@@ -1,0 +1,8 @@
+/* In-game HUD: crosshair, status line, toasts, hints. */
+#dot{position:fixed;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;background:rgba(255,250,225,.75);box-shadow:0 0 2px #000;z-index:2;pointer-events:none}
+#line{position:fixed;left:12px;bottom:10px;z-index:2;color:#e6dcb4;text-shadow:0 0 3px #000;pointer-events:none;opacity:.8}
+#toast{position:fixed;left:50%;top:30%;transform:translateX(-50%);z-index:3;color:#fff4c8;text-shadow:0 0 4px #000,0 0 10px #000;font-size:16px;letter-spacing:.04em;pointer-events:none;transition:opacity .8s;text-align:center;max-width:90vw}
+#hint{position:fixed;left:50%;bottom:38px;transform:translateX(-50%);z-index:2;color:#b3aa8c;text-shadow:0 0 3px #000;pointer-events:none;font-size:11px;transition:opacity 1.5s;text-align:center;max-width:94vw}
+#click{position:fixed;left:50%;top:58%;transform:translateX(-50%);z-index:3;color:#fff4c8;background:rgba(10,9,6,.6);border:1px solid #4d4630;padding:6px 12px;pointer-events:none}
+#fps{position:fixed;left:10px;top:10px;z-index:6;color:#f0e2a0;text-shadow:0 0 3px #000;pointer-events:none}
+.fade{opacity:0}

@@ -1,0 +1,33 @@
+/* Start / pause / options / multiplayer overlay. The 3D view renders behind it. */
+#menu{position:fixed;inset:0;z-index:5;display:flex;align-items:center;background:linear-gradient(90deg,rgba(8,7,4,.9) 0,rgba(8,7,4,.6) 34%,rgba(8,7,4,0) 64%)}
+#menu:not([data-screen=main]):not([data-screen=single]):not([data-screen=multi]):not([data-screen=room]){background:rgba(8,7,4,.62);justify-content:center}
+.screen{width:min(400px,calc(100vw - 32px));box-sizing:border-box;padding:24px 28px;margin-left:clamp(16px,6vw,90px);max-height:calc(100vh - 24px);overflow:auto}
+#menu:not([data-screen=main]):not([data-screen=single]):not([data-screen=multi]):not([data-screen=room]) .screen{margin-left:0;background:#15130d;border:1px solid #4d4630;text-align:center}
+#menu[data-screen=options] .screen{width:min(560px,calc(100vw - 24px))}
+#menu[data-screen=host] .screen,#menu[data-screen=join] .screen{width:min(480px,calc(100vw - 24px));text-align:left}
+.logo{margin:0 0 6px;font-size:36px;line-height:1.05;letter-spacing:.18em;color:#efe2a6;text-shadow:3px 3px 0 #5a4c18}
+.screen h2{margin:0 0 14px;font-size:20px;color:#efe2a6;letter-spacing:.06em}
+.screen p{margin:6px 0;color:#cdc5a8;white-space:pre-line}
+.stack{display:flex;flex-direction:column;gap:8px;margin:16px 0 10px}
+.stack button{padding:10px 14px;font-size:15px;text-align:left;letter-spacing:.04em;background:rgba(29,26,18,.9)}
+#menu:not([data-screen=main]):not([data-screen=single]):not([data-screen=multi]):not([data-screen=room]) .stack button{text-align:center}
+.stack button:hover:not(:disabled){background:#2e2a1a;padding-left:20px}
+.stack button.sub{color:#a69e82}
+.fieldrow{display:flex;flex-direction:column;gap:4px;margin:10px 0;color:#cdc5a8}
+.info{color:#efe2a6!important}
+.status{min-height:1em}
+.foot{margin-top:22px!important;font-size:11px;color:#948c74!important}
+/* options */
+.tabs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:12px}
+.tab{padding:5px 10px}
+.tabbody{text-align:left}
+.tabbody h3{margin:14px 0 4px;font-size:13px;color:#ddd0a0}
+.orow{display:grid;grid-template-columns:minmax(0,190px) 1fr 52px;gap:8px;align-items:center;margin:6px 0}
+.orow .val{text-align:right;color:#948c74}
+.orow.chk{grid-template-columns:22px 1fr}
+.orow.col{grid-template-columns:1fr;gap:4px}
+.choices{display:flex;gap:6px;flex-wrap:wrap}
+.keyrow{grid-template-columns:1fr auto}
+.keys{display:flex;gap:6px}
+.key{min-width:92px;text-align:center}
+@media (max-width:640px){.orow{grid-template-columns:1fr 1fr 44px}.logo{font-size:28px}}
