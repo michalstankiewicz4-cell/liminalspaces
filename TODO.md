@@ -5,7 +5,8 @@ Legend: **P1** next, **P2** later, **P3** ideas. State as of v0.5.0. Context: [`
 ## The Great Path (register: [`docs/GREAT_PATH.md`](docs/GREAT_PATH.md))
 - [ ] P2 More procedural detail: clutter per Hub room, more anomaly kinds, variation of lamp fixtures
 - [ ] P2 Tune event frequency and sound levels after playtesting
-- [ ] P2 Homes, hospital area, holding rooms; Rudon's backpack and skateboard at the gate
+- [ ] P2 Homes, hospital area; Rudon's backpack and skateboard at the gate
+- [ ] P3 Statues: more poses and details (faces, clothes folds) after playtesting
 - [ ] P2 Multiplayer in this world (share the start and poses; the world is static)
 - [ ] P3 The theory that the Great Path and the West Path curve and meet
 

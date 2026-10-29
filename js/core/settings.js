@@ -5,7 +5,7 @@ import { sanitizeKeys } from '../input/bindings.js';
 
 export const DEFAULTS = {
   lang: 'en',
-  gfx: { pixelH: 200, levels: 7, dither: 0.8, edge: 0.6, bright: 1.15, fov: 75, viewDist: 2, headBob: true, showFps: false, fine: true, grain: true },
+  gfx: { pixelH: 200, levels: 7, dither: 0.8, edge: 0.6, bright: 1.15, fov: 60, viewDist: 2, headBob: true, showFps: false, fine: true, grain: true },
   mouse: { sens: 1, invertY: false },
   audio: { volume: 0.6, hum: true, scratch: true },
   hud: { show: true },
@@ -22,10 +22,16 @@ const num = (v, key, d) => { const [lo, hi] = RANGES[key]; v = +v; return Number
 // Player names: letters, digits, spaces, - and _ only, at most 16 characters.
 export const cleanName = (s) => (typeof s === 'string' ? s.replace(/[^\p{L}\p{N} _-]/gu, '').trim().slice(0, 16) : '');
 
+// Settings format version. v2 (0.6.0): the default field of view went from 75° to 60°; an old save that still
+// has the old default is moved to the new one (a value the player chose stays).
+export const SETTINGS_VERSION = 2;
+
 export function sanitize(raw) {
   const r = raw && typeof raw === 'object' ? raw : {};
+  if (!(r.v >= 2) && r.gfx && +r.gfx.fov === 75) r.gfx = { ...r.gfx, fov: DEFAULTS.gfx.fov };
   const g = r.gfx || {}, m = r.mouse || {}, a = r.audio || {}, u = r.hud || {}, n = r.net || {}, D = DEFAULTS;
   return {
+    v: SETTINGS_VERSION,
     lang: r.lang === 'pl' ? 'pl' : 'en',
     gfx: {
       pixelH: Math.round(num(g.pixelH, 'pixelH', D.gfx.pixelH) / 10) * 10, levels: Math.round(num(g.levels, 'levels', D.gfx.levels)),

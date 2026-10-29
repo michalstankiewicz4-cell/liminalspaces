@@ -4,6 +4,19 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new version (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.6.0] - 2026-10-29
+### Added
+- **Statues** of the story's scenes in the Great Path world: pale stone figures in poses (pointing, reading, sitting at desks, kneeling, climbing…) with faint, broken outlines, grouped where each scene happens, each with a brass plaque (story time and title). They are colliders and are built only near the player.
+- **The story starts where the film starts**: “Begin the story” puts you at the gate of the West Court of Luceron and the guide follows the film's order (18 steps): the gate (02:18) → the lecture in the school (03:14) → every variation (06:21) → three explorers (06:45) → a girl with blond hair (10:51) → the permission slip (12:32) → a Vibra-cable station (15:38) → deep blue (15:55) → the chapel (16:44) → the cafeteria (21:16) → the holding room (25:21) → the verdict (35:33) → the senior explorer (42:56) → a mapping trip (45:47) → rain water (47:42) → the machine (49:15) → friends (53:10) → the Great Path. New places: the school (a classroom with a chalkboard, desks and chairs) and the holding room by the court.
+- **Flashlight model**: only the torch is shown now (no hand) — an olive military torch with a knurled grip, rubber rings, grip lugs around the head, a black bezel and a lit lens; shorter and kept in the lower right corner; it keeps its size on screen at any field of view.
+- **Save versioning**: the save carries a format version (`v`) and the game version; an older save is migrated on load (v1: the guide step is reset because the step order changed). Settings carry a version too. When a newer game version is published, the menu offers to reload.
+### Changed
+- Default **field of view 60°** (was 75°); a saved setting still at the old default moves to 60°, a value you chose stays.
+- Code split: the Great Path game mode moved out of `core/app.js` into `core/path-mode.js`; `story/index.js` was split into `canvas-mats.js`, `signs.js`, `skylights.js`, `gate.js`, `fx.js` and `explored.js`.
+### Fixed / faster
+- Autosave every 5 s of real time (it used to count capped frame time, so slow machines saved less often).
+- Statues reuse shared geometry and outlines (building a group is about 5× faster, no geometry churn); the layered gate's colliders no longer allocate on every collision query; the camera's far plane follows the fog distance in the Great Path world; the guide no longer recomputes its route every 8 s (a periodic hitch).
+
 ## [0.5.0] - 2026-10-29
 ### Added
 - **Story guide** in the Great Path world: 17 places in the order the story visits them (Hub → rings → Wastelands door → Vibra-cable station → deep blue hall → the chapel map → cafeteria → court → explorers' guild → senior office → dead end → rain collector → map library → map machine → the gate → the Great Path). A line at the top shows the next place, its story time, the distance along the route and an arrow; chalk arrows on the floor show the way; the map shows the route and the target; reaching a place shows what happens there in the story. **G** or Options > Graphics turns the guide off. The step is saved.

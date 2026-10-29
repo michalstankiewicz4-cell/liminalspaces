@@ -6,24 +6,27 @@ import { CS } from './grid.js';
 import { canvasTexture } from './textures.js';
 
 // key: i18n gp.s.<key> (title) and gp.sd.<key> (what happens there); t: story timestamp; r: reach radius; y: required floor level
+// The story starts where the film starts: at the gate of the Great Path (02:18), then follows the film's flashbacks
+// in order, and ends back on the Great Path. Each step has a statue scene and a plaque (statues.js, layout.js).
 export const STEPS = [
-  { key: 'hub', t: '07:10', x: 0, z: 4, r: 6 },
-  { key: 'ring1', t: '07:40', x: 0, z: 72, r: 8 },
-  { key: 'ring2', t: '08:02', x: 0, z: 118, r: 8 },
-  { key: 'door', t: '12:28', x: 0, z: 158, r: 4 },
-  { key: 'station', t: '13:48', x: 0, z: 170, r: 4 },
-  { key: 'blue', t: '15:55', x: 0, z: 386, r: 5 },
+  { key: 'gate', t: '02:18', x: 56, z: 0, r: 3.5 },
+  { key: 'classroom', t: '03:14', x: 46, z: -28, r: 6 },
+  { key: 'sketch', t: '06:21', x: 6.5, z: -8.4, r: 3 },
+  { key: 'friends', t: '06:45', x: 0, z: 116, r: 4 },
+  { key: 'rebecca', t: '10:51', x: 46, z: -18, r: 4 },
+  { key: 'door', t: '12:32', x: 0, z: 155, r: 4 },
+  { key: 'station', t: '15:38', x: -0.6, z: 220.6, r: 4 },
+  { key: 'blue', t: '15:55', x: 0, z: 393, r: 4 },
   { key: 'chapel', t: '16:44', x: 0, z: 449, r: 6, y: -6 },
-  { key: 'cafeteria', t: '20:09', x: 23, z: -10, r: 5 },
-  { key: 'court', t: '35:33', x: 51, z: 3, r: 5 },
-  { key: 'guild', t: '42:20', x: -24, z: -13, r: 5 },
-  { key: 'office', t: '42:50', x: -36.5, z: -10.5, r: 2.2 },
-  { key: 'deadEnd', t: '45:47', x: -117, z: 310, r: 4 },
-  { key: 'collector', t: '47:42', x: 0, z: 2.6, r: 3 },
-  { key: 'library', t: '48:48', x: -24, z: -30, r: 5 },
-  { key: 'machine', t: '49:25', x: -24, z: -43.5, r: 2.5 },
-  { key: 'gate', t: '52:08', x: 56, z: 0, r: 3 },
-  { key: 'path', t: '02:34', x: 262, z: 0, r: 6 },
+  { key: 'cafeteria', t: '21:16', x: 29.5, z: -6.2, r: 3.5 },
+  { key: 'holding', t: '25:21', x: 50, z: 14, r: 3 },
+  { key: 'court', t: '35:33', x: 51, z: 4, r: 3.5 },
+  { key: 'office', t: '42:56', x: -36.5, z: -11, r: 2.2 },
+  { key: 'deadEnd', t: '45:47', x: -116.6, z: 310, r: 4 },
+  { key: 'collector', t: '47:42', x: 1.75, z: 1.3, r: 2.5 },
+  { key: 'machine', t: '49:15', x: -24, z: -44, r: 2.5 },
+  { key: 'visit', t: '53:10', x: -28, z: -7, r: 3 },
+  { key: 'path', t: '02:34', x: 326, z: 0, r: 5 },
 ];
 
 export function createGuide(story) {
@@ -112,7 +115,7 @@ export function createGuide(story) {
       }
       age += dt;
       const moved = !lastFrom || Math.hypot(lastFrom.x - w.x, lastFrom.z - w.z) > 3;
-      if (!path.length || (best > 3 && age > 1 && moved) || age > 8) {
+      if (!path.length || (best > 3 && age > 1.5 && moved)) {
         const p = search(w, target);
         age = 0; lastFrom = { x: w.x, z: w.z };
         if (p) { path = p; near = 0; }

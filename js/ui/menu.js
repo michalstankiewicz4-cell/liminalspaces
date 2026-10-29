@@ -19,6 +19,10 @@ export function createMenu(root, app) {
   };
   const back = () => btn('common.back', () => menu.back(), 'sub');
 
+  // shown when the server has a newer version than the files running now (see core/app.js)
+  const updText = h('span');
+  const update = h('p', { class: 'info update', hidden: true }, updText, ' ', btn('menu.reload', () => location.reload()));
+
   /* ---- main: two tiles, one per world ---- */
   const stats = h('p', { class: 'info' });
   const tile = (img, title, desc, onClick) => h('button', { type: 'button', class: 'tile', on: { click: (e) => { e.currentTarget.blur(); onClick(); } } },
@@ -31,6 +35,7 @@ export function createMenu(root, app) {
       tile('assets/tile-path.png', 'tile.path', 'tile.pathDesc', () => menu.go('path'))),
     h('div', { class: 'stack' }, btn('menu.options', () => menu.go('options'))),
     stats,
+    update,
     h('p', { class: 'foot' }, 'v' + VERSION, ' · ', tx('menu.foot'))],
   () => bind(stats, 'menu.stats', undefined, { km: (app.progress.dist / 1000).toFixed(2), odd: app.progress.odd }));
 
@@ -120,6 +125,7 @@ export function createMenu(root, app) {
     },
     hide() { overlay.hidden = true; current = null; history.length = 0; },
     refresh() { if (current && onShow[current]) onShow[current](); },
+    showUpdate(v) { update.hidden = false; bind(updText, 'menu.update', undefined, { v, cur: VERSION }); },
   };
   return menu;
 }

@@ -63,11 +63,14 @@ The story's distances are far too long to walk in a game (hours, days, months). 
 | 52:50 | A skateboard allowed for the journey | Not placed yet |
 
 ## Story guide (`js/story/route.js`)
-The guide leads through the places in story order: Hub (07:10) → First Outer Ring (07:40) → Second Outer Ring (08:02) → Wastelands door (12:28) → a Vibra-cable station (13:48) → the deep blue hallway (15:55) → the map in the chapel (16:44) → cafeteria (20:09) → court (35:33) → explorers' guild (42:20) → senior explorer's office (42:50) → a mapping trip to the dead end (45:47) → the rain collector (47:42) → map library (48:48) → map machine (49:25) → the gate (52:08) → the Great Path (02:34, the opening scene). The short texts shown on arrival (`gp.sd.*`) are written for the game.
+The story starts where the film starts — at the gate of the West Court of Luceron (01:20) — and the guide follows the film's order: the gate opens (02:18) → the lecture in the school (03:14) → every variation, the sketch (06:21) → three explorers (06:45) → a girl with blond hair (10:51) → the permission slip at the Wastelands door (12:32) → a Vibra-cable station (15:38) → deep blue (15:55) → the chapel (16:44) → the cafeteria (21:16) → the holding room (25:21) → the verdict in the court (35:33) → the senior explorer's office (42:56) → a mapping trip to the dead end (45:47) → rain water at the collector (47:42) → the machine (49:15) → friends' visit (53:10) → the Great Path (02:34, the opening scene).
+
+## Statues (`js/story/statues.js`)
+Every guide step has a tableau of pale stone figures with faint broken outlines showing that scene, and a brass plaque on a pedestal with its story time and title. They are interpretations for the game (poses and groups), not exact shots. Rudon is not shown at the gate — the player is Rudon there. New places built for them: the school (03:14; classroom with a chalkboard, desks and chairs, a corridor from the West Court) and the holding room (25:21; a small room with a door off the court). The short texts shown on arrival (`gp.sd.*`) are written for the game.
 
 ## Sounds and events
 Sound sources and ambience follow the places above (`js/story/audio.js`); the scary events (`js/story/events.js`) are inventions in the spirit of the story's ghost stories and anomalies, not scenes from it — except the Vibra-cable signal (three plucks, 14:09) and the collapses (18:50).
 
 ## Not built yet (ideas)
-- Districts' homes, hospital area, holding rooms; Rudon's backpack and skateboard at the gate.
+- Districts' homes, hospital area; Rudon's backpack and skateboard at the gate (shown only on the statues).
 - The theory that the Great Path and the West Path curve and meet.

@@ -291,7 +291,7 @@ export const MAT_DEFS = {
 };
 // Metres per texture repeat for every material name (usable without creating materials, e.g. in the worker).
 export const MAT_SCALE = Object.fromEntries([...Object.entries(MAT_DEFS).map(([k, d]) => [k, d[1]]),
-  ...['lamp', 'lampFlicker', 'lampDead', 'sky', 'bulb', 'glow', 'glass', 'screen', 'symbol', 'mapsheet', 'water', 'decal'].map((k) => [k, 1])]);
+  ...['lamp', 'lampFlicker', 'lampDead', 'sky', 'bulb', 'glow', 'glass', 'screen', 'symbol', 'mapsheet', 'water', 'decal', 'chalkboard'].map((k) => [k, 1])]);
 // Index order used in the cell grid (fm / wm / cm / sm). 0 = unset.
 export const MAT_NAMES = ['none', ...Object.keys(MAT_DEFS)];
 export const M = Object.fromEntries(MAT_NAMES.map((n, i) => [n, i]));

@@ -41,3 +41,4 @@
 #menu[data-screen=main] .screen{width:min(620px,calc(100vw - 32px))}
 #menu[data-screen=path] .screen{width:min(460px,calc(100vw - 32px))}
 @media (max-width:640px){.tiles{grid-template-columns:1fr}}
+.update{border:1px solid #6a5a2a;padding:6px 8px;background:rgba(40,34,14,.8)}

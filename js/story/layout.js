@@ -37,6 +37,8 @@ export const ZONES = [
   { key: 'greatPath', t: '02:34', amb: 0.07, tint: W, fog: [0.22, 0.19, 0.12], map: '#e0c060', fm: 'carpet', wm: 'wallpaper', cm: 'ceiling', lamp: ['panel', 8, 0.25], lx: 90, lz: 0 },
   { key: 'westPath', t: '50:33', amb: 0.06, tint: W, fog: [0.2, 0.17, 0.11], map: '#d0b060', fm: 'carpet', wm: 'wallpaperOld', cm: 'ceiling', lamp: ['panel', 8, 0.35], lx: -90, lz: 0 },
   { key: 'booth', t: '12:32', amb: 0.08, tint: [1, 0.85, 0.6], fog: [0.14, 0.11, 0.07], map: '#a08a6a', fm: 'concrete', wm: 'concrete', cm: 'ceiling', lamp: ['bulb', 4, 0], lx: 4.5, lz: 156 },
+  { key: 'school', t: '03:14', amb: 0.14, tint: W, fog: [0.28, 0.24, 0.16], map: '#c8b080', fm: 'parquet', wm: 'wallpaper', cm: 'ceiling', lamp: ['panel', 4, 0], lx: 46, lz: -26 },
+  { key: 'holding', t: '25:21', amb: 0.05, tint: [1, 0.9, 0.75], fog: [0.12, 0.1, 0.07], map: '#8a7a6a', fm: 'concrete', wm: 'whitepanel', cm: 'ceiling', lamp: ['bulb', 4, 0], lx: 50, lz: 14 },
 ];
 export const Z = Object.fromEntries(ZONES.map((z, i) => [z.key, i]));
 for (const z of ZONES) for (const k of ['fm', 'wm', 'cm', 'sm']) z[k + 'i'] = z[k] ? M[z[k]] : 0;
@@ -132,8 +134,9 @@ export function buildLayout(grid) {
   for (let k = 0; k < 4; k++) prop('jug', -16 + k * 0.35, -21.4, 0);
   prop('bike', -16.5, -7.5, Math.PI / 2, { drum: true }); prop('bike', -18.5, -7.5, Math.PI / 2, { drum: true });
   for (let k = 0; k < 3; k++) prop('backpack', -31 + k * 0.5, -5, Math.PI);
+  prop('crate', -28.5, -7, 0, { s: 0.4 });                                // Rudon's seat when his friends visit (53:10)
   room('seniorOffice', -38.5, -14, -34.5, -8); door('seniorOffice', -34.5, -11.5, -34, -10.5);
-  prop('desk', -36.5, -12.5, Math.PI, { lamp: true, w: 1.6 }); prop('chair', -36.5, -9.7, Math.PI); prop('shelf', -38.2, -11, Math.PI / 2, { w: 2.4, books: true });
+  prop('desk', -36.5, -12.5, Math.PI, { lamp: true, w: 1.6 }); prop('chair', -36.5, -13.45, 0); prop('shelf', -38.2, -11, Math.PI / 2, { w: 2.4, books: true });
   // map library with every paper map (48:48); the machine behind a gate at the back
   room('library', -34, -40, -14, -24); door('library', -25, -24, -23, -22);
   for (let k = 0; k < 4; k++) { prop('shelf', -30 + k * 4.5, -37, 0, { w: 3.6, rolls: true }); prop('shelf', -30 + k * 4.5, -36.4, Math.PI, { w: 3.6, rolls: true }); }
@@ -145,6 +148,7 @@ export function buildLayout(grid) {
   // the court and the layered gate to the Great Path (01:20, 35:33)
   room('court', 44, -9, 58, 9); room('court', 58, -1.5, 60, 1.5, { flags: 0 });
   prop('judgeDesk', 51, 7, Math.PI);
+  prop('chair', 51, 3.9, 0);                                             // the accused (statue scene, 35:33)
   for (let r = 0; r < 3; r++) { prop('bench', 48, -2.5 - r * 1.6, 0, { w: 3 }); prop('bench', 48, 2.5 + r * 1.6 - 2.5 + 2.5, Math.PI, { w: 3 }); }
   gates.push({ x: 58, z: 0, w: 3, layers: 6 });
   note(56.5, -3, 0, -1, 'gp.n.gate');
@@ -157,6 +161,16 @@ export function buildLayout(grid) {
   for (let k = 0; k < 3; k++) { prop('factory', -27 + k * 7, 34, 0); prop('factory', -27 + k * 7, 46, Math.PI); }
   prop('conveyor', -20, 40, 0, { w: 18 });
   prop('lumber', -11, 47, Math.PI / 2, { len: 3 });
+
+  // the school (03:14): a classroom with a chalkboard, and a lobby by the corridor to the avenue
+  room('school', 36, -38, 56, -14); room('school', 40, -14, 42, -1.5);
+  prop('board', 46, -38, 0, { w: 5 });
+  prop('desk', 46, -34.6, Math.PI, { w: 1.6, lamp: false });
+  for (const [x, z] of [[-4, -4], [0, -4], [4, -4], [-4, -1], [0, -1], [4, -1]]) { prop('desk', 46 + x, -24 + z, 0, { w: 1.0 }); prop('chair', 46 + x, -24 + z + 0.7, Math.PI); }
+  for (let k = 0; k < 4; k++) prop('backpack', 37 + k * 0.6, -15, 0);
+  // the holding room (25:21): a table, two chairs, a bare bulb
+  room('holding', 46, 11, 54, 17); door('holding', 49, 9, 50.5, 11);
+  prop('table', 50, 14.2, 0, { w: 1.4, d: 0.8 }); prop('chair', 50, 13.2, 0); prop('chair', 50, 15.3, Math.PI);
 
   /* =========================== FIRST OUTER RING (07:40): walls knocked down by scavengers =========================== */
   const inRing1 = (x, z) => Math.max(Math.abs(x), Math.abs(z)) >= 60 && Math.max(Math.abs(x), Math.abs(z)) < 100;
@@ -399,6 +413,20 @@ export function buildLayout(grid) {
   skylight(-2, CZ1 - 4.5, 2, CZ1 - 0.5, 1.9, 4.0);
   prop('symbol', 0, CZ1, Math.PI, { y: CF + 1.0, w: 7, h: 4.5 });
   note(2.2, 401, 1, 0, 'gp.n.chapel', {}, { h: 1.6 });
+
+  /* ---- brass plaques on stone pedestals next to the statue scenes (statues.js), text from the guide step ---- */
+  const PLAQUES = {
+    gate: [54.5, -5.2, Math.PI, '02:18'], classroom: [39, -30, Math.PI / 2, '03:14'], sketch: [9, -5.5, -Math.PI / 2, '06:21'],
+    friends: [-1.1, 122, Math.PI, '06:45'], rebecca: [50.5, -17.5, -Math.PI / 2, '10:51'], door: [-1.1, 151.5, Math.PI, '12:32'],
+    station: [1.1, 225, Math.PI, '15:38'], blue: [1.1, 392.5, Math.PI, '15:55'], chapel: [-4.5, 451, Math.PI / 2, '16:44'],
+    cafeteria: [31.2, -9.2, -Math.PI / 2, '21:16'], holding: [53.2, 12.2, -Math.PI / 2, '25:21'], court: [55.2, 6.5, -Math.PI / 2, '35:33'],
+    office: [-34.9, -13.4, -Math.PI / 2, '42:56'], deadEnd: [-112.5, 311, -Math.PI / 2, '45:47'], collector: [3.6, 3.6, -Math.PI / 2, '47:42'],
+    machine: [-20.6, -45.2, -Math.PI / 2, '49:15'], visit: [-25.5, -5.2, -Math.PI / 2, '53:10'], path: [326, 1.15, -Math.PI / 2, '02:34'],
+  };
+  for (const [key, [x, z, face, time]] of Object.entries(PLAQUES)) {
+    prop('pedestal', x, z, face);
+    grid.addSign({ x: x + Math.sin(face) * 0.165, z: z + Math.cos(face) * 0.165, y: fl(x, z) + 0.8, rot: face, key: 'gp.s.' + key, params: {}, step: key, time, tilt: 0, kind: 'plaque' });
+  }
 
   /* ---- lamps everywhere (by zone rules) ---- */
   for (const c of grid.chunks.values()) placeLamps(c);

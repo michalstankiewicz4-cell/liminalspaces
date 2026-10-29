@@ -282,6 +282,18 @@ const PROPS = {
     E.box('whitepanel', -w / 2 - 0.08, 0, -0.06, -w / 2, 2.15, 0.06, S); E.box('whitepanel', w / 2, 0, -0.06, w / 2 + 0.08, 2.15, 0.06, S);
     E.box('whitepanel', -w / 2 - 0.08, 2.08, -0.06, w / 2 + 0.08, 2.15, 0.06);
   },
+  pedestal(E) {
+    E.box('stone', -0.27, 0, -0.17, 0.27, 1.05, 0.17, S);
+    E.box('stone', -0.32, 0, -0.22, 0.32, 0.08, 0.22);
+    E.box('stone', -0.3, 1.05, -0.2, 0.3, 1.1, 0.2);
+  },
+  board(E, p) {
+    // chalkboard on a wall (local z = out of the wall)
+    const w = p.w || 4;
+    E.box('wood', -w / 2 - 0.06, 0.84, 0, w / 2 + 0.06, 2.26, 0.03);
+    E.box('chalkboard', -w / 2, 0.9, 0.03, w / 2, 2.2, 0.035, { uv: 'local', skip: 'nz,px,nx,py,ny' });
+    E.box('wood', -w / 2, 0.88, 0.03, w / 2, 0.92, 0.11);
+  },
   skateboard(E) {
     E.box('wood', -0.1, 0.08, -0.4, 0.1, 0.1, 0.4);
     for (const z of [-0.3, 0.3]) for (const x of [-0.08, 0.08]) E.prism('plastic', x, z, 0.03, 0.03, 0, 0.06, 6, { capTop: true });

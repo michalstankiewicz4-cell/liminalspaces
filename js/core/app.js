@@ -16,13 +16,21 @@ import { createMenu } from '../ui/menu.js';
 import { createAudio } from '../audio/audio.js';
 import { createSession } from '../net/session.js';
 import { VERSION } from '../version.js';
-import { createWalker } from '../story/walker.js';
-import { createHand } from '../story/hand.js';
 import { createMapUi } from '../ui/map.js';
-import { MAT_NAMES } from '../story/textures.js';
-import { createPathAudio } from '../story/audio.js';
+import { createPathMode } from './path-mode.js';
 
 const MENU_SEED = 20251031;
+const SAVE_VERSION = 2;
+// Brings an older save up to SAVE_VERSION. v1 (up to 0.5.0): the story guide steps were in a different order.
+function migrate(d) {
+  if (!d || typeof d !== 'object') return d;
+  const v = Number.isInteger(d.v) ? d.v : 1;
+  if (v < 2 && d.path && typeof d.path === 'object') d.path.step = 0;
+  d.v = SAVE_VERSION;
+  return d;
+}
+// Is version a (x.y.z) newer than b?
+const newer = (a, b) => { const p = (s) => s.split('.').map(Number); const x = p(a), y = p(b); for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] > y[i]; return false; };
 const TITLE = 'Liminal Spaces — Endless Liminal Space Exploration Game';
 
 export function createApp({ appEl, uiEl }) {
@@ -38,7 +46,7 @@ export function createApp({ appEl, uiEl }) {
 
   const scene = new THREE.Scene();
   const world = createWorld(scene);
-  const camera = new THREE.PerspectiveCamera(75, 1, 0.05, 140);
+  const camera = new THREE.PerspectiveCamera(60, 1, 0.05, 140);
   camera.rotation.order = 'YXZ';
   scene.add(camera);
   // flashlight: a spot light carried by the camera (casts shadows)
@@ -50,16 +58,7 @@ export function createApp({ appEl, uiEl }) {
   flash.shadow.bias = -0.0004; flash.shadow.normalBias = 0.03; flash.shadow.camera.near = 0.15;
   camera.add(flash, flash.target);
   flash.visible = false;
-  // Great Path world: created the first time it is opened (textures and layout take a moment)
-  let story = null, walker = null, kind = 'endless';
-  const hand = createHand();
-  const scratches = createPathAudio(settings);     // all sound of the Great Path world (named after its first job)
-  let director = null, guide = null;
-  const stepListeners = new Set();
-  let sun = 0, sunWarned = 0;                 // sun exposure under skylights (0..1)
-  hand.group.visible = false;
-  camera.add(hand.group, hand.spot, hand.spot.target);
-  hand.spot.visible = false;
+  let kind = 'endless';                         // which world is shown: 'endless' | 'path'
 
   const input = new Input(canvas, settings);
   const pipe = new PixelPipeline(renderer);
@@ -71,9 +70,10 @@ export function createApp({ appEl, uiEl }) {
   /* ---- persistent progress: totals and the last single-player walk ---- */
   const progress = {
     dist: 0, odd: 0, last: null, path: null,
-    save() { write(KEYS.save, { dist: Math.round(this.dist), odd: this.odd, last: this.last, path: this.path }); },
+    // save format version: bump SAVE_VERSION and add a step to migrate() when the meaning of saved data changes
+    save() { write(KEYS.save, { v: SAVE_VERSION, game: VERSION, dist: Math.round(this.dist), odd: this.odd, last: this.last, path: this.path }); },
     load() {
-      const d = read(KEYS.save);
+      const d = migrate(read(KEYS.save));
       if (!d || typeof d !== 'object') return;
       this.dist = Math.max(0, +d.dist || 0);
       this.odd = Math.max(0, Math.floor(+d.odd) || 0);
@@ -85,7 +85,7 @@ export function createApp({ appEl, uiEl }) {
     },
     wipe() {
       this.dist = 0; this.odd = 0; this.last = null; this.path = null; this.save(); write(KEYS.pathMap, null);
-      if (story) for (const c of story.grid.chunks.values()) { c.seen.fill(0); c.seenV = (c.seenV || 0) + 1; }
+      path.clearSeen();
       menu.refresh();
     },
   };
@@ -96,6 +96,8 @@ export function createApp({ appEl, uiEl }) {
   let lockPauseAt = 0, lastDist = 0, saveT = 0, poseT = 0;
   const hud = createHud(uiEl);
   const mapUi = createMapUi(uiEl);
+  // the Great Path world (built the first time it is opened)
+  const path = createPathMode({ renderer, camera, pipe, input, hud, mapUi, settings, progress });
 
   world.onFind = (kind) => {
     progress.odd++;
@@ -128,10 +130,7 @@ export function createApp({ appEl, uiEl }) {
     rememberWalk();
   }
   function rememberWalk() {
-    if (mode === 'play' && kind === 'path') {
-      progress.path = { x: +walker.x.toFixed(2), z: +walker.z.toFixed(2), yaw: +walker.yaw.toFixed(3), seen: [...story.visited.keys()], step: guide ? guide.step : 0 };
-      if (story.seenDirty) write(KEYS.pathMap, story.exportSeen());     // explored map cells, kept for good
-    }
+    if (mode === 'play' && kind === 'path') path.remember();
     else if (mode === 'play' && !session) progress.last = { seed, x: +player.x.toFixed(2), z: +player.z.toFixed(2), yaw: +player.yaw.toFixed(3) };
     progress.save();
   }
@@ -139,83 +138,32 @@ export function createApp({ appEl, uiEl }) {
   /* ---- switching worlds ---- */
   function useWorld(k) {
     if (kind === k) return;
+    if (kind === 'path') { path.leave(); scene.add(camera); if (camera.far !== 140) { camera.far = 140; camera.updateProjectionMatrix(); } }
     kind = k;
-    const sc = k === 'path' ? story.scene : scene;
-    sc.add(camera);
-    hand.group.visible = k === 'path';
-    if (k !== 'path') { hand.spot.visible = false; mapUi.show(false); }
     applySettings();
   }
-  // Starts a walk in the Great Path world. where: 'gate' | 'hub' | 'wastes' | 'continue'
+  // Starts a walk in the Great Path world (see core/path-mode.js). where: 'gate' | 'hub' | 'wastes' | 'continue'
   function startPath(where) {
-    if (!story) {
+    if (!path.ready) {
       if (app.onPathStatus) app.onPathStatus('path.loading');
       // let the message paint before the (synchronous) build
-      setTimeout(() => {
-        import('../story/index.js').then(({ createStory }) => {
-          story = createStory(renderer);
-          walker = createWalker(story);
-          story.onZone = (id, first) => { if (first && mode === 'play') hud.toast(t('gp.newPlace', { place: t('gp.z.' + story.zones[id].key), time: story.zones[id].t || '' }), 4.5); };
-          story.importSeen(read(KEYS.pathMap));
-          mapUi.attach(story);
-          return Promise.all([import('../story/events.js'), import('../story/route.js')]).then(([ev, rt]) => {
-            director = ev.createDirector({ story, audio: scratches, pipe, hand, hud, t });
-            guide = rt.createGuide(story);
-            mapUi.setGuide(guide);
-            mapUi.onTeleport = (x, z) => teleport(x, z);
-            walker.onStep = () => {
-              const [c, k] = story.grid.at(Math.floor(walker.x / 0.5), Math.floor(walker.z / 0.5));
-              stepMat = c ? MAT_NAMES[c.fm[k]] : 'carpet';
-              scratches.step(stepMat);
-              for (const f of stepListeners) f();
-            };
-            walker.onLand = () => scratches.land(stepMat);
-            startPath(where);
-          });
-        }).catch((e) => { console.error(e); if (app.onPathStatus) app.onPathStatus('path.failed'); });
-      }, 30);
+      setTimeout(() => path.load().then(() => startPath(where)).catch((e) => { console.error(e); if (app.onPathStatus) app.onPathStatus('path.failed'); }), 30);
       return;
     }
     closeSession();
     useWorld('path');
-    const saved = progress.path;
-    let sp = story.starts[where] || story.starts.gate;
-    if (where === 'continue' && saved) { sp = saved; for (const id of saved.seen) story.visited.set(id, story.visited.size + 1); }
-    else story.resetVisits();
-    walker.place(sp.x, sp.z, sp.yaw);
-    story.preload(walker.x, walker.z);
-    guide.set(where === 'continue' && saved ? saved.step || 0 : 0);
-    director.reset(where === 'continue' ? 30 : 45);
-    if (where === 'gate') story.startGate(); else story.setGate(true);
-    story.setWorkLights(false);
-    hand.setOn(true);
+    path.start(where);
     mode = 'play'; paused = false; lastDist = 0;
-    input.clear(); menu.hide(); mapUi.show(true); mapUi.setOpen(false);
+    input.clear(); menu.hide();
     audio.setMuted(true);                                          // this world has its own sound (story/audio.js)
-    scratches.unlock(); scratches.resume(); scratches.reset(where === 'continue' ? 15 : 25);
-    sun = 0; sunWarned = 0; pipe.heat = 0;
     input.lock();
-    const k = settings.data.keys;
-    hud.setHint(t('hud.pathHint', { move: moveLabel(k), light: firstKey(k, 'flashlight'), work: firstKey(k, 'workLights'), map: firstKey(k, 'map'), guide: firstKey(k, 'guide') }), 14);
     rememberWalk();
-  }
-
-  // Teleport to an explored place (from the map).
-  function teleport(x, z) {
-    walker.place(x, z, walker.yaw);
-    story.preload(x, z);
-    mapUi.setOpen(false); input.clear(); input.lock();
-    pipe.glitch = 0.8; scratches.staticBurst(0.25);
-    hud.toast(t('map.teleported'), 2);
   }
 
   function goMenu() {
     if (mode === 'play') rememberWalk();
     closeSession();
     useWorld('endless');
-    mapUi.show(false); hud.setSign(null);
-    scratches.suspend(); story && story.scratchVisual(null); pipe.heat = 0; pipe.fear = 0; pipe.glitch = 0;
-    if (director) director.reset(); if (guide) guide.hide(); hud.setGoal(null);
     mode = 'menu'; paused = false;
     flash.visible = false;
     seed = MENU_SEED;
@@ -230,14 +178,14 @@ export function createApp({ appEl, uiEl }) {
   function pause() {
     if (mode !== 'play' || paused) return;
     mapUi.setOpen(false);
-    if (kind === 'path') scratches.suspend();
+    if (kind === 'path') path.pause();
     paused = true; input.clear(); input.unlock();
     rememberWalk();
     menu.show('pause');
   }
   function resume() {
     paused = false; input.clear(); menu.hide();
-    audio.unlock(); if (kind === 'path') { audio.setMuted(true); scratches.resume(); }
+    audio.unlock(); if (kind === 'path') { audio.setMuted(true); path.resume(); }
     input.lock();
   }
 
@@ -254,8 +202,7 @@ export function createApp({ appEl, uiEl }) {
     continueWalk: () => { const l = progress.last; if (l) startWalk(l.seed, l); },
     seedWalk: (text) => startWalk(String(text).trim() ? seedFrom(text) : randomSeed()),
     resume, quit: goMenu, startPath, onPathStatus: null,
-    info: () => kind === 'path'
-      ? { path: true, zone: story.zones[story.zone].key, time: story.zones[story.zone].t || '—', dist: walker.dist, places: story.visited.size, total: story.zones.length - 1 }
+    info: () => kind === 'path' ? path.info()
       : { seed, zone: world.zone, dist: player.dist, odd: world.foundCount, host: !!session && session.role === 'host' },
     // host: start a walk and open the invite screen
     startHost() {
@@ -304,16 +251,9 @@ export function createApp({ appEl, uiEl }) {
   canvas.addEventListener('mousedown', () => { audio.unlock(); if (mode === 'play' && !paused && !input.locked) input.lock(); });
   input.onPress = (act) => {
     if (mode !== 'play' || paused) return;
-    if (act === 'flashlight') {
-      if (kind === 'path') hand.setOn(!hand.spot.visible);
-      else { flash.visible = !flash.visible; audio.click(); }
-    } else if (act === 'toggleHud') settings.update((d) => { d.hud.show = !d.hud.show; });
-    else if (act === 'workLights' && kind === 'path') { story.setWorkLights(!story.workLights); hud.toast(t(story.workLights ? 'hud.workOn' : 'hud.workOff'), 2); }
-    else if (act === 'guide' && kind === 'path') { settings.update((d) => { d.story.guide = !d.story.guide; }); hud.toast(t(settings.data.story.guide ? 'hud.guideOn' : 'hud.guideOff'), 2); }
-    else if (act === 'map' && kind === 'path') {
-      const o = !mapUi.open; mapUi.setOpen(o); input.clear();
-      if (o) input.unlock(); else input.lock();
-    }
+    if (act === 'toggleHud') settings.update((d) => { d.hud.show = !d.hud.show; });
+    else if (kind === 'path') path.onPress(act);
+    else if (act === 'flashlight') { flash.visible = !flash.visible; audio.click(); }
   };
   addEventListener('beforeunload', () => { if (mode === 'play') rememberWalk(); if (session) session.close(); });
 
@@ -353,7 +293,14 @@ export function createApp({ appEl, uiEl }) {
     last = now;
     const t0 = now / 1000;
     const walking = mode === 'play' && !paused && !mapUi.open;
-    if (kind === 'path') { pathFrame(dt, t0, now, walking); requestAnimationFrame(frame); return; }
+    if (kind === 'path') {
+      const ctl = walking ? { look: input.takeLook(), turn: input.turnAxis(), move: input.moveVector(), sprint: input.isDown('sprint'), jump: input.isDown('jump') } : (input.takeLook(), still);
+      path.frame(dt, t0, walking, ctl, rememberWalk);
+      autosave(now, walking);
+      commonHud(dt, now, walking, path.loadedCount);
+      requestAnimationFrame(frame);
+      return;
+    }
 
     if (walking) {
       const look = input.takeLook();
@@ -379,103 +326,49 @@ export function createApp({ appEl, uiEl }) {
       poseT -= dt;
       if (poseT <= 0) { poseT = 1 / 12; session.sendPose({ x: player.x, y: eye.y, z: player.z, yaw: player.yaw }); }
     }
-    saveT += dt;
-    if (saveT > 5) { saveT = 0; if (walking) rememberWalk(); }
+    autosave(now, walking);
 
     pipe.render(scene, camera);
 
-    hud.showPlay(walking, hudOn);
-    hud.showClick(walking && !input.locked && !input.dragging && 'requestPointerLock' in canvas);
-    hud.tick(dt);
-    frames++;
-    if (now - fpsT > 500) {
-      if (settings.data.gfx.showFps) hud.setFps(t('hud.fps', { version: VERSION, fps: Math.round(frames * 1000 / (now - fpsT)), w: pipe.rt.width, h: pipe.rt.height, c: world.loadedCount }));
-      frames = 0; fpsT = now;
-    }
+    commonHud(dt, now, walking, world.loadedCount);
     hudT += dt;
     if (hudT > 0.2 && walking) {
       hudT = 0;
       let s = t('hud.line', { zone: t('zone.' + world.zone), m: Math.round(player.dist), odd: world.foundCount });
       if (session) s += t('hud.players', { n: session.count });
       hud.setLine(s);
-      hud.setClick(t('hud.click'));
     }
     requestAnimationFrame(frame);
   }
-
-  // frame of the Great Path world
-  let lightT = 0, lastLight = 1, stepMat = 'carpet', goalT = 0;
-  function pathFrame(dt, t0, now, walking) {
-    const ctl = walking ? { look: input.takeLook(), turn: input.turnAxis(), move: input.moveVector(), sprint: input.isDown('sprint'), jump: input.isDown('jump') } : (input.takeLook(), still);
-    // the sun through the glass: standing in it slowly burns (story 05:40-05:58: don't sit under skylights too long)
-    const sunHere = mode === 'play' ? story.sunAt(walker.x, walker.z) : 0;
-    if (walking) sun = sunHere > 0 ? Math.min(1, sun + dt * sunHere / 14) : Math.max(0, sun - dt / 5);
-    pipe.heat = sun;
-    if (sunHere > 0 && sun > 0.3 && sunWarned < 1) { sunWarned = 1; hud.toast(t('gp.sunWarm'), 4); }
-    if (sunHere > 0 && sun > 0.75 && sunWarned < 2) { sunWarned = 2; hud.toast(t('gp.sunBurn'), 4); }
-    if (sun < 0.1) sunWarned = 0;
-    if (sun > 0.6) { ctl.move = { x: ctl.move.x * (1.6 - sun), z: ctl.move.z * (1.6 - sun) }; ctl.sprint = false; }
-    walker.update(dt, ctl, settings.data.mouse);
-    if (walking) { progress.dist += walker.dist - lastDist; lastDist = walker.dist; }
-    // the story guide: next place, route, arrows; a toast when a place of the story is reached
-    const showGuide = settings.data.story.guide;
-    const reached = guide.update(walking ? dt : 0, walker, showGuide && mode === 'play');
-    if (reached) { hud.toast(t('gp.reached', { time: reached.t, place: t('gp.s.' + reached.key) }) + '\n' + t('gp.sd.' + reached.key), 9); rememberWalk(); }
-    story.stream(walker.x, walker.z, 1);
-    story.update(dt, t0, walker);
-    const eye = walker.eye(settings.data.gfx.headBob);
-    camera.position.set(eye.x + director.shake.x, eye.y + director.shake.y, eye.z);
-    camera.rotation.set(walker.pitch, walker.yaw, 0);
-    hand.sway(t0, walker.bob, walker.bobAmp);
-    lightT -= dt;
-    if (lightT <= 0) { lightT = 0.2; lastLight = story.lightAt(walker.x, eye.y - 0.3, walker.z) * (story.workLights ? 2 : 1) * (0.1 + 0.9 * story.power); hand.setLight(lastLight + (hand.spot.visible ? 0.15 : 0)); }
-    saveT += dt;
-    if (saveT > 5) { saveT = 0; if (walking) rememberWalk(); }
-    // scratching at the skylights (more often along the Great Path and the West Path)
-    camera.updateMatrixWorld();
-    const zk = (story.zones[story.zone] || {}).key;
-    scratches.update(walking ? dt : 0, camera, zk, story.emittersNear(walker), () => story.pickSkylight(walker), zk === 'greatPath' || zk === 'westPath');
-    story.scratchVisual(scratches.active);
-    // scary events
-    director.update(walking ? dt : 0, {
-      walker, zone: zk, moving: walker.moving, light: lastLight, flashOn: hand.spot.visible, stepMat,
-      enabled: settings.data.story.events, addStepListener: (f) => stepListeners.add(f), removeStepListener: (f) => stepListeners.delete(f),
-    });
-    pipe.render(story.scene, camera);
-    mapUi.update(dt, walker);
-    // reading notes
-    const fx = -Math.sin(walker.yaw), fz = -Math.cos(walker.yaw);
-    const sg = walking ? story.signNear(walker, fx, fz) : null;
-    hud.setSign(sg ? t(sg.key, sg.params) : null);
+  // saves the walk every 5 s of real time (dt is capped, so slow machines would save less often)
+  function autosave(now, walking) {
+    if (now - saveT < 5000) return;
+    saveT = now;
+    if (walking) rememberWalk();
+  }
+  // HUD parts shared by both worlds: crosshair, "click to look", toasts, FPS counter
+  function commonHud(dt, now, walking, chunks) {
     hud.showPlay(walking, hudOn);
     hud.showClick(walking && !input.locked && !input.dragging && 'requestPointerLock' in canvas);
+    hud.setClick(t('hud.click'));
     hud.tick(dt);
     frames++;
     if (now - fpsT > 500) {
-      if (settings.data.gfx.showFps) hud.setFps(t('hud.fps', { version: VERSION, fps: Math.round(frames * 1000 / (now - fpsT)), w: pipe.rt.width, h: pipe.rt.height, c: story.loadedCount }));
+      if (settings.data.gfx.showFps) hud.setFps(t('hud.fps', { version: VERSION, fps: Math.round(frames * 1000 / (now - fpsT)), w: pipe.rt.width, h: pipe.rt.height, c: chunks }));
       frames = 0; fpsT = now;
     }
-    hudT += dt;
-    if (hudT > 0.2 && walking) {
-      hudT = 0;
-      const zd = story.zones[story.zone] || story.zones[0];
-      hud.setLine(t('hud.pathLine', { zone: t('gp.z.' + zd.key), time: zd.t || '—', m: Math.round(walker.dist) }) + (story.workLights ? t('hud.workTag') : ''));
-      hud.setClick(t('hud.click'));
-    }
-    // guide arrow + next place (every frame for a smooth arrow)
-    goalT -= dt;
-    if (showGuide && walking && guide.target) {
-      const hd = guide.heading(walker);
-      if (hd) hud.setGoal(t('hud.goal', { time: guide.target.t, place: t('gp.s.' + guide.target.key), m: Math.round(hd.dist) }), hd.ang - walker.yaw);
-    } else if (showGuide && walking && guide.done) hud.setGoal(t('hud.goalDone'), null);
-    else hud.setGoal(null);
   }
 
   goMenu();
   requestAnimationFrame(frame);
+  // Is a newer version published than the one running (cached files)? Same-origin request, no data sent.
+  fetch('js/version.js', { cache: 'no-store' }).then((r) => (r.ok ? r.text() : '')).then((txt) => {
+    const m = /VERSION\s*=\s*'(\d+\.\d+\.\d+)'/.exec(txt);
+    if (m && newer(m[1], VERSION)) menu.showUpdate(m[1]);
+  }).catch(() => {});
   Object.defineProperties(app, Object.getOwnPropertyDescriptors({
-    world, player, camera, pipe, audio, goMenu, startWalk, startPath, pause, mapUi, hand,
-    get story() { return story; }, scratches, get director() { return director; }, get guide() { return guide; }, teleport, get walker() { return walker; }, get kind() { return kind; },
+    world, player, camera, pipe, audio, goMenu, startWalk, startPath, pause, mapUi, path, hand: path.hand, scratches: path.sound, teleport: path.teleport,
+    get story() { return path.story; }, get director() { return path.director; }, get guide() { return path.guide; }, get walker() { return path.walker; }, get kind() { return kind; },
     get mode() { return mode; }, get paused() { return paused; }, get session() { return session; }, get seed() { return seed; },
   }));
   return app;
