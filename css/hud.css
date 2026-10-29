@@ -1,7 +1,7 @@
 /* In-game HUD: crosshair, status line, toasts, hints. */
 #dot{position:fixed;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;background:rgba(255,250,225,.75);box-shadow:0 0 2px #000;z-index:2;pointer-events:none}
 #line{position:fixed;left:12px;bottom:10px;z-index:2;color:#e6dcb4;text-shadow:0 0 3px #000;pointer-events:none;opacity:.8}
-#toast{position:fixed;left:50%;top:30%;transform:translateX(-50%);z-index:3;color:#fff4c8;text-shadow:0 0 4px #000,0 0 10px #000;font-size:16px;letter-spacing:.04em;pointer-events:none;transition:opacity .8s;text-align:center;max-width:90vw}
+#toast{position:fixed;left:50%;top:30%;transform:translateX(-50%);z-index:3;white-space:pre-line;color:#fff4c8;text-shadow:0 0 4px #000,0 0 10px #000;font-size:16px;letter-spacing:.04em;pointer-events:none;transition:opacity .8s;text-align:center;max-width:90vw}
 #hint{position:fixed;left:50%;bottom:38px;transform:translateX(-50%);z-index:2;color:#b3aa8c;text-shadow:0 0 3px #000;pointer-events:none;font-size:11px;transition:opacity 1.5s;text-align:center;max-width:94vw}
 #click{position:fixed;left:50%;top:58%;transform:translateX(-50%);z-index:3;color:#fff4c8;background:rgba(10,9,6,.6);border:1px solid #4d4630;padding:6px 12px;pointer-events:none}
 #fps{position:fixed;left:10px;top:10px;z-index:6;color:#f0e2a0;text-shadow:0 0 3px #000;pointer-events:none}
@@ -19,3 +19,9 @@
 .journal li{margin:3px 0}
 .jt{color:#948c74;font-size:11px}
 @media (max-width:640px){#minimap{width:120px;height:120px}.mappanel{display:none}}
+#goal{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:2;color:#f4e8b8;text-shadow:0 0 3px #000,0 0 8px #000;pointer-events:none;display:flex;align-items:center;gap:8px;font-size:13px;max-width:70vw}
+#goal .garrow{display:inline-block;color:#ffd27a;font-size:16px;transition:transform .15s linear}
+.journal li button{background:none;border:0;padding:1px 2px;color:#cdc5a8;text-align:left;cursor:pointer;font:inherit}
+.journal li button:hover{color:#fff4c8;text-decoration:underline}
+.journal li.cur{color:#ffd27a}
+.journal .route{color:#948c74;font-size:11px}

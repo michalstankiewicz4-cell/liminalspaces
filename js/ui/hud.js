@@ -10,7 +10,9 @@ export function createHud(root) {
   const click = h('div', { id: 'click', hidden: true });
   const fps = h('div', { id: 'fps', hidden: true });
   const sign = h('div', { id: 'sign', hidden: true });
-  root.append(dot, line, toast, hint, click, fps, sign);
+  const goalArrow = h('span', { class: 'garrow' }, '▲'), goalText = h('span');
+  const goal = h('div', { id: 'goal', hidden: true }, goalArrow, goalText);
+  root.append(dot, line, toast, hint, click, fps, sign, goal);
   let toastT = 0, hintT = 0;
   return {
     // on: in a walk (not paused); show: user HUD toggle
@@ -24,6 +26,8 @@ export function createHud(root) {
     setFps(s) { fps.textContent = s; },
     // text of the paper note the player is reading (null hides it)
     setSign(s) { sign.hidden = !s; if (s && sign.textContent !== s) sign.textContent = s; },
+    // story guide: text and the arrow's angle relative to where the player looks (radians, null = no arrow)
+    setGoal(s, ang) { goal.hidden = !s; if (!s) return; goalText.textContent = s; goalArrow.hidden = ang === null; if (ang !== null) goalArrow.style.transform = `rotate(${-ang}rad)`; },
     tick(dt) {
       if (toastT > 0) { toastT -= dt; toast.classList.toggle('fade', toastT < 0.8); if (toastT <= 0) toast.hidden = true; }
       if (hintT > 0) { hintT -= dt; hint.classList.toggle('fade', hintT < 1.5); if (hintT <= 0) hint.hidden = true; }

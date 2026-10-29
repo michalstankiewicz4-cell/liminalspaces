@@ -17,6 +17,8 @@ export function buildGraphics({ settings }) {
     checkbox({ label: 'gfx.bob', get: () => g().headBob, set: set('headBob') }),
     checkbox({ label: 'gfx.fine', get: () => g().fine, set: set('fine') }),
     checkbox({ label: 'gfx.grain', get: () => g().grain, set: set('grain') }),
+    checkbox({ label: 'story.guide', get: () => settings.data.story.guide, set: (v) => settings.update((d) => { d.story.guide = v; }) }),
+    checkbox({ label: 'story.events', get: () => settings.data.story.events, set: (v) => settings.update((d) => { d.story.events = v; }) }),
     checkbox({ label: 'gfx.fps', get: () => g().showFps, set: set('showFps') }),
   ];
   settings.onChange(() => rows.forEach((r) => r.refresh()));

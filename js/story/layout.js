@@ -61,7 +61,14 @@ export function buildLayout(grid) {
   // doorway between two rooms (with a lintel at 2.3 m)
   const door = (zk, x0, z0, x1, z1, ceil = 2.3) => room(zk, x0, z0, x1, z1, { ceil, flags: 0 });
   const fl = (x, z) => { const f = grid.floorAt(x, z); return Number.isFinite(f) ? f : 0; };
-  const prop = (kind, x, z, rot = 0, extra = {}) => grid.addProp({ kind, x, z, rot, ...extra, y: extra.y ?? fl(x, z) });
+  // sound emitters follow some props (see story/audio.js EMIT)
+  const emitters = [];
+  const EMITS = { funnel: ['drip', 0.9], station: ['station', 1.4], vent: ['vent', 2.9], factory: ['factory', 1.2], machine: ['machine', 1.4] };
+  const prop = (kind, x, z, rot = 0, extra = {}) => {
+    const p = grid.addProp({ kind, x, z, rot, ...extra, y: extra.y ?? fl(x, z) });
+    if (EMITS[kind]) emitters.push({ kind: EMITS[kind][0], x, y: p.y + EMITS[kind][1], z });
+    return p;
+  };
 
   // Finds the wall face from (x, z) in direction (dx, dz) (max 6 m). Returns { x, z, rot } of a point on the face,
   // with rot turning a prop's local +z out of the wall.
@@ -195,6 +202,7 @@ export function buildLayout(grid) {
   solid(-98, -8, -72, -6.5);                                            // the collapse
   for (const [x, z] of [[-90, 2], [-80, 12], [-76, -2]]) prop('support', x, z, 0, { w: 4, h: 3.4 });
   note(-66, 72, 0, -1, 'gp.n.mine');
+  for (const [x, z] of [[-82, 30], [-82, 55], [-90, 4], [-78, -2], [-86, 14], [-74, 8]]) emitters.push({ kind: 'drip', x, y: grid.floorAt(x, z) + 2.5, z });
 
   /* =========================== SECOND OUTER RING (08:02): barren hallways, a few rooms =========================== */
   const inRing2 = (x, z) => Math.max(Math.abs(x), Math.abs(z)) >= 100 && Math.max(Math.abs(x), Math.abs(z)) < 160;
@@ -395,7 +403,7 @@ export function buildLayout(grid) {
   /* ---- lamps everywhere (by zone rules) ---- */
   for (const c of grid.chunks.values()) placeLamps(c);
 
-  return { beams, gates };
+  return { beams, gates, emitters };
 
   // Places ceiling lamps on the zone's grid in one chunk (deterministic: some are dead, some flicker).
   function placeLamps(c) {

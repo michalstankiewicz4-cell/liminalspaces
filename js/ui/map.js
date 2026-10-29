@@ -12,11 +12,12 @@ export function createMapUi(root) {
   const mini = h('canvas', { id: 'minimap', width: 180, height: 180, hidden: true });
   const big = h('canvas', { id: 'mapcanvas' });
   const list = h('ol', { class: 'journal' });
+  const stepEl = h('p', { class: 'info' });
   const full = h('div', { id: 'mapfull', hidden: true }, big,
-    h('div', { class: 'mappanel' }, tx('map.title', 'h2'), tx('map.journal', 'h3'), list, h('p', { class: 'note' }, tx('map.help'))));
+    h('div', { class: 'mappanel' }, tx('map.title', 'h2'), stepEl, tx('map.journal', 'h3'), list, h('p', { class: 'note' }, tx('map.help'))));
   root.append(mini, full);
 
-  let story = null, zones = null, colors = null;
+  let story = null, zones = null, colors = null, guide = null, onTeleport = null;
   const cache = new Map();             // chunk -> { cv, key }
   let view = { x: 0, z: 0, s: 2 };     // full map centre (m) and pixels per cell
   let open = false, drag = null, follow = false, fit = false;
@@ -69,6 +70,18 @@ export function createMapUi(root) {
         g.fillStyle = '#f4e8b8'; g.fillText(t('gp.z.' + z.key), x, y);
       }
     }
+    // story route (dashed) and the next place
+    if (guide && guide.target) {
+      const r = guide.path;
+      if (r.length > 1) {
+        g.strokeStyle = 'rgba(255,200,90,.85)'; g.lineWidth = Math.max(2, s * 0.8); g.setLineDash([6, 5]);
+        g.beginPath(); g.moveTo(px(r[0].x), pz(r[0].z));
+        for (let i = 1; i < r.length; i += 2) g.lineTo(px(r[i].x), pz(r[i].z));
+        g.stroke(); g.setLineDash([]);
+      }
+      const tx = px(guide.target.x), ty = pz(guide.target.z);
+      g.strokeStyle = '#ffd27a'; g.lineWidth = 2; g.beginPath(); g.arc(tx, ty, 7 + Math.sin(performance.now() / 300) * 2, 0, Math.PI * 2); g.stroke();
+    }
     // player arrow
     const ax = px(player.x), ay = pz(player.z), a = player.yaw;
     g.save(); g.translate(ax, ay); g.rotate(-a);
@@ -77,14 +90,26 @@ export function createMapUi(root) {
     g.restore();
   }
 
+  // Journal of places found; each one with a label position is a button that teleports there.
   function fillJournal() {
     list.textContent = '';
     const items = [...story.visited].sort((a, b) => a[1] - b[1]);
     for (const [id] of items) {
       const z = zones[id];
-      list.append(h('li', {}, h('span', { class: 'jt' }, z.t || ''), ' ', t('gp.z.' + z.key)));
+      const label = [h('span', { class: 'jt' }, z.t || ''), ' ', t('gp.z.' + z.key)];
+      const can = z.lx !== undefined && onTeleport;
+      list.append(h('li', {}, can ? h('button', { type: 'button', title: t('map.teleport'), on: { click: () => onTeleport(z.lx, z.lz) } }, label) : label));
     }
+    stepEl.textContent = guide && guide.target ? t('map.next', { place: t('gp.s.' + guide.target.key), time: guide.target.t }) : guide && guide.done ? t('map.storyDone') : '';
   }
+  // double-click on an explored, walkable spot: teleport
+  big.addEventListener('dblclick', (e) => {
+    if (!story || !onTeleport) return;
+    const r = big.getBoundingClientRect();
+    const x = view.x + (e.clientX - r.left - big.width / 2) / view.s * CS, z = view.z + (e.clientY - r.top - big.height / 2) / view.s * CS;
+    const [c, k] = story.grid.at(Math.floor(x / CS), Math.floor(z / CS));
+    if (c && c.open[k] && c.seen[k] && c.ceil[k] - c.floor[k] > 1.8) onTeleport(x, z);
+  });
 
   big.addEventListener('wheel', (e) => { e.preventDefault(); view.s = Math.max(0.3, Math.min(12, view.s * Math.exp(-e.deltaY * 0.0015))); }, { passive: false });
   big.addEventListener('mousedown', (e) => { drag = { x: e.clientX, y: e.clientY, vx: view.x, vz: view.z }; follow = false; });
@@ -94,6 +119,8 @@ export function createMapUi(root) {
 
   let miniT = 0;
   return {
+    setGuide(gd) { guide = gd; },
+    set onTeleport(fn) { onTeleport = fn; },
     attach(s) {
       story = s; zones = s.zones;
       colors = zones.map((z) => hex(z.map || '#777'));

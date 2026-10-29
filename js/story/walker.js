@@ -6,7 +6,7 @@ export const EYE = 1.62;
 const R = 0.27, BODY = 1.75, STEP = 0.45, WALK = 2.9, RUN = 5.2, GRAV = 18, JUMP = 5.0;
 
 export function createWalker(world) {
-  const P = { x: 0, y: 0, z: 0, vx: 0, vz: 0, vy: 0, yaw: 0, pitch: 0, ground: true, bob: 0, bobAmp: 0, dist: 0, eyeY: EYE, moving: false };
+  const P = { x: 0, y: 0, z: 0, vx: 0, vz: 0, vy: 0, yaw: 0, pitch: 0, ground: true, bob: 0, bobAmp: 0, dist: 0, eyeY: EYE, moving: false, onStep: null, onLand: null };
   const hits = (x, z, y) => world.blocked(x - R, z - R, x + R, z + R, y + STEP, y + BODY);
 
   P.place = (x, z, yaw = 0) => {
@@ -44,7 +44,7 @@ export function createWalker(world) {
     let ny = P.y + P.vy * dt;
     const sup = world.support(P.x - R, P.z - R, P.x + R, P.z + R, P.y + 0.05);
     if (P.vy > 0 && world.blocked(P.x - R, P.z - R, P.x + R, P.z + R, ny + BODY - 0.05, ny + BODY + 0.02)) { P.vy = 0; ny = P.y; }   // head bump
-    if (ny <= sup) { P.y = sup; P.vy = 0; P.ground = true; }
+    if (ny <= sup) { if (!P.ground && P.vy < -4 && P.onLand) P.onLand(); P.y = sup; P.vy = 0; P.ground = true; }
     else { P.y = ny; P.ground = ny - sup < 0.03; }
 
     const moved = Math.hypot(P.x - ox, P.z - oz);
@@ -52,7 +52,7 @@ export function createWalker(world) {
     P.moving = moved > 0.3 * dt;
     const v = moved / Math.max(dt, 1e-6);
     P.bobAmp += ((P.ground && P.moving ? Math.min(1, v / WALK) : 0) - P.bobAmp) * (1 - Math.exp(-8 * dt));
-    if (P.ground && P.moving) P.bob += dt * v * 2.1;
+    if (P.ground && P.moving) { const b0 = Math.floor(P.bob / Math.PI); P.bob += dt * v * 2.1; if (Math.floor(P.bob / Math.PI) !== b0 && P.onStep) P.onStep(); }
     // smooth the eye over step-ups, follow falls immediately
     const target = P.y + EYE;
     P.eyeY = target < P.eyeY ? target : P.eyeY + (target - P.eyeY) * (1 - Math.exp(-14 * dt));

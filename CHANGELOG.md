@@ -4,6 +4,13 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new version (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.5.0] - 2026-10-29
+### Added
+- **Story guide** in the Great Path world: 17 places in the order the story visits them (Hub → rings → Wastelands door → Vibra-cable station → deep blue hall → the chapel map → cafeteria → court → explorers' guild → senior office → dead end → rain collector → map library → map machine → the gate → the Great Path). A line at the top shows the next place, its story time, the distance along the route and an arrow; chalk arrows on the floor show the way; the map shows the route and the target; reaching a place shows what happens there in the story. **G** or Options > Graphics turns the guide off. The step is saved.
+- **Sound** in the Great Path world: ambience per place (mains hum, tube buzz, room tone, wind, the chapel drone, the mine rumble) with reverb that matches the space (small room, hall, huge chapel, damp mine), footsteps by floor surface (carpet, tile, steel, grit, wood), landing thuds, and sound sources at their places: the map machine, factory machines, dripping rain collectors and mine water, Vibra-cable stations, vents.
+- **Scary events** (no people, nothing seen clearly), more often in the outer rings, the Wastelands, the dense rooms, the room of doors and dead ends: a power cut, footsteps behind you that stop when you turn round, a distant door slam, three knocks inside a wall, something running above the ceiling with dust falling, a tube bursting in sparks, the flashlight failing, the Vibra-cable twanging three times, the structure groaning with shaking and dust, the picture tearing like a bad tape. Standing in the dark without the flashlight brings a heartbeat and the edges of the view close in. Options > Graphics can turn the events off.
+- **Teleport** on the map: click a place in the list of places found, or double-click an explored spot.
+
 ## [0.4.1] - 2026-10-29
 ### Fixed
 - Great Path map: explored places stay revealed. The full map (M) now opens framed on everything you have explored (plus where you are) instead of a fixed zoom around you, so earlier places no longer seem to disappear when you walk away; zoom out further than before.

@@ -30,6 +30,9 @@ Published at: repo <https://github.com/michalstankiewicz4-cell/liminalspaces>, s
 | `js/story/textures.js` | Great Path: procedural PBR maps (albedo, normal, roughness/metalness), canvas textures, the builders' symbol, environment map |
 | `js/story/props.js` | Great Path: props from boxes and prisms (furniture, lab, machine, gate, cable, stations, funnels, doors, mine supports, rubble…) |
 | `js/story/index.js` | Great Path facade: streaming, colliders, notes, sunbeams with dust, layered gate, flicker, zones/journal, map visibility, work lights, `blocked`/`support` queries |
+| `js/story/audio.js` | Great Path sound: zone ambience, reverbs, footsteps, positional emitters, event one-shots, skylight scratching |
+| `js/story/events.js` | Great Path scary-event director (power cut, followed, door slam, knocks, ceiling run, lamp pop, flashlight fail, cable signal, groan, glitch; dread in the dark) |
+| `js/story/route.js` | Great Path story guide: ordered steps, BFS route on cells, chalk arrows, heading for the HUD |
 | `js/story/worker.js` | Great Path: mesh worker (layout copy, returns vertex buffers) |
 | `js/story/walker.js`, `hand.js` | Great Path: multi-level walker (step-up 0.45 m, falling, jumping); flashlight view model + shadowed spot light |
 | `js/ui/map.js` | Minimap and full map with journal (Great Path) |
@@ -102,7 +105,11 @@ See [`MULTIPLAYER.md`](MULTIPLAYER.md). In short: the session shares only the se
 - **Zones and journal**: each cell has a zone; entering a new one shows its name and story timestamp and adds it to the journal; cells seen (line of sight, 15 m) are drawn on the map and stay revealed (saved in `ls:pathmap:v1`). The full map opens framed on all explored chunks (`seenBounds`).
 - **Notes**: canvas textures from i18n keys (`gp.n.*`), re-drawn on language change; looking at a note within 2.2 m shows it large in the HUD.
 - **Skylights**: `sunAt(x, z)` (sun strength in a sun square) drives the exposure (`sun` in `core/app.js`, 0..1, +sun/14 per second in the light, −1/5 per second in the shade) and the pipeline's `heat` uniform (shimmer, warm tint, bleach, burn vignette); above 0.6 the walker slows. Scratching (`story/sounds.js`): its own `AudioContext`, synthesised strokes/taps/knocks through a glass low-pass and an HRTF `PannerNode` at a skylight chosen by `pickSkylight`; the listener follows the camera; every 25–60 s on the paths, 70–150 s elsewhere; `scratchVisual` shows the shape on the glass and dims that beam. Setting `audio.scratch`.
-- **Save**: `progress.path` in `ls:save:v1` — `{ x, z, yaw, seen: [zone ids] }`.
+- **Guide** (`route.js`): `STEPS` with story timestamps; BFS on 0.5 m cells in a box around the player and the target (open, ≥1.8 m clearance, step up ≤0.45 m, drops allowed); recomputed when you leave the route or every 8 s; up to 14 instanced chalk arrows along the next metres; HUD arrow from `heading()`; the map draws the route.
+- **Sound** (`audio.js`): one `AudioContext`; beds per zone group cross-faded, three convolution reverbs (generated impulses) mixed per space; emitters registered by `layout.js` (props `funnel`, `station`, `vent`, `factory`, `machine` + mine drips) become positional loops/timers within 22 m; footsteps from the floor material under the walker (`walker.onStep`).
+- **Events** (`events.js`): a timer scaled by `ZONE_LEVEL`, cooldown, last three events not repeated; effects through `story.setPower` (ambient light and lamp materials), `story.particles` / `story.flash` (one reused point light), `pipe.glitch` / `pipe.fear` uniforms, camera shake, `hand.setOn`. Setting `story.events`.
+- **Teleport**: from the map journal (zone label positions) or by double-clicking an explored open cell.
+- **Save**: `progress.path` in `ls:save:v1` — `{ x, z, yaw, seen: [zone ids], step }`.
 
 ## Persistence (localStorage)
 - `ls:save:v1` — `{ dist, odd, last: { seed, x, z, yaw }, path: { x, z, yaw, seen } }` (total metres walked, oddities found, last single-player walk; saved every 5 s while walking, on pause/quit and on page unload)

@@ -63,7 +63,7 @@ export function createStory(renderer) {
   for (const k of ['screen', 'symbol', 'mapsheet', 'water', 'decal']) mats.scale[k] = 1;
 
   const grid = createGrid();
-  const { beams, gates } = buildLayout(grid);
+  const { beams, gates, emitters } = buildLayout(grid);
   const ctx = { zones: ZONES, materials: mats.byName, scale: mats.scale };
 
   /* ---- prop colliders (dry run) ---- */
@@ -388,12 +388,13 @@ export function createStory(renderer) {
     scene.fog.color.lerp(fogTarget, 1 - Math.exp(-1.2 * dt));
     const far = zone === Z_CHAPEL ? 70 : 46;
     scene.fog.far += (far - scene.fog.far) * Math.min(1, dt);
+    updateFx(dt);
     seenT -= dt;
     if (seenT <= 0) { seenT = 0.25; markSeen(pos.x, pos.z, pos.y); }
   }
   function setWorkLights(on) {
-    workLights = on;
-    ambient.intensity = on ? Math.PI * 2.4 : Math.PI;
+    workLights = on; workLightsOn = on;
+    ambient.intensity = Math.PI * (on ? 2.4 : 1) * (0.1 + 0.9 * power);
     hemi.intensity = on ? 1.2 : 0;
     scene.environmentIntensity = on ? 0.6 : 0.35;
   }
@@ -466,6 +467,77 @@ export function createStory(renderer) {
     if (b && b.mesh) { dimmed = b; b.mesh.material.color.setRGB(1, 0.93, 0.78).multiplyScalar(b.base * (1 - 0.45 * k)); }
   }
 
+  /* ---- for events: power, nearby lamps and walls, particles, flashes ---- */
+  let power = 1, workLightsOn = false;
+  const lampMats = ['lamp', 'lampFlicker', 'bulb', 'glow'].map((k) => mats.byName[k]);
+  function setPower(k) {
+    power = k;
+    ambient.intensity = Math.PI * (workLightsOn ? 2.4 : 1) * (0.1 + 0.9 * k);
+    for (const m of lampMats) m.color.setScalar(Math.max(0.03, k));
+  }
+  function emittersNear(p, r = 25) { return emitters.filter((e) => Math.abs(e.x - p.x) < r && Math.abs(e.z - p.z) < r); }
+  // nearest working ceiling lamp within r metres (optionally in front of the player)
+  function nearestLamp(p, r = 10, fwd = null) {
+    let best = null, bd = r;
+    const ci = fdiv(p.x, CW), cj = fdiv(p.z, CW);
+    for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+      const c = grid.chunk(ci + di, cj + dj, false);
+      if (!c) continue;
+      for (const l of c.lights) {
+        if (l.sky || l.dead || !l.fixture) continue;
+        const d = Math.hypot(l.x - p.x, l.z - p.z);
+        if (d > bd || d < 2) continue;
+        if (fwd && ((l.x - p.x) * fwd.x + (l.z - p.z) * fwd.z) < 0) continue;
+        bd = d; best = l;
+      }
+    }
+    return best;
+  }
+  // nearest wall surface around a point (4 directions, up to 5 m)
+  function wallNear(p) {
+    let best = null;
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) for (let t = 0.25; t < 5; t += 0.25) {
+      if (!grid.isOpen(p.x + dx * t, p.z + dz * t)) { if (!best || t < best.t) best = { t, x: p.x + dx * (t - 0.1), z: p.z + dz * (t - 0.1) }; break; }
+    }
+    return best;
+  }
+  // particles: falling dust and sparks; short point-light flashes
+  const fxPts = [];
+  const dustM = new THREE.PointsMaterial({ color: 0xcfc4a8, size: 0.03, transparent: true, opacity: 0.8, depthWrite: false });
+  const sparkM = new THREE.PointsMaterial({ color: 0xffd080, size: 0.035, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false });
+  function particles(kind, x, y, z, n) {
+    const fl0 = grid.floorAt(x, z);
+    if (!Number.isFinite(y) || !Number.isFinite(fl0)) return;
+    const pos = new Float32Array(n * 3), vel = new Float32Array(n * 3);
+    for (let k = 0; k < n; k++) {
+      pos[k * 3] = x + (Math.random() - 0.5) * (kind === 'dust' ? 1.6 : 0.2); pos[k * 3 + 1] = y; pos[k * 3 + 2] = z + (Math.random() - 0.5) * (kind === 'dust' ? 1.6 : 0.2);
+      vel[k * 3] = (Math.random() - 0.5) * (kind === 'dust' ? 0.1 : 2.5); vel[k * 3 + 1] = kind === 'dust' ? -0.3 - Math.random() * 0.6 : Math.random() * 1.5; vel[k * 3 + 2] = (Math.random() - 0.5) * (kind === 'dust' ? 0.1 : 2.5);
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const pts = new THREE.Points(g, kind === 'dust' ? dustM : sparkM);
+    pts.userData = { vel, life: kind === 'dust' ? 5 : 1.4, kind, floor: fl0 };
+    scene.add(pts); fxPts.push(pts);
+  }
+  // one persistent point light reused for flashes (adding lights at run time would recompile every shader)
+  const flashL = new THREE.PointLight(0xfff0d0, 0, 9, 2);
+  scene.add(flashL);
+  function flash(x, y, z, color = 0xfff0d0, power2 = 6) { flashL.color.set(color); flashL.position.set(x, y, z); flashL.intensity = power2; }
+  function updateFx(dt) {
+    for (let i = fxPts.length - 1; i >= 0; i--) {
+      const p = fxPts[i], u = p.userData, a = p.geometry.attributes.position;
+      u.life -= dt;
+      for (let k = 0; k < a.count; k++) {
+        if (u.kind === 'spark') u.vel[k * 3 + 1] -= 9.8 * dt;
+        let y = a.getY(k) + u.vel[k * 3 + 1] * dt;
+        if (y < u.floor) { y = u.floor; u.vel[k * 3] *= 0.3; u.vel[k * 3 + 2] *= 0.3; u.vel[k * 3 + 1] = 0; }
+        a.setXYZ(k, a.getX(k) + u.vel[k * 3] * dt, y, a.getZ(k) + u.vel[k * 3 + 2] * dt);
+      }
+      a.needsUpdate = true;
+      if (u.life <= 0) { scene.remove(p); p.geometry.dispose(); fxPts.splice(i, 1); }
+    }
+    flashL.intensity = flashL.intensity < 0.02 ? 0 : flashL.intensity * Math.exp(-dt * 9);
+  }
+
   // baked light at a point (for the hand model and other dynamic things), cached baker per chunk
   const bakers = new Map();
   function lightAt(x, y, z) {
@@ -482,7 +554,8 @@ export function createStory(renderer) {
     set onZone(fn) { onZone = fn; },
     get loadedCount() { return loaded.size; },
     stream, preload, preloadAll, update, sunAt, pickSkylight, scratchVisual,
-    exportSeen, importSeen, seenBounds, get seenDirty() { return seenDirty; }, blocked, support, signNear, relabel,
+    exportSeen, importSeen, seenBounds, setPower, get power() { return power; }, emittersNear, nearestLamp, wallNear, particles, flash,
+    floorAt: (x, z) => grid.floorAt(x, z), ceilAt: (x, z) => grid.ceilAt(x, z), isOpen: (x, z) => grid.isOpen(x, z), get seenDirty() { return seenDirty; }, blocked, support, signNear, relabel,
     setGate, startGate() { setGate(false); gateT = 0; },
     setWorkLights, get workLights() { return workLights; },
     resetVisits() { visited.clear(); zone = 0; },

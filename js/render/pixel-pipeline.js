@@ -7,7 +7,7 @@ const VERT = `varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0
 const FRAG = `precision highp float;
 uniform sampler2D tColor,tDepth;
 uniform vec2 texel;
-uniform float levels,dither,edge,bright,persp,near,far,tone,grain,time,heat;
+uniform float levels,dither,edge,bright,persp,near,far,tone,grain,time,heat,glitch,fear;
 varying vec2 vUv;
 float bayer(vec2 p){
   p=floor(mod(p,4.));
@@ -31,6 +31,12 @@ void main(){
   if(heat>0.){                                   // sun exposure: the air shimmers
     p+=vec2(sin(p.y*38.+time*5.3),cos(p.x*31.+time*4.1))*.0025*heat;
   }
+  if(glitch>0.){                                 // video glitch: torn rows and a rolling band
+    float row=floor(p.y*90.);
+    float r=fract(sin(row*12.9898+floor(time*30.)*7.13)*43758.5453);
+    p.x+=(r-.5)*.06*glitch*step(.6,r);
+    p.y+=step(.985,fract(p.y*2.+time*1.7))*.01*glitch;
+  }
   vec2 uv=(floor(p/texel)+.5)*texel;
   vec3 c=texture2D(tColor,uv).rgb*bright;
   float d=lin(uv);
@@ -50,6 +56,15 @@ void main(){
     float vg=length(vUv-.5);
     c=mix(c,vec3(1.,.55,.3),smoothstep(.35,.75,vg)*heat*.35);
   }
+  if(glitch>0.){
+    float l=fract(sin(floor(vUv.y/texel.y)*3.7+time*91.)*43758.5);
+    c=mix(c,vec3(step(.5,l)),step(.97,l)*glitch*.6);
+  }
+  if(fear>0.){                                   // dread: the edges close in and colour drains
+    float v=length(vUv-.5);
+    c*=1.-smoothstep(.2,.75,v)*fear*.75;
+    c=mix(c,vec3(dot(c,vec3(.3,.59,.11))),fear*.45);
+  }
   if(grain>0.){                                  // film grain
     float n=fract(sin(dot(floor(vUv/texel)+time*vec2(17.3,9.1),vec2(12.9898,78.233)))*43758.5453);
     c+=(n-.5)*grain*(.35+.65*(1.-dot(c,vec3(.33))));
@@ -68,6 +83,7 @@ export class PixelPipeline {
     this.r = renderer;
     this.params = { pixelH: 200, levels: 7, dither: 0.8, edge: 0.8, bright: 1.4, tone: 0, grain: 0 };
     this.heat = 0;                     // sun exposure effect 0..1 (Great Path)
+    this.glitch = 0; this.fear = 0;    // event effects 0..1 (Great Path)
     this.mat = new THREE.ShaderMaterial({
       vertexShader: VERT,
       fragmentShader: FRAG,
@@ -77,7 +93,7 @@ export class PixelPipeline {
         tColor: { value: null }, tDepth: { value: null },
         texel: { value: new THREE.Vector2(1, 1) },
         levels: { value: 7 }, dither: { value: 0.8 }, edge: { value: 0.8 }, bright: { value: 1.4 },
-        persp: { value: 0 }, near: { value: 0.1 }, far: { value: 100 }, tone: { value: 0 }, grain: { value: 0 }, time: { value: 0 }, heat: { value: 0 },
+        persp: { value: 0 }, near: { value: 0.1 }, far: { value: 100 }, tone: { value: 0 }, grain: { value: 0 }, time: { value: 0 }, heat: { value: 0 }, glitch: { value: 0 }, fear: { value: 0 },
       },
     });
     const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.mat);
@@ -114,7 +130,7 @@ export class PixelPipeline {
   render(scene, camera) {
     const u = this.mat.uniforms, p = this.params;
     u.levels.value = p.levels; u.dither.value = p.dither; u.edge.value = p.edge; u.bright.value = p.bright;
-    u.tone.value = p.tone; u.grain.value = p.grain; u.heat.value = this.heat; u.time.value = (performance.now() / 1000) % 100;
+    u.tone.value = p.tone; u.grain.value = p.grain; u.heat.value = this.heat; u.glitch.value = this.glitch; u.fear.value = this.fear; u.time.value = (performance.now() / 1000) % 100;
     u.persp.value = camera.isPerspectiveCamera ? 1 : 0;
     u.near.value = camera.near; u.far.value = camera.far;
     if (!camera.isPerspectiveCamera) { u.near.value = camera.near; u.far.value = camera.far; }

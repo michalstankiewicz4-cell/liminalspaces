@@ -9,6 +9,7 @@ export const DEFAULTS = {
   mouse: { sens: 1, invertY: false },
   audio: { volume: 0.6, hum: true, scratch: true },
   hud: { show: true },
+  story: { guide: true, events: true },
   net: { name: '', stun: false },
 };
 // numeric ranges used by both the sanitiser and the option sliders
@@ -35,6 +36,7 @@ export function sanitize(raw) {
     mouse: { sens: num(m.sens, 'sens', 1), invertY: m.invertY === true },
     audio: { volume: num(a.volume, 'volume', D.audio.volume), hum: a.hum !== false, scratch: a.scratch !== false },
     hud: { show: u.show !== false },
+    story: { guide: !(r.story && r.story.guide === false), events: !(r.story && r.story.events === false) },
     net: { name: cleanName(n.name), stun: n.stun === true },
     keys: sanitizeKeys(r.keys),
   };
