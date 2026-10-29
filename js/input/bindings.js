@@ -10,6 +10,8 @@ export const ACTIONS = [
   { id: 'sprint', keys: ['ShiftLeft', 'ShiftRight'] },
   { id: 'jump', keys: ['Space', null] },
   { id: 'flashlight', keys: ['KeyF', null] },
+  { id: 'workLights', keys: ['KeyL', null] },
+  { id: 'map', keys: ['KeyM', null] },
   { id: 'toggleHud', keys: ['KeyH', null] },
 ];
 export const RESERVED = new Set(['Escape']);

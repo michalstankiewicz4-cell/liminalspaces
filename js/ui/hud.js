@@ -1,5 +1,5 @@
 // In-game HUD: crosshair dot, a quiet status line (zone, distance, finds), centred toasts, control hint,
-// "click to look" prompt and the optional FPS counter.
+// "click to look" prompt, the paper note being read and the optional FPS counter.
 import { h } from './dom.js';
 
 export function createHud(root) {
@@ -9,7 +9,8 @@ export function createHud(root) {
   const hint = h('div', { id: 'hint', hidden: true });
   const click = h('div', { id: 'click', hidden: true });
   const fps = h('div', { id: 'fps', hidden: true });
-  root.append(dot, line, toast, hint, click, fps);
+  const sign = h('div', { id: 'sign', hidden: true });
+  root.append(dot, line, toast, hint, click, fps, sign);
   let toastT = 0, hintT = 0;
   return {
     // on: in a walk (not paused); show: user HUD toggle
@@ -21,6 +22,8 @@ export function createHud(root) {
     setHint(s, seconds = 12) { hint.textContent = s; hintT = seconds; },
     toast(s, seconds = 3.5) { toast.textContent = s; toastT = seconds; toast.hidden = false; toast.classList.remove('fade'); },
     setFps(s) { fps.textContent = s; },
+    // text of the paper note the player is reading (null hides it)
+    setSign(s) { sign.hidden = !s; if (s && sign.textContent !== s) sign.textContent = s; },
     tick(dt) {
       if (toastT > 0) { toastT -= dt; toast.classList.toggle('fade', toastT < 0.8); if (toastT <= 0) toast.hidden = true; }
       if (hintT > 0) { hintT -= dt; hint.classList.toggle('fade', hintT < 1.5); if (hintT <= 0) hint.hidden = true; }

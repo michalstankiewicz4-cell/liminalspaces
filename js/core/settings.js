@@ -5,7 +5,7 @@ import { sanitizeKeys } from '../input/bindings.js';
 
 export const DEFAULTS = {
   lang: 'en',
-  gfx: { pixelH: 200, levels: 7, dither: 0.8, edge: 0.6, bright: 1.15, fov: 75, viewDist: 2, headBob: true, showFps: false },
+  gfx: { pixelH: 200, levels: 7, dither: 0.8, edge: 0.6, bright: 1.15, fov: 75, viewDist: 2, headBob: true, showFps: false, fine: true, grain: true },
   mouse: { sens: 1, invertY: false },
   audio: { volume: 0.6, hum: true },
   hud: { show: true },
@@ -30,7 +30,7 @@ export function sanitize(raw) {
       pixelH: Math.round(num(g.pixelH, 'pixelH', D.gfx.pixelH) / 10) * 10, levels: Math.round(num(g.levels, 'levels', D.gfx.levels)),
       dither: num(g.dither, 'dither', D.gfx.dither), edge: num(g.edge, 'edge', D.gfx.edge), bright: num(g.bright, 'bright', D.gfx.bright),
       fov: Math.round(num(g.fov, 'fov', D.gfx.fov)), viewDist: Math.round(num(g.viewDist, 'viewDist', D.gfx.viewDist)),
-      headBob: g.headBob !== false, showFps: g.showFps === true,
+      headBob: g.headBob !== false, showFps: g.showFps === true, fine: g.fine !== false, grain: g.grain !== false,
     },
     mouse: { sens: num(m.sens, 'sens', 1), invertY: m.invertY === true },
     audio: { volume: num(a.volume, 'volume', D.audio.volume), hum: a.hum !== false },

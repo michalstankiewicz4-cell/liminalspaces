@@ -66,6 +66,7 @@ export class MeshBuilder {
       const m = new THREE.Mesh(g, materials[name]);
       m.matrixAutoUpdate = false;
       if (name === 'water') m.renderOrder = 2;
+      m.castShadow = m.receiveShadow = !materials[name].isMeshBasicMaterial;
       group.add(m);
     }
     return group;

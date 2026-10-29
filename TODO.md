@@ -1,6 +1,15 @@
 # TODO
 
-Legend: **P1** next, **P2** later, **P3** ideas. State as of v0.1.0. Context: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Legend: **P1** next, **P2** later, **P3** ideas. State as of v0.2.0. Context: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+## The Great Path (register: [`docs/GREAT_PATH.md`](docs/GREAT_PATH.md))
+- [ ] P1 Mesh chunks in a Web Worker (meshing + baking ~20–50 ms per chunk on the main thread causes hitches when crossing chunks)
+- [ ] P1 Procedural detail: wear decals (stains, scratches, patched wallpaper), clutter per room, rare anomalies along the infinite paths
+- [ ] P2 Sound (hum, footsteps, distant noises) — off for now by the owner's choice
+- [ ] P2 Skylight scratching / shadows (ghost stories), sun exposure under skylights
+- [ ] P2 Homes, hospital area, holding rooms; Rudon's backpack and skateboard at the gate
+- [ ] P2 Multiplayer in this world (share the start and poses; the world is static)
+- [ ] P3 The theory that the Great Path and the West Path curve and meet
 
 ## Look (hiding the rough edges of the graphics)
 - [ ] P1 Tune the filter per zone (palette, dither, grain) — e.g. a VHS/camcorder look: scanlines, chroma bleed, timestamp overlay, slight fisheye

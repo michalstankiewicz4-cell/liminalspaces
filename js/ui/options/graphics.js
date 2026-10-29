@@ -15,6 +15,8 @@ export function buildGraphics({ settings }) {
     slider({ label: 'gfx.fov', range: RANGES.fov, get: () => g().fov, set: set('fov'), fmt: (v) => v + '°' }),
     slider({ label: 'gfx.viewDist', range: RANGES.viewDist, get: () => g().viewDist, set: set('viewDist'), fmt: (v) => String(v) }),
     checkbox({ label: 'gfx.bob', get: () => g().headBob, set: set('headBob') }),
+    checkbox({ label: 'gfx.fine', get: () => g().fine, set: set('fine') }),
+    checkbox({ label: 'gfx.grain', get: () => g().grain, set: set('grain') }),
     checkbox({ label: 'gfx.fps', get: () => g().showFps, set: set('showFps') }),
   ];
   settings.onChange(() => rows.forEach((r) => r.refresh()));

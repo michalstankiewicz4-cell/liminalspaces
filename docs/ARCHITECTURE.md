@@ -1,6 +1,6 @@
 # Architecture and project context
 
-Browser game **Liminal Spaces**: a first-person walk through an endless, procedurally generated building (liminal spaces), 3D rendered at low resolution with a pixel-art filter. No dependencies except three.js (vendored locally), no network requests in single player.
+Browser game **Liminal Spaces**: a first-person walk through two worlds — an endless, procedurally generated building (liminal spaces), rendered at low resolution with a pixel-art filter, and **The Great Path**, a hand-laid multi-level 3D world built from the story “Rudon's Plane – Part 1” (see [`GREAT_PATH.md`](GREAT_PATH.md)), rendered finer with PBR materials and tone mapping. No dependencies except three.js (vendored locally), no network requests in single player.
 
 Published at: repo <https://github.com/michalstankiewicz4-cell/liminalspaces>, site <https://michalstankiewicz4-cell.github.io/liminalspaces/> (GitHub Pages, workflow `.github/workflows/static.yml`). Engine origin: <https://github.com/michalstankiewicz4-cell/VS> (Capital Quarantine).
 
@@ -24,6 +24,14 @@ Published at: repo <https://github.com/michalstankiewicz4-cell/liminalspaces>, s
 | `js/world/textures.js` | Procedural canvas textures and per-zone surface table |
 | `js/world/oddities.js` | Box-built oddity models |
 | `js/world/index.js` | World facade: materials, chunk streaming, fog per zone, flicker, water animation, oddity discovery |
+| `js/story/grid.js` | Great Path: sparse cell grid (0.5 m cells, 64×64 per chunk); per cell open/closed, floor and ceiling height, zone, materials, flags; paint API, queries, lazy column painter for the infinite paths |
+| `js/story/layout.js` | Great Path: zones table (story timestamps, light, fog, materials, map colour), start points, the whole layout, notes, skylights, lamp placement |
+| `js/story/mesher.js` | Great Path: chunk mesher (greedy floors/ceilings, merged wall runs, risers, headers, skylight wells, skirting, fixtures) and the light baker (lights + skylights + sun squares + occlusion + AO); `Emitter` geometry builder (also runs "dry" to collect prop colliders) |
+| `js/story/textures.js` | Great Path: procedural PBR maps (albedo, normal, roughness/metalness), canvas textures, the builders' symbol, environment map |
+| `js/story/props.js` | Great Path: props from boxes and prisms (furniture, lab, machine, gate, cable, stations, funnels, doors, mine supports, rubble…) |
+| `js/story/index.js` | Great Path facade: streaming, colliders, notes, sunbeams with dust, layered gate, flicker, zones/journal, map visibility, work lights, `blocked`/`support` queries |
+| `js/story/walker.js`, `hand.js` | Great Path: multi-level walker (step-up 0.45 m, falling, jumping); flashlight view model + shadowed spot light |
+| `js/ui/map.js` | Minimap and full map with journal (Great Path) |
 | `js/world/player.js` | First-person walker: look, walk/run/jump, circle-vs-box collisions, head bob, footsteps |
 | `js/world/avatars.js` | Other players' figures (interpolated) |
 | `js/render/pixel-pipeline.js` | `PixelPipeline` from Capital Quarantine: low-res target + final shader (palette, dither, depth outline, vignette) |
@@ -79,8 +87,19 @@ Everything is synthesised: a looping noise buffer through filters (room tone, wa
 ## Multiplayer (`js/net/`)
 See [`MULTIPLAYER.md`](MULTIPLAYER.md). In short: the session shares only the seed and poses; transports are WebRTC DataChannels (manual copy/paste signalling, star topology through the host) or BroadcastChannel for same-browser rooms; every message is validated.
 
+## The Great Path world (`js/story/`)
+- **Cells**: `CS = 0.5` m, chunks of 64×64 cells (32 m). A cell is closed (solid) or open with its own floor and ceiling height. Everything 3D comes from differences between neighbours: walls (open↔closed), risers (floor steps), headers (ceiling steps), so drops, podiums, windows, lintels, tunnels and hanging blocks need no special code. Chunks never painted are closed.
+- **Layout** (`layout.js`) paints rectangles (`room`, `door`, `solid`, `where` predicates), places props, notes and skylights, then lamps on per-zone grids (some dead, some flickering). The Great Path and the West Path are painted per 32 m column on demand (`grid.lazy`, with a guard against recursive painting), so they never end.
+- **Meshing** (`mesher.js`): one chunk at a time, with lighting baked into vertex colours: zone ambient × tint, lamps and skylight bounce with wrap Lambert, falloff and occlusion (2D march through cells respecting floor/ceiling heights), direct sun squares under skylights, and AO from blocked samples and closeness to floor/ceiling. Materials are `MeshStandardMaterial` with procedural maps; the scene has an `AmbientLight` of π (so colour = albedo × baked light), a small PMREM environment for reflections, and the flashlight `SpotLight` with shadows. **L** (work lights) raises ambient and adds a hemisphere light.
+- **Streaming**: chunks within 3 (radius) around the player, at most one built per frame; prop colliders are collected in a dry run when needed (`prepare`).
+- **Collision** (`blocked`, `support`): the walker's 0.54 m box against cells (closed, floor above the step height, ceiling below head) and prop boxes; step-up up to 0.45 m; gravity and falling; the layered gate adds temporary colliders.
+- **Rendering**: `PixelPipeline` with `tone: 1` (ACES) and grain; with “detailed rendering” on, the render height is 360–720 px with 40 colour levels and light dithering.
+- **Zones and journal**: each cell has a zone; entering a new one shows its name and story timestamp and adds it to the journal; cells seen (line of sight, 15 m) are drawn on the map.
+- **Notes**: canvas textures from i18n keys (`gp.n.*`), re-drawn on language change; looking at a note within 2.2 m shows it large in the HUD.
+- **Save**: `progress.path` in `ls:save:v1` — `{ x, z, yaw, seen: [zone ids] }`.
+
 ## Persistence (localStorage)
-- `ls:save:v1` — `{ dist, odd, last: { seed, x, z, yaw } }` (total metres walked, oddities found, last single-player walk; saved every 5 s while walking, on pause/quit and on page unload)
+- `ls:save:v1` — `{ dist, odd, last: { seed, x, z, yaw }, path: { x, z, yaw, seen } }` (total metres walked, oddities found, last single-player walk; saved every 5 s while walking, on pause/quit and on page unload)
 - `ls:settings:v1` — settings
 Storage errors are swallowed (private mode etc.).
 
@@ -93,4 +112,4 @@ Storage errors are swallowed (private mode etc.).
 Every push to `main` is a new semver version: bump `js/version.js`, add an entry at the top of `CHANGELOG.md`, run `node tools/check-version.mjs`, then push. The owner creates `vX.Y.Z` tags in GitHub Releases. Changes to world generation change every seed — mention it in the changelog.
 
 ## Testing (headless)
-Playwright (Python) with Chromium and `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --ignore-gpu-blocklist` gives working WebGL2 without a GPU. Serve the folder with `python -m http.server`, open the page and get the app with `(await import('/js/main.js')).default` (it exposes `world`, `player`, `camera`, `settings`, `progress`, `session`, `mode`, `paused`, `startWalk(seed, spawn)`, `pause()`, `goMenu()`…). **Stub pointer lock** with an init script (`HTMLCanvasElement.prototype.requestPointerLock = () => Promise.resolve()`): a granted pointer lock in headless Chromium drops the frame rate to ~2 fps. Listen to `pageerror` and `console` errors. Scope button selectors to `.screen:not([hidden])`. WebRTC works between two browser contexts in one headless browser without STUN; same-browser rooms need two pages in the same context.
+Playwright (Python) with Chromium and `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --ignore-gpu-blocklist` gives working WebGL2 without a GPU. Serve the folder with `python -m http.server`, open the page and get the app with `(await import('/js/main.js')).default` (it exposes `world`, `player`, `camera`, `settings`, `progress`, `session`, `mode`, `paused`, `startWalk(seed, spawn)`, `pause()`, `goMenu()`…). **Stub pointer lock** with an init script (`HTMLCanvasElement.prototype.requestPointerLock = () => Promise.resolve()`): a granted pointer lock in headless Chromium drops the frame rate to ~2 fps. Listen to `pageerror` and `console` errors. Scope button selectors to `.screen:not([hidden])`. WebRTC works between two browser contexts in one headless browser without STUN; same-browser rooms need two pages in the same context. For the Great Path, `A.startPath('gate')` and wait for `A.kind === 'path'`; `A.story`, `A.walker` are exposed. SwiftShader is slow (a chunk takes ~50–100 ms to mesh there), so teleport with `walker.place()` + `story.preload()` rather than walking.

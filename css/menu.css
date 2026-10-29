@@ -31,3 +31,13 @@
 .keys{display:flex;gap:6px}
 .key{min-width:92px;text-align:center}
 @media (max-width:640px){.orow{grid-template-columns:1fr 1fr 44px}.logo{font-size:28px}}
+/* world tiles on the start screen */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0 6px}
+.tile{display:flex;flex-direction:column;text-align:left;padding:0;background:rgba(29,26,18,.92);overflow:hidden}
+.tile img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;image-rendering:pixelated;border-bottom:1px solid #4d4630;filter:saturate(.95)}
+.tile .ttl{padding:8px 10px 2px;font-size:15px;color:#efe2a6;letter-spacing:.04em}
+.tile .dsc{padding:0 10px 10px;font-size:11px;color:#b3aa8c;line-height:1.4}
+.tile:hover:not(:disabled){border-color:#d8c56a;background:#2e2a1a}
+#menu[data-screen=main] .screen{width:min(620px,calc(100vw - 32px))}
+#menu[data-screen=path] .screen{width:min(460px,calc(100vw - 32px))}
+@media (max-width:640px){.tiles{grid-template-columns:1fr}}
