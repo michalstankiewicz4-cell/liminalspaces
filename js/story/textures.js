@@ -74,7 +74,7 @@ const GEN = {
     return (u, v, o) => {
       const f = fib(u * 256, v * 256), m = mott(u, v), s = stain(u, v);
       let k = 0.78 + f * 0.3 + (m - 0.5) * 0.25;
-      if (s > 0.68) k *= 0.8;
+      if (s > 0.7) k *= 0.93;
       o.r = c[0] * k; o.g = c[1] * k; o.b = c[2] * k * (s > 0.68 ? 0.9 : 1);
       o.h = f * 0.7 + m * 0.3; o.rough = 0.97; o.metal = 0;
     };
@@ -289,6 +289,9 @@ export const MAT_DEFS = {
   dark: ['dark', 1, 64, 0.6],
   brass: ['brass', 0.5, 128, 0.5],
 };
+// Metres per texture repeat for every material name (usable without creating materials, e.g. in the worker).
+export const MAT_SCALE = Object.fromEntries([...Object.entries(MAT_DEFS).map(([k, d]) => [k, d[1]]),
+  ...['lamp', 'lampFlicker', 'lampDead', 'sky', 'bulb', 'glow', 'glass', 'screen', 'symbol', 'mapsheet', 'water', 'decal'].map((k) => [k, 1])]);
 // Index order used in the cell grid (fm / wm / cm / sm). 0 = unset.
 export const MAT_NAMES = ['none', ...Object.keys(MAT_DEFS)];
 export const M = Object.fromEntries(MAT_NAMES.map((n, i) => [n, i]));

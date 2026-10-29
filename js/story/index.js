@@ -3,7 +3,7 @@
 import * as THREE from '../../vendor/three.module.js';
 import { createGrid, CS, CN, CW, H, F } from './grid.js';
 import { makeMaterials, makeEnvironment, canvasTexture, drawSymbol } from './textures.js';
-import { meshChunk, makeBaker, Emitter } from './mesher.js';
+import { meshChunk, makeBaker, Emitter, groupFromBuffers } from './mesher.js';
 import { buildProp } from './props.js';
 import { buildLayout, ZONES, STARTS } from './layout.js';
 import { disposeGroup } from '../world/mesh.js';
@@ -45,7 +45,22 @@ export function createStory(renderer) {
   });
   mats.byName.mapsheet = new THREE.MeshStandardMaterial({ map: sheetTex, roughness: 0.9, vertexColors: true });
   mats.byName.water = new THREE.MeshStandardMaterial({ color: 0x4a7a90, roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.75, vertexColors: true });
-  for (const k of ['screen', 'symbol', 'mapsheet', 'water']) mats.scale[k] = 1;
+  // wear decals atlas: water stain, scuff, mould, crack (with alpha)
+  const decalTex = canvasTexture(512, 512, (g) => {
+    const rnd = ((s) => () => (s = (s * 16807) % 2147483647) / 2147483647)(7);
+    // 0: water stain rings (top-left)
+    for (let k = 0; k < 4; k++) { g.strokeStyle = `rgba(110,80,35,${0.25 - k * 0.04})`; g.lineWidth = 6 - k; g.beginPath(); g.ellipse(128, 120 + k * 6, 100 - k * 14, 80 - k * 12, 0, 0, Math.PI * 2); g.stroke(); }
+    const gr = g.createRadialGradient(128, 128, 10, 128, 128, 110); gr.addColorStop(0, 'rgba(140,110,50,.18)'); gr.addColorStop(1, 'rgba(140,110,50,0)'); g.fillStyle = gr; g.fillRect(0, 0, 256, 256);
+    // 1: scuffs (top-right)
+    for (let k = 0; k < 40; k++) { g.strokeStyle = `rgba(40,35,30,${0.08 + rnd() * 0.25})`; g.lineWidth = 1 + rnd() * 4; const x = 266 + rnd() * 220, y = 40 + rnd() * 180; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 20 + rnd() * 60, y + (rnd() - 0.5) * 8); g.stroke(); }
+    // 2: mould / dark spots (bottom-left)
+    for (let k = 0; k < 160; k++) { const a = rnd() * 6.28, d = Math.pow(rnd(), 0.7) * 110, r = 1 + rnd() * 9; g.fillStyle = `rgba(${30 + rnd() * 20},${35 + rnd() * 25},${25},${0.15 + rnd() * 0.35})`; g.beginPath(); g.arc(128 + Math.cos(a) * d, 384 + Math.sin(a) * d * 0.8, r, 0, 6.28); g.fill(); }
+    // 3: cracks (bottom-right)
+    g.strokeStyle = 'rgba(30,26,20,.55)';
+    for (let k = 0; k < 5; k++) { let x = 300 + rnd() * 160, y = 270; g.lineWidth = 2.5 - k * 0.3; g.beginPath(); g.moveTo(x, y); for (let s = 0; s < 14; s++) { x += (rnd() - 0.5) * 30; y += 8 + rnd() * 10; g.lineTo(Math.max(260, Math.min(508, x)), Math.min(508, y)); } g.stroke(); }
+  });
+  mats.byName.decal = new THREE.MeshStandardMaterial({ map: decalTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4, roughness: 0.9, vertexColors: true });
+  for (const k of ['screen', 'symbol', 'mapsheet', 'water', 'decal']) mats.scale[k] = 1;
 
   const grid = createGrid();
   const { beams, gates } = buildLayout(grid);
@@ -66,12 +81,28 @@ export function createStory(renderer) {
   const root = new THREE.Group(); scene.add(root);
   const loaded = new Map();        // key -> { group, ci, cj, version, extras: [] }
   const key = (ci, cj) => ci + ',' + cj;
-  function build(ci, cj) {
+  // Off-thread meshing: a module worker with its own copy of the layout. Falls back to the main thread.
+  let worker = null, workerReady = false;
+  const inFlight = new Set();
+  try {
+    worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
+    worker.onmessage = (ev) => {
+      const m = ev.data;
+      if (m.t === 'ready') { workerReady = true; return; }
+      if (m.t !== 'mesh') return;
+      inFlight.delete(key(m.ci, m.cj));
+      if (loaded.has(key(m.ci, m.cj))) return;
+      build(m.ci, m.cj, groupFromBuffers(m.list, mats.byName));
+    };
+    worker.onerror = (e) => { console.warn('mesh worker failed, meshing on the main thread', e.message); worker = null; inFlight.clear(); };
+  } catch (e) { worker = null; }
+
+  function build(ci, cj, meshed) {
     for (let a = -1; a <= 1; a++) grid.ensure(ci + a);
     const c = grid.chunk(ci, cj, false);
     const e = { ci, cj, group: new THREE.Group(), version: c ? c.version : -1 };
     if (c) {
-      e.group.add(meshChunk(grid, c, ctx));
+      e.group.add(meshed || meshChunk(grid, c, ctx).build(mats.byName));
       const bake = makeBaker(grid, ZONES, ci, cj);
       for (const s of c.signs) e.group.add(makeSign(s, bake));
     }
@@ -81,19 +112,32 @@ export function createStory(renderer) {
     loaded.set(key(ci, cj), e);
   }
   function unload(k) { const e = loaded.get(k); root.remove(e.group); disposeSigns(e.group); disposeGroup(e.group); loaded.delete(k); }
-  // Builds at most `budget` missing chunks (nearest first); drops far ones.
-  function stream(x, z, budget = 1) {
+  // Builds missing chunks nearest first: in the worker (2 in flight) or, when sync / no worker, `budget` per call
+  // on the main thread. Drops far chunks.
+  function stream(x, z, budget = 1, sync = false) {
     const ci = fdiv(x, CW), cj = fdiv(z, CW), want = [];
     for (let dj = -VIEW; dj <= VIEW; dj++) for (let di = -VIEW; di <= VIEW; di++) {
       if (di * di + dj * dj > VIEW * VIEW + 1) continue;
-      if (!loaded.has(key(ci + di, cj + dj))) want.push([di * di + dj * dj, ci + di, cj + dj]);
+      const k = key(ci + di, cj + dj);
+      if (!loaded.has(k) && (sync || !inFlight.has(k))) want.push([di * di + dj * dj, ci + di, cj + dj]);
     }
     want.sort((a, b) => a[0] - b[0]);
-    for (let k = 0; k < Math.min(budget, want.length); k++) build(want[k][1], want[k][2]);
+    if (!sync && worker && workerReady) {
+      for (let k = 0; k < want.length && inFlight.size < 2; k++) {
+        const [, a, b] = want[k];
+        inFlight.add(key(a, b)); worker.postMessage({ t: 'mesh', ci: a, cj: b });
+      }
+    } else for (let k = 0; k < Math.min(budget, want.length); k++) build(want[k][1], want[k][2]);
     for (const [k, e] of loaded) if (Math.abs(e.ci - ci) > VIEW + 1 || Math.abs(e.cj - cj) > VIEW + 1) unload(k);
     return want.length;
   }
-  function preload(x, z) { while (stream(x, z, 6) > 0); }
+  // Everything around a point at once on the main thread (spawn; nearest ring only, the rest streams).
+  function preload(x, z) {
+    const ci = fdiv(x, CW), cj = fdiv(z, CW);
+    for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) if (!loaded.has(key(ci + di, cj + dj))) build(ci + di, cj + dj);
+    stream(x, z, 0);
+  }
+  function preloadAll(x, z) { while (stream(x, z, 6, true) > 0); }
 
   /* ---- paper notes ---- */
   const signTex = new Map();         // sign -> texture
@@ -340,7 +384,7 @@ export function createStory(renderer) {
     get zone() { return zone; }, get visited() { return visited; },
     set onZone(fn) { onZone = fn; },
     get loadedCount() { return loaded.size; },
-    stream, preload, update, blocked, support, signNear, relabel,
+    stream, preload, preloadAll, update, blocked, support, signNear, relabel,
     setGate, startGate() { setGate(false); gateT = 0; },
     setWorkLights, get workLights() { return workLights; },
     resetVisits() { visited.clear(); zone = 0; },

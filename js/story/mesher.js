@@ -6,6 +6,7 @@ import * as THREE from '../../vendor/three.module.js';
 import { CS, CN, CW, F } from './grid.js';
 import { MAT_NAMES } from './textures.js';
 import { buildProp } from './props.js';
+import { rand4 } from '../core/util.js';
 
 const R2 = 3.2 * 3.2;          // light falloff scale squared
 const REACH = 12;              // max light distance (m)
@@ -112,6 +113,16 @@ export class Emitter {
     return [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.min(a[2], b[2]), Math.max(a[0], b[0]), Math.max(a[1], b[1]), Math.max(a[2], b[2])];
   }
   at(x, y, z, rot) { this.T = { x, y, z, c: Math.round(Math.cos(rot)), s: Math.round(Math.sin(rot)) }; }
+  // Raw buffers per material (for the worker -> main thread transfer).
+  export() {
+    const out = [];
+    for (const [name, b] of this.buckets) {
+      if (!b.i.length) continue;
+      const big = b.p.length / 3 > 65535;
+      out.push({ name, p: new Float32Array(b.p), n: new Float32Array(b.n), uv: new Float32Array(b.uv), c: new Float32Array(b.c), i: big ? new Uint32Array(b.i) : new Uint16Array(b.i) });
+    }
+    return out;
+  }
   build(materials) {
     const group = new THREE.Group();
     for (const [name, b] of this.buckets) {
@@ -217,8 +228,9 @@ function breaks(a, b, step = 1) {
   return out;
 }
 
+// Meshes one chunk; returns the Emitter (call .build(materials) or .export()).
 export function meshChunk(grid, c, ctx) {
-  const { zones, materials, scale } = ctx;
+  const { zones, scale } = ctx;
   const bake = makeBaker(grid, zones, c.ci, c.cj);
   const E = new Emitter(bake, scale);
   const x0 = c.ci * CW, z0 = c.cj * CW;
@@ -244,9 +256,21 @@ export function meshChunk(grid, c, ctx) {
     }
     return out;
   }
+  /* procedural wear: decals from a 2x2 atlas (0 water stain, 1 scuff, 2 mould, 3 crack) */
+  const WEAR = { wallpaperOld: 0.4, wallpaper: 0.16, drywall: 0.35, concrete: 0.3, whitepanel: 0.06, plaster: 0.12, rock: 0, carpet: 0.07, carpetGrey: 0.05, subfloor: 0.1, tile: 0.04, steel: 0.05, parquet: 0.03, stone: 0.05 };
+  function decal(O, U, V, w, hgt, nrm, type) {
+    const u0 = (type % 2) * 0.5, v0 = type < 2 ? 0.5 : 0;
+    E.grid('decal', O, U, V, breaks(0, w, 1), breaks(0, hgt, 1), nrm, (x, y, z, a, b) => [u0 + a / w * 0.5, v0 + b / hgt * 0.5]);
+  }
   for (const r of rects((k) => (c.open[k] ? c.floor[k] + '|' + c.fm[k] : null))) {
-    const X0 = x0 + r.i * CS, Z0 = z0 + r.j * CS, X1 = X0 + r.w * CS, Z1 = Z0 + r.h * CS;
-    E.grid(name(c.fm[r.k]), [X0, c.floor[r.k], Z0], [1, 0, 0], [0, 0, 1], breaks(X0, X1), breaks(Z0, Z1), [0, 1, 0]);
+    const X0 = x0 + r.i * CS, Z0 = z0 + r.j * CS, X1 = X0 + r.w * CS, Z1 = Z0 + r.h * CS, fm = name(c.fm[r.k]), y = c.floor[r.k];
+    E.grid(fm, [X0, y, Z0], [1, 0, 0], [0, 0, 1], breaks(X0, X1), breaks(Z0, Z1), [0, 1, 0]);
+    const wear = (WEAR[fm] || 0) * 0.5;
+    for (let gz = Math.ceil(Z0 / 2) * 2; gz + 2 <= Z1; gz += 2) for (let gx = Math.ceil(X0 / 2) * 2; gx + 2 <= X1; gx += 2) {
+      if (rand4(777, gx, gz, 1) > wear) continue;
+      const s = 0.6 + rand4(777, gx, gz, 2) * 1.2, ox = rand4(777, gx, gz, 3) * (2 - s), oz = rand4(777, gx, gz, 4) * (2 - s);
+      decal([gx + ox, y + 0.004, gz + oz], [1, 0, 0], [0, 0, 1], s, s, [0, 1, 0], rand4(777, gx, gz, 5) < 0.6 ? 0 : 2);
+    }
   }
   for (const r of rects((k) => (c.open[k] && !(c.flags[k] & F.SKY) ? c.ceil[k] + '|' + c.cm[k] : null))) {
     const X0 = x0 + r.i * CS, Z0 = z0 + r.j * CS, X1 = X0 + r.w * CS, Z1 = Z0 + r.h * CS;
@@ -310,11 +334,28 @@ export function meshChunk(grid, c, ctx) {
       const nrm = [-dx, 0, 0];
       E.grid(mat, [X, run.y0, Za], [0, 0, 1], [0, 1, 0], breaks(Za, Zb), ys, nrm);
       if (run.skirt) skirt(nrm, X - dx * 0.018, Za, Zb, run.y0, true);
+      wallWear(mat, run, Za, Zb, (t, y) => [X - dx * 0.006, y, t], [0, 0, 1], nrm, X);
     } else {
       const Z = z0 + (line + (dz > 0 ? 1 : 0)) * CS, Xa = x0 + run.t0 * CS, Xb = x0 + run.t1 * CS;
       const nrm = [0, 0, -dz];
       E.grid(mat, [Xa, run.y0, Z], [1, 0, 0], [0, 1, 0], breaks(Xa, Xb), ys, nrm);
       if (run.skirt) skirt(nrm, Z - dz * 0.018, Xa, Xb, run.y0, false);
+      wallWear(mat, run, Xa, Xb, (t, y) => [t, y, Z - dz * 0.006], [1, 0, 0], nrm, Z);
+    }
+  }
+  // stains, scuffs, mould and cracks on full-height walls, every ~2.5 m with a per-material chance
+  function wallWear(mat, run, a, b, P, U, nrm, line) {
+    const wear = WEAR[mat] || 0, H0 = run.y1 - run.y0;
+    if (!wear || H0 < 2) return;
+    for (let t = Math.ceil(a / 2.5) * 2.5; t + 1.6 <= b; t += 2.5) {
+      const h1 = rand4(778, Math.round(t * 2), Math.round(line * 2), nrm[0] * 3 + nrm[2] + 5);
+      if (h1 > wear) continue;
+      const r2 = rand4(778, Math.round(t * 2), Math.round(line * 2), 11), r3 = rand4(778, Math.round(t * 2), Math.round(line * 2), 12);
+      const type = r2 < 0.35 ? 0 : r2 < 0.7 ? 1 : r2 < 0.85 ? 2 : 3;
+      const w = 0.5 + r3 * 1.0, hh = type === 1 ? 0.25 + r3 * 0.4 : 0.4 + r3 * 0.9;
+      const y = type === 0 ? run.y1 - hh - 0.02 : type === 1 ? run.y0 + 0.08 + r2 * 0.3 : run.y0 + 0.3 + r3 * (H0 - hh - 0.5);
+      // U must run so the decal faces outward: use the same winding helper as walls (grid() fixes it by the normal)
+      decal(P(t + (1.6 - w) * r2, y), U, [0, 1, 0], w, hh, nrm, type);
     }
   }
   function skirt(nrm, at, a, b, y, alongZ) {
@@ -349,7 +390,29 @@ export function meshChunk(grid, c, ctx) {
   E.solids = null;
   for (const p of c.props) { E.T = null; buildProp(E, p, ctx); }
 
-  const group = E.build(materials);
+  return E;
+}
+
+// Builds a THREE.Group from exported buffers (see Emitter.export).
+export function groupFromBuffers(list, materials) {
+  const group = new THREE.Group();
+  for (const b of list) {
+    const mat = materials[b.name];
+    if (!mat) continue;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(b.p, 3));
+    g.setAttribute('normal', new THREE.BufferAttribute(b.n, 3));
+    g.setAttribute('uv', new THREE.BufferAttribute(b.uv, 2));
+    g.setAttribute('color', new THREE.BufferAttribute(b.c, 3));
+    g.setIndex(new THREE.BufferAttribute(b.i, 1));
+    g.computeBoundingSphere();
+    const m = new THREE.Mesh(g, mat);
+    m.matrixAutoUpdate = false;
+    const emissive = mat.isMeshBasicMaterial;
+    m.castShadow = !emissive && !mat.transparent; m.receiveShadow = !emissive;
+    if (mat.transparent) m.renderOrder = 2;
+    group.add(m);
+  }
   return group;
 }
 const M_WELL = 255;

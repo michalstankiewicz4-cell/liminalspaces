@@ -30,6 +30,7 @@ Published at: repo <https://github.com/michalstankiewicz4-cell/liminalspaces>, s
 | `js/story/textures.js` | Great Path: procedural PBR maps (albedo, normal, roughness/metalness), canvas textures, the builders' symbol, environment map |
 | `js/story/props.js` | Great Path: props from boxes and prisms (furniture, lab, machine, gate, cable, stations, funnels, doors, mine supports, rubble…) |
 | `js/story/index.js` | Great Path facade: streaming, colliders, notes, sunbeams with dust, layered gate, flicker, zones/journal, map visibility, work lights, `blocked`/`support` queries |
+| `js/story/worker.js` | Great Path: mesh worker (layout copy, returns vertex buffers) |
 | `js/story/walker.js`, `hand.js` | Great Path: multi-level walker (step-up 0.45 m, falling, jumping); flashlight view model + shadowed spot light |
 | `js/ui/map.js` | Minimap and full map with journal (Great Path) |
 | `js/world/player.js` | First-person walker: look, walk/run/jump, circle-vs-box collisions, head bob, footsteps |
@@ -70,6 +71,9 @@ Published at: repo <https://github.com/michalstankiewicz4-cell/liminalspaces>, s
 ## Player (`js/world/player.js`)
 Eye height 1.6 m, radius 0.3, walk 3 m/s, run 5.4 m/s, jump 5.2 m/s, gravity 18 m/s². Movement is sub-stepped (≤ 0.2 m) and resolved with two passes of circle-vs-AABB push-out. Yaw/pitch from mouse movement (`sens` setting, optional Y inversion) and the turn keys. Footsteps fire every half head-bob cycle and pick the sound by zone (or a splash in water).
 
+## Mouse look
+Pointer lock is requested with `{ unadjustedMovement: true }` (raw input, falls back when unsupported). `Input` drops the first two events after a lock change and single events far larger than the recent average (Chrome pointer-lock spikes).
+
 ## UI and i18n
 All UI is built with `h(tag, props, ...kids)` (`js/ui/dom.js`) — no `innerHTML`. Static text uses `bind(el, key)` / `tx(key)` and follows the language automatically; dynamic text (HUD, pause info) is recomputed with `t(key, params)`. Add a language: new dictionary in `js/i18n/`, register it in `index.js` (`dicts`, `LANGS`) and in the settings sanitiser. Missing keys fall back to English, then to the key itself.
 Screens (`js/ui/menu.js`, `js/ui/multi.js`): `main`, `single`, `multi`, `host`, `join`, `room`, `pause`, `options`, with a small history stack (`go`/`back`). Each screen may have an `onShow` refresher. Options tabs (`js/ui/options/`): Graphics, Controls, Mouse, Audio, Language, Privacy & data.
@@ -91,7 +95,8 @@ See [`MULTIPLAYER.md`](MULTIPLAYER.md). In short: the session shares only the se
 - **Cells**: `CS = 0.5` m, chunks of 64×64 cells (32 m). A cell is closed (solid) or open with its own floor and ceiling height. Everything 3D comes from differences between neighbours: walls (open↔closed), risers (floor steps), headers (ceiling steps), so drops, podiums, windows, lintels, tunnels and hanging blocks need no special code. Chunks never painted are closed.
 - **Layout** (`layout.js`) paints rectangles (`room`, `door`, `solid`, `where` predicates), places props, notes and skylights, then lamps on per-zone grids (some dead, some flickering). The Great Path and the West Path are painted per 32 m column on demand (`grid.lazy`, with a guard against recursive painting), so they never end.
 - **Meshing** (`mesher.js`): one chunk at a time, with lighting baked into vertex colours: zone ambient × tint, lamps and skylight bounce with wrap Lambert, falloff and occlusion (2D march through cells respecting floor/ceiling heights), direct sun squares under skylights, and AO from blocked samples and closeness to floor/ceiling. Materials are `MeshStandardMaterial` with procedural maps; the scene has an `AmbientLight` of π (so colour = albedo × baked light), a small PMREM environment for reflections, and the flashlight `SpotLight` with shadows. **L** (work lights) raises ambient and adds a hemisphere light.
-- **Streaming**: chunks within 3 (radius) around the player, at most one built per frame; prop colliders are collected in a dry run when needed (`prepare`).
+- **Streaming**: chunks within 3 (radius) around the player. Meshing runs in a module Web Worker (`js/story/worker.js`, its own copy of the deterministic layout; buffers are transferred back and turned into meshes by `groupFromBuffers`), two chunks in flight; the 3×3 chunks around a spawn are built on the main thread. Without a worker everything falls back to the main thread. Prop colliders are collected in a dry run when needed (`prepare`).
+- **Procedural detail**: wear decals (atlas: water stain, scuff, mould, crack) placed by hash on walls (every ~2.5 m, chance per material) and floors (per 2 m cell); rare anomalies and clutter painted by `layout.js` (per path column, per dense room).
 - **Collision** (`blocked`, `support`): the walker's 0.54 m box against cells (closed, floor above the step height, ceiling below head) and prop boxes; step-up up to 0.45 m; gravity and falling; the layered gate adds temporary colliders.
 - **Rendering**: `PixelPipeline` with `tone: 1` (ACES) and grain; with “detailed rendering” on, the render height is 360–720 px with 40 colour levels and light dithering.
 - **Zones and journal**: each cell has a zone; entering a new one shows its name and story timestamp and adds it to the journal; cells seen (line of sight, 15 m) are drawn on the map.

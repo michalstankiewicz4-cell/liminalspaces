@@ -13,6 +13,7 @@ export class Input {
     this.suspended = false;             // true while a key is being rebound
     this.look = { x: 0, y: 0 };         // accumulated mouse movement since the last frame (pixels)
     this.dragging = false;
+    this.skip = 0; this.recent = 0;     // mouse spike filter (see mousemove)
     this.onPress = null;                // (actionId) => void
     this.onLockChange = null;           // (locked) => void
     this.#rebuild();
@@ -24,16 +25,29 @@ export class Input {
     canvas.addEventListener('mousedown', (e) => { if (!this.locked) this.dragging = true; e.preventDefault(); });
     addEventListener('mouseup', () => { this.dragging = false; });
     addEventListener('mousemove', (e) => {
-      if (this.locked || this.dragging) { this.look.x += e.movementX || 0; this.look.y += e.movementY || 0; }
+      if (!(this.locked || this.dragging)) return;
+      const dx = e.movementX || 0, dy = e.movementY || 0;
+      // Chrome sometimes reports a single huge jump while the pointer is locked (and right after locking):
+      // drop the first events after a lock and any event far larger than the recent movement.
+      if (this.skip > 0) { this.skip--; return; }
+      const m = Math.max(Math.abs(dx), Math.abs(dy));
+      if (m > 150 && m > this.recent * 8 + 60) { this.recent += (Math.min(m, this.recent * 2 + 30) - this.recent) * 0.3; return; }
+      this.recent = this.recent * 0.8 + m * 0.2;
+      this.look.x += dx; this.look.y += dy;
     });
-    document.addEventListener('pointerlockchange', () => { if (this.onLockChange) this.onLockChange(this.locked); });
+    document.addEventListener('pointerlockchange', () => { this.skip = 2; this.recent = 0; if (this.onLockChange) this.onLockChange(this.locked); });
     addEventListener('blur', () => this.clear());
   }
 
   get locked() { return document.pointerLockElement === this.canvas; }
   // Must be called from a user gesture (click / key press). Failures (e.g. headless browsers) are ignored.
+  // Raw (unadjusted) movement avoids OS acceleration and most of Chrome's jumps; falls back when not supported.
   lock() {
-    try { const p = this.canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (e) { /* not available */ }
+    const plain = () => { try { const q = this.canvas.requestPointerLock(); if (q && q.catch) q.catch(() => {}); } catch (e) { /* not available */ } };
+    try {
+      const p = this.canvas.requestPointerLock({ unadjustedMovement: true });
+      if (p && p.catch) p.catch((err) => { if (err && err.name === 'NotSupportedError') plain(); });
+    } catch (e) { plain(); }
   }
   unlock() { if (this.locked) document.exitPointerLock(); }
 

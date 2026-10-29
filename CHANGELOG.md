@@ -4,6 +4,17 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new version (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.3.0] - 2026-10-29
+### Fixed
+- Mouse look: sudden jumps of tens of degrees. The pointer lock now asks for raw (unadjusted) mouse movement where the browser supports it, ignores the first events after locking and drops single events that are far larger than the recent movement (a known Chrome pointer-lock glitch).
+### Added
+- The Great Path: chunks are meshed in a Web Worker (no hitches when crossing into new areas); only the 3×3 chunks around the spawn are built up front.
+- Procedural wear: water stains, scuffs, mould and cracks on walls and stains on floors (decals, amount depends on the surface).
+- Rare anomalies along the infinite Great Path and West Path: drywall boxes, vents to nowhere, doors into solid wall, missing ceiling panels, a chair facing the wall, a door frame with no wall, small empty side rooms, loose papers.
+- Clutter in the dense rooms and the Wastelands hall (papers, boxes).
+### Changed
+- Carpet stains are subtler (less visible tiling).
+
 ## [0.2.0] - 2026-10-29
 ### Added
 - Start screen with two tiles: **Endless Liminal Spaces** (the procedural world) and **The Great Path** (new world).

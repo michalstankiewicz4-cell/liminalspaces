@@ -267,6 +267,21 @@ const PROPS = {
     E.box('stone', -w / 2 - 0.2, -0.2, 0, w / 2 + 0.2, h + 0.2, 0.08);
     E.box('symbol', -w / 2, 0, 0.08, w / 2, h, 0.1, { uv: 'local', skip: 'nz,px,nx,py,ny' });
   },
+  papers(E, p) {
+    // a few loose sheets on the floor
+    const n = p.n || 5;
+    for (let k = 0; k < n; k++) {
+      const a = k * 2.1 + (p.seed || 0), x = Math.cos(a) * 0.35 * (k % 3), z = Math.sin(a) * 0.3 * ((k + 1) % 3);
+      const w = k % 2 ? 0.21 : 0.297, d = k % 2 ? 0.297 : 0.21;
+      E.box('paper', x - w / 2, 0.002 + k * 0.0015, z - d / 2, x + w / 2, 0.0035 + k * 0.0015, z + d / 2, { skip: 'ny' });
+    }
+  },
+  frame(E, p) {
+    // a door frame standing on its own in the middle of a hallway, no wall around it
+    const w = p.w || 0.9;
+    E.box('whitepanel', -w / 2 - 0.08, 0, -0.06, -w / 2, 2.15, 0.06, S); E.box('whitepanel', w / 2, 0, -0.06, w / 2 + 0.08, 2.15, 0.06, S);
+    E.box('whitepanel', -w / 2 - 0.08, 2.08, -0.06, w / 2 + 0.08, 2.15, 0.06);
+  },
   skateboard(E) {
     E.box('wood', -0.1, 0.08, -0.4, 0.1, 0.1, 0.4);
     for (const z of [-0.3, 0.3]) for (const x of [-0.08, 0.08]) E.prism('plastic', x, z, 0.03, 0.03, 0, 0.06, 6, { capTop: true });

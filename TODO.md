@@ -1,10 +1,9 @@
 # TODO
 
-Legend: **P1** next, **P2** later, **P3** ideas. State as of v0.2.0. Context: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Legend: **P1** next, **P2** later, **P3** ideas. State as of v0.3.0. Context: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## The Great Path (register: [`docs/GREAT_PATH.md`](docs/GREAT_PATH.md))
-- [ ] P1 Mesh chunks in a Web Worker (meshing + baking ~20–50 ms per chunk on the main thread causes hitches when crossing chunks)
-- [ ] P1 Procedural detail: wear decals (stains, scratches, patched wallpaper), clutter per room, rare anomalies along the infinite paths
+- [ ] P2 More procedural detail: clutter per Hub room, more anomaly kinds, variation of lamp fixtures
 - [ ] P2 Sound (hum, footsteps, distant noises) — off for now by the owner's choice
 - [ ] P2 Skylight scratching / shadows (ghost stories), sun exposure under skylights
 - [ ] P2 Homes, hospital area, holding rooms; Rudon's backpack and skateboard at the gate
@@ -59,4 +58,5 @@ Legend: **P1** next, **P2** later, **P3** ideas. State as of v0.2.0. Context: [`
 - [ ] Add the site to Google Search Console and submit `sitemap.xml`
 
 ## Done (summary)
+v0.3.0: worker meshing, wear decals, anomalies and clutter, mouse jump fix. v0.2.0: The Great Path world, tiles, map, flashlight shadows.
 First version: infinite deterministic world from a seed with four zones, chunk streaming, baked lighting with flickering and dead lights, pixel-art pipeline from Capital Quarantine, first-person controller with collisions, flashlight, synthesised audio, oddities, menus/options, English UI with Polish option, peer-to-peer multiplayer and same-browser rooms. Details: `CHANGELOG.md`.

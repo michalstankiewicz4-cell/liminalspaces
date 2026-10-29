@@ -231,6 +231,23 @@ export function buildLayout(grid) {
     for (let x = Math.ceil(xa / 48) * 48 + 20; x < xb; x += 48) {
       if (east) prop('chalk', x, -1.5, 0, { n: 1 + (Math.abs(x / 48) | 0) % 5, y: 0 }); else prop('chalk', x, 1.5, Math.PI, { n: 1 + (Math.abs(x / 48) | 0) % 5, y: 0 });
     }
+    // rare anomalies, one per column at most (only past the rings, where the space around is free)
+    const far = east ? xa >= 160 : xb <= -160;
+    const r = R(ci, 0, 50), ax = xa + 6 + Math.floor(R(ci, 0, 51) * 18) * 0.5;
+    const side = R(ci, 0, 52) < 0.5 ? -1 : 1;                        // -1 north wall, +1 south wall
+    if (r < 0.1) solid(ax, side < 0 ? -1.5 : 0.5, ax + 1.5, side < 0 ? -0.5 : 1.5);          // drywall box jutting out
+    else if (r < 0.2) {                                                                       // vent to nowhere
+      room(zk, ax, side < 0 ? -2.5 : 1.5, ax + 1, side < 0 ? -1.5 : 2.5, { floor: 2.75, ceil: 3.15, flags: 0 });
+      prop('vent', ax + 0.5, side * 1.5, side < 0 ? 0 : Math.PI, { y: 0 });
+    } else if (r < 0.28) prop('doorClosed', ax, side * 1.5, side < 0 ? 0 : Math.PI, { y: 0 });  // a door into solid wall
+    else if (r < 0.36) grid.paint(ax, -1.5, ax + 6, 1.5, { ceil: H + 0.15, cm: M.agarite, where: (x, z) => grid.isOpen(x, z) && !(grid.flagsAt(x, z) & F.SKY) });
+    else if (r < 0.42) prop('chair', ax, side * 0.9, side < 0 ? Math.PI : 0);                  // a chair facing the wall
+    else if (r < 0.48) prop('frame', ax, 0, 0, { w: 0.9 });                                    // a door frame with no wall
+    else if (r < 0.54 && far) {                                                                // a small empty side room
+      solid(ax - 1, side < 0 ? -7.5 : 1.5, ax + 6, side < 0 ? -1.5 : 7.5);
+      room(zk, ax, side < 0 ? -6.5 : 2.5, ax + 4.5, side < 0 ? -2.5 : 6.5, { flags: 0 });
+      door(zk, ax + 1.5, side < 0 ? -2.5 : 1.5, ax + 2.5, side < 0 ? -1.5 : 2.5);
+    } else if (r < 0.62) prop('papers', ax, side * 0.6, 0, { seed: ci });
     // distance notes: every 200 m stands for about a day of walking in the story
     const start = east ? 60 : -60;
     for (let d = 200; ; d += 200) {
@@ -319,6 +336,13 @@ export function buildLayout(grid) {
     let [x, z] = roomXY(1, 6); prop('chair', x + 3, z + 0.8, Math.PI);
     [x, z] = roomXY(5, 3); prop('desk', x + 3, z + 3, Math.PI / 2, {});
   }
+  // clutter: loose papers and boxes left in some rooms
+  for (let j = 0; j < RZ; j++) for (let i = 0; i < RX; i++) {
+    const [x, z] = roomXY(i, j), r = R(i, j, 60);
+    if (r < 0.35) prop('papers', x + 1 + R(i, j, 61) * 4, z + 1 + R(i, j, 62) * 4, 0, { seed: i * 7 + j });
+    else if (r < 0.5) prop('crate', x + 0.5 + R(i, j, 63) * 0.2, z + SZ - 0.6, 0, { s: 0.5 });
+  }
+  for (let z = 175; z < 365; z += 23) if (R(z, 0, 64) < 0.5) prop('papers', (R(z, 0, 65) - 0.5) * 1.6, z, 0, { seed: z, n: 3 });
   note(3, 250, 0, -1, 'gp.n.cluster');
   // the room of doors (08:37): steel floor, doors every ~4 ft on each wall, one opens into door after door
   room('cluster', 59.5, 284, 62.5, 295, { flags: F.SKIRT });
