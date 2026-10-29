@@ -7,6 +7,8 @@ Legend: **P1** next, **P2** later, **P3** ideas. State as of v0.5.0. Context: [`
 - [ ] P2 Tune event frequency and sound levels after playtesting
 - [ ] P2 Homes, hospital area; Rudon's backpack and skateboard at the gate
 - [ ] P3 Statues: more poses and details (faces, clothes folds) after playtesting
+- [ ] P2 Part 2 (the journey): tune the darkness of the nights and the blackout, the squeeze and the timing of the scripted events after playtesting
+- [ ] P3 The surface: more of the plane (other domes, the lines going somewhere), the key stations from the inscription
 - [ ] P2 Multiplayer in this world (share the start and poses; the world is static)
 - [ ] P3 The theory that the Great Path and the West Path curve and meet
 

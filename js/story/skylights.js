@@ -23,7 +23,7 @@ export function createSkylights(scene, grid, beams) {
     geo.rotateY(Math.PI / 4);
     const m = new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 0.93, 0.78).multiplyScalar(0.11 * b.sun), alphaMap: beamAlpha, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
     const mesh = new THREE.Mesh(geo, m);
-    b.mesh = mesh; b.base = 0.11 * b.sun; b.floor = floor;
+    b.mesh = mesh; b.base = 0.11 * b.sun; b.floor = floor; b.fade = 1; b.dim = 1;
     g.userData.beam = b;
     mesh.scale.set(w, h, d);
     mesh.position.set((b.x0 + b.x1) / 2, floor + h / 2, (b.z0 + b.z1) / 2);
@@ -77,8 +77,9 @@ export function createSkylights(scene, grid, beams) {
   shape.rotation.x = Math.PI / 2; shape.renderOrder = 4; shape.visible = false;
   scene.add(shape);
   let dimmed = null;
+  const tint = (b) => { if (b.mesh) b.mesh.material.color.setRGB(1, 0.93, 0.78).multiplyScalar(b.base * b.fade * b.dim); };
   function scratchVisual(ep) {
-    if (dimmed && dimmed.mesh) dimmed.mesh.material.color.setRGB(1, 0.93, 0.78).multiplyScalar(dimmed.base);
+    if (dimmed) { dimmed.dim = 1; tint(dimmed); }
     dimmed = null;
     if (!ep) { shape.visible = false; return; }
     const { sky, t, dur } = ep, b = sky.beam;
@@ -87,11 +88,22 @@ export function createSkylights(scene, grid, beams) {
     shape.material.opacity = k;
     shape.position.set(sky.x + Math.sin(t * 0.9) * 0.35, sky.y - 0.03, sky.z + Math.cos(t * 0.6) * 0.25);
     shape.rotation.z = Math.sin(t * 0.4) * 0.5;
-    if (b && b.mesh) { dimmed = b; b.mesh.material.color.setRGB(1, 0.93, 0.78).multiplyScalar(b.base * (1 - 0.45 * k)); }
+    if (b && b.mesh) { dimmed = b; b.dim = 1 - 0.45 * k; tint(b); }
   }
 
-  // floating dust drifts down inside the beams near the player
+  // floating dust drifts down inside the beams near the player; beams fade out with distance (they ignore fog)
+  let fadeT = 0;
   function updateDust(dt, time, pos) {
+    fadeT -= dt;
+    if (fadeT <= 0) {
+      fadeT = 0.25;
+      for (const b of beams) {
+        if (!b.mesh) continue;
+        const d = Math.hypot((b.x0 + b.x1) / 2 - pos.x, (b.z0 + b.z1) / 2 - pos.z), k = Math.max(0, Math.min(1, (44 - d) / 18));
+        if (Math.abs(k - b.fade) > 0.02) { b.fade = k; tint(b); }
+        b.mesh.visible = k > 0;
+      }
+    }
     for (const p of dusts) {
       if (!p.parent || !p.parent.parent) continue;
       const { b, floor, h } = p.userData.dust, a = p.geometry.attributes.position;

@@ -14,6 +14,7 @@ import { createSkylights } from './skylights.js';
 import { createGate } from './gate.js';
 import { createFx } from './fx.js';
 import { createExplored } from './explored.js';
+import { createWater } from './water.js';
 import { disposeGroup } from '../world/mesh.js';
 
 const VIEW = 3;              // chunks streamed around the player (radius)
@@ -34,7 +35,7 @@ export function createStory(renderer) {
   addCanvasMaterials(mats);
 
   const grid = createGrid();
-  const { beams, gates, emitters } = buildLayout(grid);
+  const { beams, gates, emitters, water } = buildLayout(grid);
   const ctx = { zones: ZONES, materials: mats.byName, scale: mats.scale };
 
   /* ---- prop colliders (dry run) ---- */
@@ -73,6 +74,7 @@ export function createStory(renderer) {
   const gate = createGate(scene, mats.byName.steel, gates);
   const fx = createFx(scene, grid);
   const explored = createExplored(grid);
+  const waters = createWater(scene, water);
 
   function build(ci, cj, meshed) {
     for (let a = -1; a <= 1; a++) grid.ensure(ci + a);
@@ -173,9 +175,10 @@ export function createStory(renderer) {
     fogTarget.setRGB(zd.fog[0], zd.fog[1], zd.fog[2]);
     if (workLights) fogTarget.multiplyScalar(1.8);
     scene.fog.color.lerp(fogTarget, 1 - Math.exp(-1.2 * dt));
-    const far = zone === Z_CHAPEL ? 70 : 46;
+    const far = zd.far || (zone === Z_CHAPEL ? 70 : 46);
     scene.fog.far += (far - scene.fog.far) * Math.min(1, dt);
     fx.update(dt);
+    waters.update(dt, time, pos);
     seenT -= dt;
     if (seenT <= 0) { seenT = 0.25; explored.markSeen(pos.x, pos.z, pos.y); }
   }
@@ -231,6 +234,7 @@ export function createStory(renderer) {
   }
 
   const extraSolidsAdd = (list) => { extraSolids.push(...list); };
+  const extraSolidsRemove = (list) => { for (const b of list) { const i = extraSolids.indexOf(b); if (i >= 0) extraSolids.splice(i, 1); } };
   return {
     scene, grid, zones: ZONES, starts: STARTS, lightAt,
     get zone() { return zone; }, get visited() { return visited; },
@@ -249,9 +253,9 @@ export function createStory(renderer) {
     setWorkLights, get workLights() { return workLights; }, setPower, get power() { return power; },
     // events
     emittersNear, nearestLamp, wallNear, particles: fx.particles, flash: fx.flash,
-    addSolids: extraSolidsAdd, stoneMaps: { map: mats.byName.stone.map, normalMap: mats.byName.stone.normalMap },
+    addSolids: extraSolidsAdd, removeSolids: extraSolidsRemove, materials: mats.byName, stoneMaps: { map: mats.byName.stone.map, normalMap: mats.byName.stone.normalMap },
     floorAt: (x, z) => grid.floorAt(x, z), ceilAt: (x, z) => grid.ceilAt(x, z), isOpen: (x, z) => grid.isOpen(x, z),
-    flagsAt: (x, z) => grid.flagsAt(x, z),
+    flagsAt: (x, z) => grid.flagsAt(x, z), zoneKeyAt: (x, z) => (ZONES[grid.zoneAt(x, z)] || ZONES[0]).key,
     resetVisits() { visited.clear(); zone = 0; },
   };
 }

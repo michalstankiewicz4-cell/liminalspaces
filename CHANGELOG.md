@@ -4,6 +4,18 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new version (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.7.0] - 2026-10-29
+### Added
+- **The journey down the Great Path** (part 2 of the story, the full video *Rudon's Plane*): the endless east hallway is replaced by a ~2.9 km journey with every episode of the walk, each with a note saying what happened and how much was shortened: the doors shutting behind you, the last Vibra-cable, dusk and the first night (stars in the skylights, the camp), the explorers' marks and Rudon's red chalk, the niches, cracked concrete and the line where carpet begins, intersections with side halls ending in built-in shelves and a ramp, long nights, changing floors (concrete, carpet, floorboards), shapes scurrying over the skylights and a skylight curved outward, the turn-around point, **the blackout** (no light at all — and something that wears Mel Dogger's face, then running behind you until you reach the light), the first skylight, the broken skateboard, the **split that curves back into itself**, the long shallow room with bar stools, the offset hall, the **glass path over rushing water and an opening onto a violent ocean under a cloudy sky**, the **grate over an abyss** with howling wind, the **room of columns**, an **empty district** with muffled commotion that stops when you come near, the **shaft** where the floor gives way, the deeper hall with skylights in ever deeper wells, the **squeeze** (the ceiling comes down until you crawl, the flashlight dies, you get stuck), daylight again, black tiles, the **round room** (plate, platform, case, lever, staircase from the ceiling), the **surface** — a white plane under the sky with the dark dome on timbers and the inscription — the mirror staircase and another hallway that never ends, and the **ending** (lie down: the view rises to a sphere in the void, machines in orbit and the arriving ships).
+- 24 new story-guide steps for part 2 (times from the full video), new zones, sounds (water, surf, wind in the abyss, the commotion, silence at night) and materials (taupe carpet, black tiles, floorboards, night sky).
+- **E** (use) in the Great Path world; a prompt line and full-screen fades in the HUD.
+- The walker stoops, crouches and crawls by itself under low ceilings.
+### Changed
+- **Statues are no longer solid** — you walk through them (they blocked passages).
+- The Great Path statue scene and plaque moved to x = 96; the West Path is still endless with day notes.
+- Sunbeams fade out with distance (they ignore fog and showed through from far away).
+- The Great Path world's east side is generated differently (the layout of the Hub and part 1 is unchanged); the endless world's seeds are unchanged.
+
 ## [0.6.0] - 2026-10-29
 ### Added
 - **Statues** of the story's scenes in the Great Path world: pale stone figures in poses (pointing, reading, sitting at desks, kneeling, climbing…) with faint, broken outlines, grouped where each scene happens, each with a brass plaque (story time and title). They are colliders and are built only near the player.

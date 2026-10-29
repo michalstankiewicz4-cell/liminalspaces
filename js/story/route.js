@@ -26,7 +26,32 @@ export const STEPS = [
   { key: 'collector', t: '47:42', x: 1.75, z: 1.3, r: 2.5 },
   { key: 'machine', t: '49:15', x: -24, z: -44, r: 2.5 },
   { key: 'visit', t: '53:10', x: -28, z: -7, r: 3 },
-  { key: 'path', t: '02:34', x: 326, z: 0, r: 5 },
+  { key: 'path', t: '02:34', x: 96, z: 0, r: 5 },
+  // part 2: the journey (times from the full story video, see docs/GREAT_PATH.md)
+  { key: 'jCable', t: '60:31', x: 170, z: 0, r: 3 },
+  { key: 'jNight', t: '62:14', x: 300, z: 0, r: 3 },
+  { key: 'jMarks', t: '63:15', x: 344, z: 0, r: 3 },
+  { key: 'jCarpet', t: '67:28', x: 562, z: 0, r: 3 },
+  { key: 'jCross', t: '69:32', x: 640, z: 0, r: 3 },
+  { key: 'jRamp', t: '72:04', x: 784, z: -27, r: 3 },
+  { key: 'jSkylight', t: '74:42', x: 1076, z: 0, r: 3 },
+  { key: 'jTurn', t: '75:33', x: 1120, z: 0, r: 3 },
+  { key: 'jBlackout', t: '76:05', x: 1240, z: 0, r: 4 },
+  { key: 'jLight', t: '83:16', x: 1308, z: 0, r: 4 },
+  { key: 'jLoop', t: '86:35', x: 1464, z: -14, r: 3.5 },
+  { key: 'jBar', t: '89:25', x: 1624, z: -2.6, r: 3 },
+  { key: 'jWater', t: '90:13', x: 1780, z: -1.8, r: 3 },
+  { key: 'jGrate', t: '91:07', x: 1928, z: -1, r: 3 },
+  { key: 'jColumns', t: '91:28', x: 2028, z: -1, r: 4 },
+  { key: 'jDistrict', t: '92:07', x: 2184, z: -1, r: 4 },
+  { key: 'jShaft', t: '93:43', x: 2311, z: -1, r: 3, y: -7.45 },
+  { key: 'jSqueeze', t: '99:43', x: 2650, z: -1, r: 3 },
+  { key: 'jLightAgain', t: '103:32', x: 2712, z: -1, r: 3 },
+  { key: 'jTiles', t: '105:22', x: 2840, z: -1, r: 3 },
+  { key: 'jLever', t: '106:32', x: 2896, z: -2.4, r: 1.6 },
+  { key: 'jRoof', t: '107:27', x: 2905, z: -1, r: 3, y: -5.55 },
+  { key: 'jMirror', t: '109:36', x: 2971, z: -1, r: 3 },
+  { key: 'jInscription', t: '110:15', x: 2936, z: -1, r: 4, y: -5.55 },
 ];
 
 export function createGuide(story) {
@@ -42,7 +67,7 @@ export function createGuide(story) {
     const N = W * Hh, floor = new Float32Array(N).fill(NaN), prev = new Int32Array(N).fill(-1), q = new Int32Array(N);
     for (let j = 0; j < Hh; j++) for (let i = 0; i < W; i++) {
       const [c, k] = grid.at(x0 + i, z0 + j);
-      if (c && c.open[k] && c.ceil[k] - c.floor[k] >= 1.8) floor[i + j * W] = c.floor[k];
+      if (c && c.open[k] && c.ceil[k] - c.floor[k] >= 0.6) floor[i + j * W] = c.floor[k];
     }
     const s = (Math.floor(from.x / CS) - x0) + (Math.floor(from.z / CS) - z0) * W, e = (Math.floor(to.x / CS) - x0) + (Math.floor(to.z / CS) - z0) * W;
     if (Number.isNaN(floor[s]) || Number.isNaN(floor[e])) return null;

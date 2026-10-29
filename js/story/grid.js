@@ -9,7 +9,9 @@ export const CW = CS * CN;        // chunk size (m) = 32
 export const H = 3.35;            // standard ceiling height: 11 ft
 
 // Cell flags
-export const F = { SKY: 1, SKIRT: 2, NOLAMP: 4, LAMP: 8, CHALK: 16 };
+// NOFLOOR: walkable but no floor drawn (glass over water, the grate over the abyss — drawn by water.js / props)
+// OUT: open to the sky (no ceiling; walls only as a roof edge above lower neighbours) — the ocean view, stair holes
+export const F = { SKY: 1, SKIRT: 2, NOLAMP: 4, LAMP: 8, CHALK: 16, OUT: 32, NOFLOOR: 64 };
 
 class Chunk {
   constructor(ci, cj) {

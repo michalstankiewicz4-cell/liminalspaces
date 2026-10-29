@@ -4,7 +4,9 @@
 const ZONE_LEVEL = {
   plaza: 0.15, cafeteria: 0.2, guild: 0.15, seniorOffice: 0.3, library: 0.35, machine: 0.5, court: 0.2, gardens: 0.2, market: 0.2,
   factory: 0.45, offices: 0.35, avenue: 0.3, ring1: 0.7, mine: 1.0, ring2: 0.75, gate: 0.4, booth: 0.6, wastes: 0.8, cluster: 1.0,
-  doors: 1.1, deadend: 1.2, blue: 0.9, chapel: 0.5, greatPath: 0.75, westPath: 0.85,
+  doors: 1.1, deadend: 1.2, blue: 0.9, chapel: 0.5, greatPath: 0.5, westPath: 0.85,
+  // the journey: mostly quiet, worse at night, in the empty district, among the columns and deep down
+  gpNight: 0.8, gpLongNight: 0.8, gpDistrict: 1.0, gpColumns: 0.8, gpDeep: 0.9, gpGrate: 0.6, gpFork: 0.7, gpBeyond: 0.6,
 };
 
 export function createDirector({ story, audio, pipe, hand, hud, t }) {

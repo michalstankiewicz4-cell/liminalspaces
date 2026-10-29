@@ -5,6 +5,7 @@
 import { CS, CN, CW, H, F } from './grid.js';
 import { M } from './textures.js';
 import { rand4, hash4 } from '../core/util.js';
+import { JOURNEY_ZONES, paintJourney, JX } from './journey.js';
 
 const R = (a, b = 0, c = 0) => rand4(4242, Math.round(a * 2), Math.round(b * 2), c);
 
@@ -34,11 +35,12 @@ export const ZONES = [
   { key: 'deadend', t: '43:28', amb: 0.04, tint: W, fog: [0.08, 0.07, 0.05], map: '#8a7a5a', fm: 'carpet', wm: 'wallpaperOld', cm: 'ceiling', lamp: ['panel', 8, 0.6], skirt: true, lx: -70, lz: 310 },
   { key: 'blue', t: '15:55', amb: 0.08, tint: [0.45, 0.6, 1.0], fog: [0.04, 0.07, 0.2], map: '#5a7ac8', fm: 'carpet', wm: 'wallpaper', cm: 'ceiling', lamp: ['panel', 6, 0, [0.35, 0.5, 1.2]], lx: 0, lz: 388 },
   { key: 'chapel', t: '16:21', amb: 0.17, tint: [0.4, 0.55, 1.0], fog: [0.03, 0.06, 0.18], map: '#4a6ab8', fm: 'stone', wm: 'plaster', cm: 'plaster', sm: 'stone', lamp: null, lx: 0, lz: 428 },
-  { key: 'greatPath', t: '02:34', amb: 0.07, tint: W, fog: [0.22, 0.19, 0.12], map: '#e0c060', fm: 'carpet', wm: 'wallpaper', cm: 'ceiling', lamp: ['panel', 8, 0.25], lx: 90, lz: 0 },
+  { key: 'greatPath', t: '02:34', amb: 0.07, tint: W, fog: [0.22, 0.19, 0.12], map: '#e0c060', fm: 'concrete', wm: 'wallpaperOld', cm: 'ceiling', lamp: null, lx: 90, lz: 0 },
   { key: 'westPath', t: '50:33', amb: 0.06, tint: W, fog: [0.2, 0.17, 0.11], map: '#d0b060', fm: 'carpet', wm: 'wallpaperOld', cm: 'ceiling', lamp: ['panel', 8, 0.35], lx: -90, lz: 0 },
   { key: 'booth', t: '12:32', amb: 0.08, tint: [1, 0.85, 0.6], fog: [0.14, 0.11, 0.07], map: '#a08a6a', fm: 'concrete', wm: 'concrete', cm: 'ceiling', lamp: ['bulb', 4, 0], lx: 4.5, lz: 156 },
   { key: 'school', t: '03:14', amb: 0.14, tint: W, fog: [0.28, 0.24, 0.16], map: '#c8b080', fm: 'parquet', wm: 'wallpaper', cm: 'ceiling', lamp: ['panel', 4, 0], lx: 46, lz: -26 },
   { key: 'holding', t: '25:21', amb: 0.05, tint: [1, 0.9, 0.75], fog: [0.12, 0.1, 0.07], map: '#8a7a6a', fm: 'concrete', wm: 'whitepanel', cm: 'ceiling', lamp: ['bulb', 4, 0], lx: 50, lz: 14 },
+  ...JOURNEY_ZONES,                 // the journey down the Great Path (part 2 of the story), see journey.js
 ];
 export const Z = Object.fromEntries(ZONES.map((z, i) => [z.key, i]));
 for (const z of ZONES) for (const k of ['fm', 'wm', 'cm', 'sm']) z[k + 'i'] = z[k] ? M[z[k]] : 0;
@@ -50,8 +52,20 @@ export const STARTS = {
   wastes: { x: 0, z: 150, yaw: Math.PI },
 };
 
-export function buildLayout(grid) {
-  const beams = [], gates = [];
+export function buildLayout(grid0) {
+  const beams = [], gates = [], water = [];
+  // Everything below paints through `grid`, a view of the real grid that can be clipped to an x range: the journey
+  // and the infinite paths are painted one 32 m column at a time (lazily), each call keeping only its own slice.
+  let clip = null;
+  const inClip = (x) => !clip || (x >= clip[0] && x < clip[1]);
+  const grid = Object.create(grid0);
+  grid.paint = (x0, z0, x1, z1, o) => {
+    if (clip) { const a = Math.max(Math.min(x0, x1), clip[0]), b = Math.min(Math.max(x0, x1), clip[1]); if (b <= a) return; x0 = a; x1 = b; }
+    grid0.paint(x0, z0, x1, z1, o);
+  };
+  grid.addProp = (p) => (inClip(p.x) ? grid0.addProp(p) : p);
+  grid.addSign = (sg) => (inClip(sg.x) ? grid0.addSign(sg) : sg);
+  grid.addLight = (l) => (inClip(l.x) ? grid0.addLight(l) : l);
 
   /* ---- painting helpers ---- */
   const zoneOpts = (zk, extra = {}) => {
@@ -67,10 +81,12 @@ export function buildLayout(grid) {
   const emitters = [];
   const EMITS = { funnel: ['drip', 0.9], station: ['station', 1.4], vent: ['vent', 2.9], factory: ['factory', 1.2], machine: ['machine', 1.4] };
   const prop = (kind, x, z, rot = 0, extra = {}) => {
+    if (!inClip(x)) return { kind, x, z, y: 0 };
     const p = grid.addProp({ kind, x, z, rot, ...extra, y: extra.y ?? fl(x, z) });
     if (EMITS[kind]) emitters.push({ kind: EMITS[kind][0], x, y: p.y + EMITS[kind][1], z });
     return p;
   };
+  const emitter = (kind, x, y, z) => { if (inClip(x)) emitters.push({ kind, x, y, z }); };
 
   // Finds the wall face from (x, z) in direction (dx, dz) (max 6 m). Returns { x, z, rot } of a point on the face,
   // with rot turning a prop's local +z out of the wall.
@@ -95,11 +111,14 @@ export function buildLayout(grid) {
     return grid.addSign({ x: w.x - dx * 0.012, z: w.z - dz * 0.012, y: fl(x, z) + (extra.h ?? 1.55), rot: w.rot, key, params, tilt: (R(x, z, 9) - 0.5) * 0.08, kind: extra.kind || 'note' });
   };
   // Skylight in the ceiling: the cells get the SKY flag; a sky light source and a sunbeam are recorded.
-  function skylight(x0, z0, x1, z1, sun = 1, p = 1.1) {
+  // col: colour of the light coming in (dusk, night).
+  function skylight(x0, z0, x1, z1, sun = 1, p = 1.1, col = [1.0, 1.0, 1.05]) {
+    if (!inClip((x0 + x1) / 2)) return;
     grid.paint(x0, z0, x1, z1, { addFlags: F.SKY, where: (x, z) => grid.isOpen(x, z) });
     const top = grid.ceilAt((x0 + x1) / 2, (z0 + z1) / 2) + 0.55;
-    grid.addLight({ sky: true, x: (x0 + x1) / 2, z: (z0 + z1) / 2, x0, z0, x1, z1, y: top, r: 1.0, g: 1.0, b: 1.05, p, sun });
-    beams.push({ x0, z0, x1, z1, top, sun });
+    if (!Number.isFinite(top)) return;
+    grid.addLight({ sky: true, x: (x0 + x1) / 2, z: (z0 + z1) / 2, x0, z0, x1, z1, y: top, r: col[0], g: col[1], b: col[2], p, sun });
+    beams.push({ x0, z0, x1, z1, top, sun, col });
   }
   // Vibra-cable along a wall, split in 16 m pieces so it streams with the chunks.
   function cable(x, z0, z1, dx, frayed) {
@@ -234,11 +253,22 @@ export function buildLayout(grid) {
 
   /* =========================== THE GREAT PATH (02:34) and the WEST PATH (50:33) =========================== */
   // painted per 32 m column; static part now, the rest lazily as the player walks (infinite)
+  const H_ = { grid, room, solid, door, prop, onWall, note, skylight, cable, wallAt, fl, zoneOpts, emitter, R, Z, ZONES, F, M, H, CS, beams, water };
   function pathColumn(ci) {
     const east = ci >= 0, x0 = ci * CW, x1 = x0 + CW;
-    const xa = east ? Math.max(x0, 60) : x0, xb = east ? x1 : Math.min(x1, -60);
+    if (east) {
+      clip = [Math.max(x0, 60), x1];
+      if (clip[1] > clip[0]) paintJourney(H_, clip[0], clip[1]);
+      clip = null;
+      return;
+    }
+    plainColumn(ci, x0, x1, false);
+  }
+  // the plain endless hallway of the West Path
+  function plainColumn(ci, x0, x1, east) {
+    const xa = x0, xb = Math.min(x1, -60);
     if (xb <= xa) return;
-    const zk = east ? 'greatPath' : 'westPath';
+    const zk = 'westPath';
     solid(xa, -3, xb, 3);
     for (let x = xa; x < xb; x += 16) {
       const seg = Math.floor(x / 16);
@@ -270,9 +300,9 @@ export function buildLayout(grid) {
       room(zk, ax, side < 0 ? -6.5 : 2.5, ax + 4.5, side < 0 ? -2.5 : 6.5, { flags: 0 });
       door(zk, ax + 1.5, side < 0 ? -2.5 : 1.5, ax + 2.5, side < 0 ? -1.5 : 2.5);
     } else if (r < 0.62) prop('papers', ax, side * 0.6, 0, { seed: ci });
-    // distance notes: every 200 m stands for about a day of walking in the story
+    // distance notes: every 200 m stands for about a day of walking in the story (West Path only)
     const start = east ? 60 : -60;
-    for (let d = 200; ; d += 200) {
+    if (!east) for (let d = 200; ; d += 200) {
       const x = east ? start + d : start - d;
       if (east ? x >= xb : x < xa) break;
       if (east ? x < xa : x >= xb) continue;
@@ -281,9 +311,8 @@ export function buildLayout(grid) {
   }
   for (let ci = 1; ci <= 4; ci++) pathColumn(ci);
   for (let ci = -2; ci >= -5; ci--) pathColumn(ci);
-  note(66, 0, 0, -1, 'gp.n.greatPath');
   note(-66, 0, 0, 1, 'gp.n.westPath');
-  grid.lazy = (ci) => { if (ci >= 5 || ci <= -6) { pathColumn(ci); for (const cj of [-1, 0]) { const c = grid.chunk(ci, cj, false); if (c) placeLamps(c); } } };
+  grid.lazy = (ci) => { if (ci >= 5 || ci <= -6) { pathColumn(ci); for (let cj = -6; cj <= 5; cj++) { const c = grid.chunk(ci, cj, false); if (c) placeLamps(c); } } };
 
   /* =========================== THE WASTELANDS DOOR (12:28): steel door, a guard, the Vibra-cable =========================== */
   room('gate', -1.5, 156, 1.5, 164);
@@ -421,7 +450,7 @@ export function buildLayout(grid) {
     station: [1.1, 225, Math.PI, '15:38'], blue: [1.1, 392.5, Math.PI, '15:55'], chapel: [-4.5, 451, Math.PI / 2, '16:44'],
     cafeteria: [31.2, -9.2, -Math.PI / 2, '21:16'], holding: [53.2, 12.2, -Math.PI / 2, '25:21'], court: [55.2, 6.5, -Math.PI / 2, '35:33'],
     office: [-34.9, -13.4, -Math.PI / 2, '42:56'], deadEnd: [-112.5, 311, -Math.PI / 2, '45:47'], collector: [3.6, 3.6, -Math.PI / 2, '47:42'],
-    machine: [-20.6, -45.2, -Math.PI / 2, '49:15'], visit: [-25.5, -5.2, -Math.PI / 2, '53:10'], path: [326, 1.15, -Math.PI / 2, '02:34'],
+    machine: [-20.6, -45.2, -Math.PI / 2, '49:15'], visit: [-25.5, -5.2, -Math.PI / 2, '53:10'], path: [96, 1.15, -Math.PI / 2, '02:34'],
   };
   for (const [key, [x, z, face, time]] of Object.entries(PLAQUES)) {
     prop('pedestal', x, z, face);
@@ -431,7 +460,7 @@ export function buildLayout(grid) {
   /* ---- lamps everywhere (by zone rules) ---- */
   for (const c of grid.chunks.values()) placeLamps(c);
 
-  return { beams, gates, emitters };
+  return { beams, gates, emitters, water };
 
   // Places ceiling lamps on the zone's grid in one chunk (deterministic: some are dead, some flicker).
   function placeLamps(c) {

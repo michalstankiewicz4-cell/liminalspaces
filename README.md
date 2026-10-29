@@ -21,7 +21,7 @@ ES modules need a web server (they do not work from `file://`):
 ## The Great Path
 - The district of Luceron (Hub, First and Second Outer Ring, mine), the Wastelands (Vibra-cable, dense rooms, the room of doors, a dead end, the deep blue hall, the chapel) and the infinite Great Path and West Path. Start at the gate (the layered doors open), in the Hub or at the Wastelands door; the last position is saved.
 - Real 3D: drops, podiums, stairs, windows, tunnels. Procedural PBR materials, baked light with occlusion, sunbeams, flickering lamps, a flashlight that casts shadows (always in hand, F switches it), work lights (L), a map (M).
-- Where the story walks for hours or months the route is shortened, and a note on the wall says so. Every element with its story timestamp: [`docs/GREAT_PATH.md`](docs/GREAT_PATH.md). No people. Sound and scary events (power cuts, footsteps behind you, knocks, something above the ceiling…), a story guide (G) leading through the places in story order, teleport from the map. Standing in the sun under a skylight for too long burns. The story starts at the gate, as in the film, and stone statues with brass plaques show each scene where it happens.
+- Where the story walks for hours or months the route is shortened, and a note on the wall says so. Every element with its story timestamp: [`docs/GREAT_PATH.md`](docs/GREAT_PATH.md). No people. Sound and scary events (power cuts, footsteps behind you, knocks, something above the ceiling…), a story guide (G) leading through the places in story order, teleport from the map. Standing in the sun under a skylight for too long burns. The story starts at the gate, as in the film, and stone statues with brass plaques show each scene where it happens. Part 2 — the journey down the Great Path from the full video — runs ~2.9 km east to the round room, the surface and the ending.
 
 ## Menus and options
 Start screen: two tiles — Endless Liminal Spaces (Single Player: New walk, Continue walk, walk a seed; Multiplayer: Host, Join with a code, Same-browser room) and The Great Path (start at the gate, continue, Hub, Wastelands door) — and Options. Esc pauses (Resume / Invite player when hosting / Options / Quit). Options: Graphics (pixel filter, field of view, view distance, head bob, FPS counter), Controls (key bindings), Mouse, Audio (volume, fluorescent hum), Language (English / Polski), Privacy & data.
@@ -32,7 +32,7 @@ Peer-to-peer over WebRTC with no game server: the host creates an invite code, t
 ## Structure
 - `js/main.js` – entry point; `js/core/` – app shell, settings, storage, helpers,
 - `js/world/` – endless world: generator (`gen.js`), chunk meshing with baked lighting, textures, oddities, player, other players' avatars,
-- `js/story/` – the Great Path world: multi-level cell grid, PBR materials, mesher with baking, props, layout from the story, walker, flashlight model,
+- `js/story/` – the Great Path world: multi-level cell grid, PBR materials, mesher with baking, props, layout from the story (part 1 in `layout.js`, the journey in `journey.js`), walker, flashlight model, statues, water, the surface and the ending,
 - `js/render/` – pixel-art pipeline (low-res target + final shader), shared with Capital Quarantine,
 - `js/input/` – key bindings, keyboard and mouse look,
 - `js/audio/` – synthesised sound (Web Audio, no files),

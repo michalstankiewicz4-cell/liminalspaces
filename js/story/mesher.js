@@ -57,7 +57,7 @@ export class Emitter {
   box(mat, x0, y0, z0, x1, y1, z1, o = {}) {
     [x0, y0, z0, x1, y1, z1] = this.tf(x0, y0, z0, x1, y1, z1);
     if (o.solid && this.solids) this.solids.push([x0, y0, z0, x1, y1, z1]);
-    if (this.dry) return;
+    if (this.dry || o.hide) return;                 // hide: an invisible collider
     const seg = o.seg || 1;
     const br = (a, b) => { const n = Math.max(1, Math.ceil((b - a) / seg - 1e-6)), out = []; for (let k = 0; k <= n; k++) out.push((b - a) * k / n); return out; };
     const W = x1 - x0, Hh = y1 - y0, D = z1 - z0, skip = o.skip || '', uv = o.uv || 'world', g = o.glow || null;
@@ -262,7 +262,7 @@ export function meshChunk(grid, c, ctx) {
     const u0 = (type % 2) * 0.5, v0 = type < 2 ? 0.5 : 0;
     E.grid('decal', O, U, V, breaks(0, w, 1), breaks(0, hgt, 1), nrm, (x, y, z, a, b) => [u0 + a / w * 0.5, v0 + b / hgt * 0.5]);
   }
-  for (const r of rects((k) => (c.open[k] ? c.floor[k] + '|' + c.fm[k] : null))) {
+  for (const r of rects((k) => (c.open[k] && !(c.flags[k] & F.NOFLOOR) ? c.floor[k] + '|' + c.fm[k] : null))) {
     const X0 = x0 + r.i * CS, Z0 = z0 + r.j * CS, X1 = X0 + r.w * CS, Z1 = Z0 + r.h * CS, fm = name(c.fm[r.k]), y = c.floor[r.k];
     E.grid(fm, [X0, y, Z0], [1, 0, 0], [0, 0, 1], breaks(X0, X1), breaks(Z0, Z1), [0, 1, 0]);
     const wear = (WEAR[fm] || 0) * 0.5;
@@ -272,15 +272,16 @@ export function meshChunk(grid, c, ctx) {
       decal([gx + ox, y + 0.004, gz + oz], [1, 0, 0], [0, 0, 1], s, s, [0, 1, 0], rand4(777, gx, gz, 5) < 0.6 ? 0 : 2);
     }
   }
-  for (const r of rects((k) => (c.open[k] && !(c.flags[k] & F.SKY) ? c.ceil[k] + '|' + c.cm[k] : null))) {
+  for (const r of rects((k) => (c.open[k] && !(c.flags[k] & (F.SKY | F.OUT)) ? c.ceil[k] + '|' + c.cm[k] : null))) {
     const X0 = x0 + r.i * CS, Z0 = z0 + r.j * CS, X1 = X0 + r.w * CS, Z1 = Z0 + r.h * CS;
     E.grid(name(c.cm[r.k]), [X0, c.ceil[r.k], Z1], [1, 0, 0], [0, 0, -1], breaks(X0, X1), breaks(Z0, Z1, 1).map((v) => v), [0, -1, 0]);
   }
   // skylight glass panes (emissive), 0.55 m above the ceiling line
+  // (zones can tint the glass — dusk — or show the night sky with stars: zone.skyGlow, zone.night)
   const skyGlow = [4.2, 4.2, 4.4];
-  for (const r of rects((k) => (c.open[k] && (c.flags[k] & F.SKY) ? String(c.ceil[k]) : null))) {
-    const X0 = x0 + r.i * CS, Z0 = z0 + r.j * CS, X1 = X0 + r.w * CS, Z1 = Z0 + r.h * CS;
-    E.grid('sky', [X0, c.ceil[r.k] + 0.55, Z1], [1, 0, 0], [0, 0, -1], [0, X1 - X0], [0, Z1 - Z0], [0, -1, 0], 'local', skyGlow);
+  for (const r of rects((k) => (c.open[k] && (c.flags[k] & F.SKY) ? c.ceil[k] + '|' + c.zone[k] : null))) {
+    const X0 = x0 + r.i * CS, Z0 = z0 + r.j * CS, X1 = X0 + r.w * CS, Z1 = Z0 + r.h * CS, zd = zones[c.zone[r.k]] || {};
+    E.grid(zd.night ? 'skyNight' : 'sky', [X0, c.ceil[r.k] + 0.55, Z1], [1, 0, 0], [0, 0, -1], [0, X1 - X0], [0, Z1 - Z0], [0, -1, 0], 'local', zd.skyGlow || skyGlow);
   }
 
   /* vertical faces between neighbouring cells, merged into runs along each edge line */
@@ -302,7 +303,10 @@ export function meshChunk(grid, c, ctx) {
             const [nc, nk] = grid.at(gx, gz);
             const A = { f: c.floor[k], ce: c.ceil[k], wm: c.wm[k], sky: c.flags[k] & F.SKY, skirt: c.flags[k] & F.SKIRT };
             const parts = [];
-            if (!nc || !nc.open[nk]) parts.push([A.f, A.ce, A.wm, A.skirt ? 1 : 0]);
+            if (c.flags[k] & F.OUT) {
+              // open to the sky: only the roof edge above a lower neighbour (0.6 m of building above its ceiling)
+              if (nc && nc.open[nk] && nc.ceil[nk] < A.ce) parts.push([Math.max(nc.ceil[nk], A.f), Math.min(A.ce, nc.ceil[nk] + 0.6), nc.sm[nk] || A.wm, 0]);
+            } else if (!nc || !nc.open[nk]) parts.push([A.f, A.ce, A.wm, A.skirt ? 1 : 0]);
             else {
               const bf = nc.floor[nk], bc = nc.ceil[nk], sm = nc.sm[nk] || A.wm;
               if (bf > A.f + 0.001) parts.push([A.f, Math.min(bf, A.ce), sm, 0]);

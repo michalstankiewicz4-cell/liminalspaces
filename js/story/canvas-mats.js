@@ -55,5 +55,13 @@ export function addCanvasMaterials(mats) {
     for (let k = 0; k < 5; k++) { let x = 300 + rnd() * 160, y = 270; g.lineWidth = 2.5 - k * 0.3; g.beginPath(); g.moveTo(x, y); for (let s = 0; s < 14; s++) { x += (rnd() - 0.5) * 30; y += 8 + rnd() * 10; g.lineTo(Math.max(260, Math.min(508, x)), Math.min(508, y)); } g.stroke(); }
   });
   mats.byName.decal = new THREE.MeshStandardMaterial({ map: decalTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4, roughness: 0.9, vertexColors: true });
-  for (const k of ['screen', 'symbol', 'mapsheet', 'water', 'decal', 'chalkboard']) mats.scale[k] = 1;
+  // night sky through the skylight glass: deep blue with stars (story 62:00, 72:41 "the light of the stars")
+  const starTex = canvasTexture(256, 256, (g, w, h) => {
+    const gr = g.createLinearGradient(0, 0, w, h); gr.addColorStop(0, '#0b1430'); gr.addColorStop(1, '#141c3c'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    const rnd = ((s) => () => (s = (s * 16807) % 2147483647) / 2147483647)(11);
+    for (let k = 0; k < 140; k++) { const b = 120 + rnd() * 135, r = rnd() < 0.1 ? 1.4 : 0.7; g.fillStyle = `rgb(${b},${b},${Math.min(255, b + 20)})`; g.beginPath(); g.arc(rnd() * w, rnd() * h, r, 0, 6.3); g.fill(); }
+  });
+  starTex.wrapS = starTex.wrapT = THREE.RepeatWrapping;
+  mats.byName.skyNight = new THREE.MeshBasicMaterial({ map: starTex, vertexColors: true });
+  for (const k of ['screen', 'symbol', 'mapsheet', 'water', 'decal', 'chalkboard', 'skyNight']) mats.scale[k] = 1;
 }

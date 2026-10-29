@@ -13,6 +13,7 @@ export const ACTIONS = [
   { id: 'workLights', keys: ['KeyL', null] },
   { id: 'map', keys: ['KeyM', null] },
   { id: 'guide', keys: ['KeyG', null] },
+  { id: 'use', keys: ['KeyE', null] },
   { id: 'toggleHud', keys: ['KeyH', null] },
 ];
 export const RESERVED = new Set(['Escape']);

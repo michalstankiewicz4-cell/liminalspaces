@@ -18,12 +18,24 @@ const BEDS = {
   blue:       [0.3, 0.3, 0.35, 500, 0.3, 0.35, 0.1, 'hall'],
   chapel:     [0.0, 0.0, 0.25, 350, 0.55, 0.9, 0.12, 'huge'],
   path:       [0.4, 0.5, 0.45, 650, 0.25, 0.1, 0.08, 'hall'],
+  // the journey: no lamps, so no mains hum — just the air of the hallway; silence at night and in the dark
+  journey:    [0.0, 0.0, 0.42, 600, 0.18, 0.0, 0.05, 'hall'],
+  silence:    [0.0, 0.0, 0.16, 350, 0.05, 0.0, 0.02, 'hall'],
+  columns:    [0.0, 0.0, 0.3, 380, 0.12, 0.18, 0.05, 'huge'],
+  abyss:      [0.0, 0.0, 0.3, 500, 0.9, 0.0, 0.25, 'huge'],
+  district:   [0.15, 0.25, 0.4, 600, 0.1, 0.0, 0.05, 'small'],
+  surface:    [0.0, 0.0, 0.0, 500, 2.6, 0.0, 0.0, 'small'],
 };
 const ZONE_BED = {
   plaza: 'quiet', cafeteria: 'quiet', guild: 'quiet', seniorOffice: 'quiet', library: 'quiet', machine: 'quiet', court: 'quiet',
   gardens: 'quiet', market: 'quiet', offices: 'quiet', booth: 'quiet', factory: 'factory', avenue: 'hall',
   ring1: 'ring', ring2: 'ring', mine: 'mine', gate: 'wastes', wastes: 'wastes', cluster: 'wastes', doors: 'wastes', deadend: 'ring',
-  blue: 'blue', chapel: 'chapel', greatPath: 'path', westPath: 'path',
+  blue: 'blue', chapel: 'chapel', greatPath: 'journey', westPath: 'path',
+  gpCable: 'journey', gpDusk: 'journey', gpNight: 'silence', gpMorning: 'journey', gpNiches: 'journey', gpCracks: 'journey', gpCarpet: 'journey',
+  gpCross: 'journey', gpLongNight: 'silence', gpFloors: 'journey', gpSkylights: 'journey', gpTurn: 'journey', gpBlackout: 'silence', gpLight: 'journey',
+  gpYear: 'journey', gpFork: 'journey', gpHalf: 'journey', gpBar: 'journey', gpOffset: 'journey', gpGlass: 'journey', gpCarpet2: 'journey',
+  gpGrate: 'abyss', gpColumns: 'columns', gpDistrict: 'district', gpShaft: 'journey', gpDeep: 'silence', gpSqueeze: 'silence', gpEmerge: 'journey',
+  gpBlack: 'journey', gpRound: 'columns', gpMirror: 'columns', gpBeyond: 'journey', surface: 'surface',
 };
 const SPACES = { small: [0.6, 0.18], hall: [1.9, 0.3], huge: [5.5, 0.55], damp: [1.2, 0.22] };
 // footstep sounds per floor material: [filter type, freq, Q, duration, gain, click]
@@ -34,6 +46,7 @@ const STEPS = {
 const MAT_STEP = {
   carpet: 'carpet', carpetGrey: 'carpet', tile: 'tile', stone: 'tile', plaster: 'tile', whitepanel: 'tile', concrete: 'grit', subfloor: 'grit',
   soil: 'grit', rock: 'grit', earth: 'grit', steel: 'metal', agarite: 'metal', parquet: 'wood', wood: 'wood', drywall: 'grit',
+  carpetTaupe: 'carpet', blackTile: 'tile', boards: 'wood', dark: 'metal',
 };
 
 export function createPathAudio(settings) {
@@ -166,6 +179,43 @@ export function createPathAudio(settings) {
       const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = 220; o.connect(g); o.start();
       return { stop: () => o.stop() };
     },
+    // water rushing under the glass path (89:54) and the ocean through the opening (90:41)
+    water(pn) {
+      const s = ctx.createBufferSource(); s.buffer = brown; s.loop = true;
+      const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900;
+      const s2 = ctx.createBufferSource(); s2.buffer = pink; s2.loop = true;
+      const f2 = ctx.createBiquadFilter(); f2.type = 'bandpass'; f2.frequency.value = 1500; f2.Q.value = 0.7;
+      const g = ctx.createGain(); g.gain.value = 0.22; s.connect(f).connect(g); s2.connect(f2).connect(g); g.connect(pn);
+      s.start(0, Math.random() * 3); s2.start(0, Math.random() * 3);
+      return { stop: () => { s.stop(); s2.stop(); } };
+    },
+    surf(pn) {
+      const s = ctx.createBufferSource(); s.buffer = brown; s.loop = true;
+      const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 500;
+      const g = ctx.createGain(); g.gain.value = 0.25;
+      const l = ctx.createOscillator(); l.frequency.value = 0.12; const lg = ctx.createGain(); lg.gain.value = 0.2; l.connect(lg).connect(g.gain); l.start();
+      s.connect(f).connect(g).connect(pn); s.start(0, Math.random() * 3);
+      return { stop: () => { s.stop(); l.stop(); } };
+    },
+    // the howling wind through the grate (91:07)
+    abyss(pn) {
+      const s = ctx.createBufferSource(); s.buffer = pink; s.loop = true;
+      const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 380; f.Q.value = 3;
+      const l = ctx.createOscillator(); l.frequency.value = 0.09; const lg = ctx.createGain(); lg.gain.value = 160; l.connect(lg).connect(f.frequency); l.start();
+      const g = ctx.createGain(); g.gain.value = 0.5; s.connect(f).connect(g).connect(pn); s.start(0, Math.random() * 3);
+      return { stop: () => { s.stop(); l.stop(); } };
+    },
+    // muffled commotion in an empty district (92:50): murmurs and thumps that stop when you come close
+    commotion(pn, e) {
+      const g = ctx.createGain(); g.gain.value = 0; g.connect(pn); e.out = g;
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 700; lp.connect(g);
+      e.tick = (t) => {
+        for (let k = 0; k < 4 + Math.random() * 6; k++) burst(lp, t + k * 0.18, { type: 'bandpass', f: 250 + Math.random() * 400, q: 4, dur: 0.15 + Math.random() * 0.2, gain: 0.5 });
+        if (Math.random() < 0.4) tone(lp, t + 1, { f: 80, f2: 40, dur: 0.2, gain: 0.6 });
+        return 1.2 + Math.random() * 3;
+      };
+      e.near = (d) => g.gain.setTargetAtTime(Math.max(0, Math.min(1, (d - 7) / 6)) * 0.5, ctx.currentTime, 0.15);
+    },
     vent(pn) {
       const s = ctx.createBufferSource(); s.buffer = pink; s.loop = true;
       const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 700; f.Q.value = 0.6;
@@ -188,6 +238,7 @@ export function createPathAudio(settings) {
         emit.set(e, s);
       }
       if (s.tick && now() > s.next - 0.1) s.next = Math.max(s.next, now()) + s.tick(Math.max(s.next, now()));
+      if (s.near) s.near(d);
     }
     for (const [e, s] of emit) if (!keep.has(e)) { if (s.stop) s.stop(); later(s.pn, 3000); emit.delete(e); }
   }

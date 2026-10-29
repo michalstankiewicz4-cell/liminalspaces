@@ -25,3 +25,5 @@
 .journal li button:hover{color:#fff4c8;text-decoration:underline}
 .journal li.cur{color:#ffd27a}
 .journal .route{color:#948c74;font-size:11px}
+#prompt{position:fixed;left:50%;top:68%;transform:translateX(-50%);z-index:3;color:#fff4c8;background:rgba(10,9,6,.55);border:1px solid #6d6440;padding:6px 14px;pointer-events:none;letter-spacing:.04em}
+#fade{position:fixed;inset:0;z-index:4;pointer-events:none;opacity:0}

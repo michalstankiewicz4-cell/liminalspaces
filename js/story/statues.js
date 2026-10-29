@@ -52,7 +52,7 @@ function edgesOf(geo) {
 }
 
 /* ---- figures: s = size (adult 1, teen 0.9, child 0.76), g = girth ---- */
-function humanoid(o, mat, line) {
+export function humanoid(o, mat, line) {
   const s = o.s || 1, g = o.g || 1, pose = P[o.pose] || P.stand;
   const root = new THREE.Group();
   const add = (parent, geo, x, y, z, sx = 1, sy = 1, sz = 1) => {
@@ -210,7 +210,7 @@ export const TABLEAUX = [
     [1.6, -0.5, W, { name: 'adam', s: 0.98, g: 1.3, pose: 'crossed' }],
     [1.6, 0.6, W, { name: 'nestor', s: 0.86, g: 0.85, pose: 'talk' }],
   ] },
-  { step: 'path', x: 330, z: 0, figs: [
+  { step: 'path', x: 100, z: 0, figs: [
     [0, 0, E, { name: 'rudon', s: 0.92, pose: 'walk', items: ['backpack', 'skateboard'] }],
   ] },
 ];

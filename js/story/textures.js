@@ -80,6 +80,22 @@ const GEN = {
     };
   },
   carpetGrey(seed) { return GEN.carpet(seed, [0.36, 0.37, 0.4]); },
+  carpetTaupe(seed) { return GEN.carpet(seed, [0.42, 0.37, 0.31]); },
+  // black square tiles, polished (they reflect the sunlight — story 105:22)
+  blackTile(seed) {
+    const n = fbm(seed, 8, 3);
+    return (u, v, o) => {
+      const g = Math.min(lineDist(u, 2), lineDist(v, 2)), grout = g < 0.012;
+      const k = grout ? 0.5 : 1 + (n(u, v) - 0.5) * 0.08;
+      o.r = (grout ? 0.12 : 0.03) * k; o.g = (grout ? 0.12 : 0.032) * k; o.b = (grout ? 0.12 : 0.036) * k;
+      o.h = grout ? 0.1 : 0.85; o.rough = grout ? 0.9 : 0.06 + n(u, v) * 0.05; o.metal = grout ? 0 : 0.35;
+    };
+  },
+  // old floorboards: long planks, worn (story 73:44)
+  boards(seed) {
+    const w = GEN.wood(seed, [0.5, 0.36, 0.22]), wear = fbm(seed + 9, 3, 3);
+    return (u, v, o) => { w(u, v, o); const k = 0.9 + wear(u, v) * 0.2; o.r *= k; o.g *= k; o.b *= k; o.rough = Math.min(1, o.rough + 0.15); };
+  },
   ceiling(seed) {
     const pits = lattice(seed, 128, 128), mott = fbm(seed + 4, 4, 3), stain = fbm(seed + 6, 2, 3);
     return (u, v, o) => {
@@ -288,10 +304,13 @@ export const MAT_DEFS = {
   plastic: ['plastic', 1, 64, 0.2],
   dark: ['dark', 1, 64, 0.6],
   brass: ['brass', 0.5, 128, 0.5],
+  carpetTaupe: ['carpetTaupe', 1.5, 256, 1.2],
+  blackTile: ['blackTile', 1.0, 256, 0.6],
+  boards: ['boards', 3.2, 256, 1.0],
 };
 // Metres per texture repeat for every material name (usable without creating materials, e.g. in the worker).
 export const MAT_SCALE = Object.fromEntries([...Object.entries(MAT_DEFS).map(([k, d]) => [k, d[1]]),
-  ...['lamp', 'lampFlicker', 'lampDead', 'sky', 'bulb', 'glow', 'glass', 'screen', 'symbol', 'mapsheet', 'water', 'decal', 'chalkboard'].map((k) => [k, 1])]);
+  ...['lamp', 'lampFlicker', 'lampDead', 'sky', 'skyNight', 'bulb', 'glow', 'glass', 'screen', 'symbol', 'mapsheet', 'water', 'decal', 'chalkboard'].map((k) => [k, 1])]);
 // Index order used in the cell grid (fm / wm / cm / sm). 0 = unset.
 export const MAT_NAMES = ['none', ...Object.keys(MAT_DEFS)];
 export const M = Object.fromEntries(MAT_NAMES.map((n, i) => [n, i]));
