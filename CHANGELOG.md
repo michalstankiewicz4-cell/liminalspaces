@@ -4,6 +4,14 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new version (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.4.0] - 2026-10-29
+### Added
+- The Great Path: **scratching at the skylights** (story 04:17). Now and then something scratches at a skylight near you: synthesised claw strokes, taps and knocks, positioned at that skylight (HRTF) and muffled by the glass; a dark shape slides over the glass and the sunbeam dims. More often along the Great Path and the West Path. It is the only sound in this world; Options > Audio can turn it off.
+### Fixed
+- Ceiling tiles: the water stains were too dark and read as silhouettes; now subtle.
+### Added (continued)
+- **The sun under the skylights** (story 05:40): standing in a sun square slowly burns — the picture warms up, the air shimmers, then it bleaches to white; warnings appear and you slow down. It wears off in the shade.
+
 ## [0.3.0] - 2026-10-29
 ### Fixed
 - Mouse look: sudden jumps of tens of degrees. The pointer lock now asks for raw (unadjusted) mouse movement where the browser supports it, ignores the first events after locking and drops single events that are far larger than the recent movement (a known Chrome pointer-lock glitch).

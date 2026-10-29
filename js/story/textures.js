@@ -87,7 +87,7 @@ const GEN = {
       const p = pits(u * 128, v * 128), m = mott(u, v);
       const pit = p > 0.8 ? (p - 0.8) * 5 : 0;
       let k = 0.94 + (m - 0.5) * 0.08 - pit * 0.12;
-      if (stain(u, v) > 0.72) { k *= 0.86; }
+      const st = stain(u, v); if (st > 0.74) k *= 1 - smooth(0.74, 0.86, st) * 0.07;
       const groove = g < 0.012;
       if (groove) k *= 0.55; else if (g < 0.02) k *= 0.85;
       o.r = 0.86 * k; o.g = 0.845 * k; o.b = 0.80 * k;

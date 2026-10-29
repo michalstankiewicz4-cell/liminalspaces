@@ -19,6 +19,7 @@ import { VERSION } from '../version.js';
 import { createWalker } from '../story/walker.js';
 import { createHand } from '../story/hand.js';
 import { createMapUi } from '../ui/map.js';
+import { createScratches } from '../story/sounds.js';
 
 const MENU_SEED = 20251031;
 const TITLE = 'Liminal Spaces — Endless Liminal Space Exploration Game';
@@ -51,6 +52,8 @@ export function createApp({ appEl, uiEl }) {
   // Great Path world: created the first time it is opened (textures and layout take a moment)
   let story = null, walker = null, kind = 'endless';
   const hand = createHand();
+  const scratches = createScratches(settings);
+  let sun = 0, sunWarned = 0;                 // sun exposure under skylights (0..1)
   hand.group.visible = false;
   camera.add(hand.group, hand.spot, hand.spot.target);
   hand.spot.visible = false;
@@ -162,7 +165,9 @@ export function createApp({ appEl, uiEl }) {
     hand.setOn(true);
     mode = 'play'; paused = false; lastDist = 0;
     input.clear(); menu.hide(); mapUi.show(true); mapUi.setOpen(false);
-    audio.setMuted(true);                                          // no sound in this world for now
+    audio.setMuted(true);                                          // the only sound here: scratching at the skylights
+    scratches.unlock(); scratches.resume(); scratches.reset(where === 'continue' ? 15 : 25);
+    sun = 0; sunWarned = 0; pipe.heat = 0;
     input.lock();
     const k = settings.data.keys;
     hud.setHint(t('hud.pathHint', { move: moveLabel(k), light: firstKey(k, 'flashlight'), work: firstKey(k, 'workLights'), map: firstKey(k, 'map') }), 14);
@@ -174,6 +179,7 @@ export function createApp({ appEl, uiEl }) {
     closeSession();
     useWorld('endless');
     mapUi.show(false); hud.setSign(null);
+    scratches.suspend(); story && story.scratchVisual(null); pipe.heat = 0;
     mode = 'menu'; paused = false;
     flash.visible = false;
     seed = MENU_SEED;
@@ -188,13 +194,14 @@ export function createApp({ appEl, uiEl }) {
   function pause() {
     if (mode !== 'play' || paused) return;
     mapUi.setOpen(false);
+    if (kind === 'path') scratches.suspend();
     paused = true; input.clear(); input.unlock();
     rememberWalk();
     menu.show('pause');
   }
   function resume() {
     paused = false; input.clear(); menu.hide();
-    audio.unlock(); if (kind === 'path') audio.setMuted(true);
+    audio.unlock(); if (kind === 'path') { audio.setMuted(true); scratches.resume(); }
     input.lock();
   }
 
@@ -363,6 +370,14 @@ export function createApp({ appEl, uiEl }) {
   let lightT = 0;
   function pathFrame(dt, t0, now, walking) {
     const ctl = walking ? { look: input.takeLook(), turn: input.turnAxis(), move: input.moveVector(), sprint: input.isDown('sprint'), jump: input.isDown('jump') } : (input.takeLook(), still);
+    // the sun through the glass: standing in it slowly burns (story 05:40-05:58: don't sit under skylights too long)
+    const sunHere = mode === 'play' ? story.sunAt(walker.x, walker.z) : 0;
+    if (walking) sun = sunHere > 0 ? Math.min(1, sun + dt * sunHere / 14) : Math.max(0, sun - dt / 5);
+    pipe.heat = sun;
+    if (sunHere > 0 && sun > 0.3 && sunWarned < 1) { sunWarned = 1; hud.toast(t('gp.sunWarm'), 4); }
+    if (sunHere > 0 && sun > 0.75 && sunWarned < 2) { sunWarned = 2; hud.toast(t('gp.sunBurn'), 4); }
+    if (sun < 0.1) sunWarned = 0;
+    if (sun > 0.6) { ctl.move = { x: ctl.move.x * (1.6 - sun), z: ctl.move.z * (1.6 - sun) }; ctl.sprint = false; }
     walker.update(dt, ctl, settings.data.mouse);
     if (walking) { progress.dist += walker.dist - lastDist; lastDist = walker.dist; }
     story.stream(walker.x, walker.z, 1);
@@ -375,6 +390,11 @@ export function createApp({ appEl, uiEl }) {
     if (lightT <= 0) { lightT = 0.2; hand.setLight(story.lightAt(walker.x, eye.y - 0.3, walker.z) * (story.workLights ? 2 : 1) + (hand.spot.visible ? 0.15 : 0)); }
     saveT += dt;
     if (saveT > 5) { saveT = 0; if (walking) rememberWalk(); }
+    // scratching at the skylights (more often along the Great Path and the West Path)
+    camera.updateMatrixWorld();
+    const zk = (story.zones[story.zone] || {}).key;
+    scratches.update(walking ? dt : 0, camera, () => story.pickSkylight(walker), zk === 'greatPath' || zk === 'westPath');
+    story.scratchVisual(scratches.active);
     pipe.render(story.scene, camera);
     mapUi.update(dt, walker);
     // reading notes
@@ -402,7 +422,7 @@ export function createApp({ appEl, uiEl }) {
   requestAnimationFrame(frame);
   Object.defineProperties(app, Object.getOwnPropertyDescriptors({
     world, player, camera, pipe, audio, goMenu, startWalk, startPath, pause, mapUi, hand,
-    get story() { return story; }, get walker() { return walker; }, get kind() { return kind; },
+    get story() { return story; }, scratches, get walker() { return walker; }, get kind() { return kind; },
     get mode() { return mode; }, get paused() { return paused; }, get session() { return session; }, get seed() { return seed; },
   }));
   return app;

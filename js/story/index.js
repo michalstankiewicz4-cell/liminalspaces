@@ -111,7 +111,11 @@ export function createStory(renderer) {
     root.add(e.group);
     loaded.set(key(ci, cj), e);
   }
-  function unload(k) { const e = loaded.get(k); root.remove(e.group); disposeSigns(e.group); disposeGroup(e.group); loaded.delete(k); }
+  function unload(k) {
+    const e = loaded.get(k);
+    e.group.traverse((o) => { if (o.userData.beam) o.userData.beam.mesh = null; });
+    root.remove(e.group); disposeSigns(e.group); disposeGroup(e.group); loaded.delete(k);
+  }
   // Builds missing chunks nearest first: in the worker (2 in flight) or, when sync / no worker, `budget` per call
   // on the main thread. Drops far chunks.
   function stream(x, z, budget = 1, sync = false) {
@@ -207,6 +211,8 @@ export function createStory(renderer) {
     geo.rotateY(Math.PI / 4);
     const m = new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 0.93, 0.78).multiplyScalar(0.11 * b.sun), alphaMap: beamAlpha, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
     const mesh = new THREE.Mesh(geo, m);
+    b.mesh = mesh; b.base = 0.11 * b.sun; b.floor = floor;
+    g.userData.beam = b;
     mesh.scale.set(w, h, d);
     mesh.position.set((b.x0 + b.x1) / 2, floor + h / 2, (b.z0 + b.z1) / 2);
     mesh.renderOrder = 3;
@@ -369,6 +375,56 @@ export function createStory(renderer) {
     return best;
   }
 
+  /* ---- skylights: sun exposure and the scratching episodes ---- */
+  // Sun strength at a point: > 0 when standing in a sun square under a skylight.
+  function sunAt(x, z) {
+    if (!(grid.flagsAt(x, z) & F.SKY)) return 0;
+    for (const b of beams) if (x >= b.x0 && x <= b.x1 && z >= b.z0 && z <= b.z1) return b.sun;
+    return 0.8;
+  }
+  // A loaded skylight near the player (within 18 m), chosen at random with nearer ones more likely.
+  function pickSkylight(pos) {
+    const c = [];
+    for (const b of beams) {
+      if (!b.mesh) continue;
+      const cx = (b.x0 + b.x1) / 2, cz = (b.z0 + b.z1) / 2, d = Math.hypot(cx - pos.x, cz - pos.z);
+      if (d < 18 && d > 2) c.push([b, 1 / (d + 3)]);
+    }
+    if (!c.length) return null;
+    let r = Math.random() * c.reduce((s, e) => s + e[1], 0);
+    let pick = c[0][0];
+    for (const [b, w] of c) { r -= w; if (r <= 0) { pick = b; break; } }
+    return { x: (pick.x0 + pick.x1) / 2, y: pick.top, z: (pick.z0 + pick.z1) / 2, beam: pick };
+  }
+  // A dark shape pressed against the glass while something scratches at it; the sunbeam dims.
+  const shapeTex = canvasTexture(256, 256, (g) => {
+    g.filter = 'blur(6px)';
+    g.fillStyle = 'rgba(0,0,0,.95)';
+    g.beginPath(); g.ellipse(128, 150, 46, 56, 0, 0, Math.PI * 2); g.fill();
+    for (let k = 0; k < 4; k++) {
+      const a = -0.75 + k * 0.5;
+      g.save(); g.translate(128 + Math.sin(a) * 40, 120 - Math.cos(a) * 30); g.rotate(a);
+      g.beginPath(); g.ellipse(0, -48, 9, 50, 0, 0, Math.PI * 2); g.fill(); g.restore();
+    }
+    g.filter = 'none';
+  });
+  const shape = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), new THREE.MeshBasicMaterial({ map: shapeTex, transparent: true, depthWrite: false, opacity: 0, fog: false, color: 0x000000 }));
+  shape.rotation.x = Math.PI / 2; shape.renderOrder = 4; shape.visible = false;
+  scene.add(shape);
+  let dimmed = null;
+  function scratchVisual(ep) {
+    if (dimmed && dimmed.mesh) dimmed.mesh.material.color.setRGB(1, 0.93, 0.78).multiplyScalar(dimmed.base);
+    dimmed = null;
+    if (!ep) { shape.visible = false; return; }
+    const { sky, t, dur } = ep, b = sky.beam;
+    const k = Math.max(0, Math.min(1, t / 0.8, (dur - t) / 1.2));
+    shape.visible = k > 0;
+    shape.material.opacity = k;
+    shape.position.set(sky.x + Math.sin(t * 0.9) * 0.35, sky.y - 0.03, sky.z + Math.cos(t * 0.6) * 0.25);
+    shape.rotation.z = Math.sin(t * 0.4) * 0.5;
+    if (b && b.mesh) { dimmed = b; b.mesh.material.color.setRGB(1, 0.93, 0.78).multiplyScalar(b.base * (1 - 0.45 * k)); }
+  }
+
   // baked light at a point (for the hand model and other dynamic things), cached baker per chunk
   const bakers = new Map();
   function lightAt(x, y, z) {
@@ -384,7 +440,7 @@ export function createStory(renderer) {
     get zone() { return zone; }, get visited() { return visited; },
     set onZone(fn) { onZone = fn; },
     get loadedCount() { return loaded.size; },
-    stream, preload, preloadAll, update, blocked, support, signNear, relabel,
+    stream, preload, preloadAll, update, sunAt, pickSkylight, scratchVisual, blocked, support, signNear, relabel,
     setGate, startGate() { setGate(false); gateT = 0; },
     setWorkLights, get workLights() { return workLights; },
     resetVisits() { visited.clear(); zone = 0; },

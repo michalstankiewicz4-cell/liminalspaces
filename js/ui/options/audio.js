@@ -9,6 +9,7 @@ export function buildAudio({ settings }) {
   const rows = [
     slider({ label: 'audio.volume', range: RANGES.volume, get: () => a().volume, set: set('volume'), fmt: (v) => Math.round(v * 100) + '%' }),
     checkbox({ label: 'audio.hum', get: () => a().hum, set: set('hum') }),
+    checkbox({ label: 'audio.scratch', get: () => a().scratch, set: set('scratch') }),
   ];
   settings.onChange(() => rows.forEach((r) => r.refresh()));
   return h('div', { class: 'tabbody' }, rows.map((r) => r.el), h('div', { class: 'btns' }, btn('audio.reset', () => settings.resetSection('audio'))));

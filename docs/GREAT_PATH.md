@@ -27,10 +27,10 @@ The story's distances are far too long to walk in a game (hours, days, months). 
 | 01:47 | The judge, the court | West Court of Luceron: parquet hall, judge's desk, benches (`court` zone) |
 | 02:34 | Long yellow-beige hallway, skylights let squares of sunlight onto the floor | The Great Path: 3 m wide hall, skylight every 8 m with a sun square and a dusty sunbeam |
 | 03:25 | The Great Path runs along the right (east) half of the district | Starts at the court gate at x = 60 and runs east forever |
-| 04:23 | Stories of creatures scratching at the skylights | Not built (no creatures); see TODO |
+| 04:23 | Stories of creatures scratching at the skylights | Scratching episodes at a skylight near the player (sound positioned at the skylight, muffled by the glass), a dark shape on the glass and a dimmed sunbeam; nothing is ever seen clearly (`story/sounds.js`, `scratchVisual` in `story/index.js`) |
 | 05:03 | Scavengers break down walls and take the lumber | Ring 1: open area with pillars, wall stubs, stud frames, lumber piles, drywall rubble |
 | 05:20 | A flat endless maze of hallways and skylights | Overall structure; skylights in avenues, gardens, paths |
-| 05:52 | Don't sit under skylights for too long (sun radiation) | Sunlight only falls through glass; not a mechanic yet (TODO) |
+| 05:52 | Don't sit under skylights for too long (sun radiation) | Sun exposure: standing in a sun square warms, shimmers and bleaches the view, warns and slows you; recovers in the shade (`heat` in the pixel pipeline, exposure in `core/app.js`) |
 | 06:26 | Variations noted in a sketch book: a rogue hole in a wall, a piece cut out of the carpet | Dense rooms: a hole through a wall at waist height; a patch of carpet cut out to the subfloor |
 | 07:10 | Luceron: four rings; the Hub has cafeterias, tailors, factories, vendors, gardens, offices, everything within half an hour on foot | Hub: plaza, avenues, cafeteria, market with a tailor, factory, gardens, offices |
 | 07:40 | First Outer Ring: population falls off; walls knocked down a mile out, then mining in one direction | Ring 1 (`ring1`), mine entrance in its west part, tunnel heading away from the Hub |
@@ -63,7 +63,5 @@ The story's distances are far too long to walk in a game (hours, days, months). 
 | 52:50 | A skateboard allowed for the journey | Not placed yet |
 
 ## Not built yet (ideas)
-- Creatures scratching at the skylights (sounds/shadows) — no people and no sound for now.
-- Sun exposure under skylights as a mechanic.
 - Districts' homes, hospital area, holding rooms; Rudon's backpack and skateboard at the gate.
 - The theory that the Great Path and the West Path curve and meet.

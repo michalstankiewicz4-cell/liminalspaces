@@ -7,7 +7,7 @@ export const DEFAULTS = {
   lang: 'en',
   gfx: { pixelH: 200, levels: 7, dither: 0.8, edge: 0.6, bright: 1.15, fov: 75, viewDist: 2, headBob: true, showFps: false, fine: true, grain: true },
   mouse: { sens: 1, invertY: false },
-  audio: { volume: 0.6, hum: true },
+  audio: { volume: 0.6, hum: true, scratch: true },
   hud: { show: true },
   net: { name: '', stun: false },
 };
@@ -33,7 +33,7 @@ export function sanitize(raw) {
       headBob: g.headBob !== false, showFps: g.showFps === true, fine: g.fine !== false, grain: g.grain !== false,
     },
     mouse: { sens: num(m.sens, 'sens', 1), invertY: m.invertY === true },
-    audio: { volume: num(a.volume, 'volume', D.audio.volume), hum: a.hum !== false },
+    audio: { volume: num(a.volume, 'volume', D.audio.volume), hum: a.hum !== false, scratch: a.scratch !== false },
     hud: { show: u.show !== false },
     net: { name: cleanName(n.name), stun: n.stun === true },
     keys: sanitizeKeys(r.keys),

@@ -152,7 +152,7 @@ export default {
   'path.hub': 'Zacznij w Hubie',
   'path.wastes': 'Zacznij przy drzwiach na Pustkowia',
   'path.keys': 'Mysz: rozglądanie · WASD: chodzenie · Shift: bieg · Spacja: skok · F: latarka · L: światła robocze · M: mapa · Esc: pauza',
-  'path.credit': 'Świat fanowski na podstawie opowieści „Rudon’s Plane – Part 1” kanału Solar Sands (YouTube). Bez ludzi, na razie bez dźwięku.',
+  'path.credit': 'Świat fanowski na podstawie opowieści „Rudon’s Plane – Part 1” kanału Solar Sands (YouTube). Bez ludzi. Jedyny dźwięk: coś drapie w świetliki.',
   'path.loading': 'Budowanie Luceronu…',
   'path.failed': 'Nie udało się zbudować świata (szczegóły w konsoli przeglądarki).',
   'pause.pathInfo': 'Miejsce: {zone} (opowieść {time})\nPrzebyto: {m} m · odkryte miejsca: {n}/{total}',
@@ -216,4 +216,7 @@ export default {
   'gp.n.deadEnd': 'ŚLEPY ZAUŁEK\nGoła ściana. Za pierwszą warstwą jest tylko ten sam metal co w suficie: Agaryt.',
   'gp.n.cableEnd': 'TU KOŃCZY SIĘ LINA\nDalej nie ma stacji. Przed tobą światło robi się głęboko niebieskie.',
   'gp.n.chapel': 'KAPLICA\nOgromna sala. Podłoga opada o jakieś 20 stóp, podesty każdej wysokości wyrastają z podłogi i zwisają z sufitu, a snop słońca pada na mapę budowniczych. Schody z podestów po lewej prowadzą w dół.',
+  'gp.sunWarm': 'Robi się gorąco. Słońce przez szybę nie jest bezpieczne na długo.',
+  'gp.sunBurn': 'Pali! Zejdź ze światła.',
+  'audio.scratch': 'Wielka Ścieżka: drapanie w świetliki',
 };

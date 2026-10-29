@@ -101,6 +101,7 @@ See [`MULTIPLAYER.md`](MULTIPLAYER.md). In short: the session shares only the se
 - **Rendering**: `PixelPipeline` with `tone: 1` (ACES) and grain; with “detailed rendering” on, the render height is 360–720 px with 40 colour levels and light dithering.
 - **Zones and journal**: each cell has a zone; entering a new one shows its name and story timestamp and adds it to the journal; cells seen (line of sight, 15 m) are drawn on the map.
 - **Notes**: canvas textures from i18n keys (`gp.n.*`), re-drawn on language change; looking at a note within 2.2 m shows it large in the HUD.
+- **Skylights**: `sunAt(x, z)` (sun strength in a sun square) drives the exposure (`sun` in `core/app.js`, 0..1, +sun/14 per second in the light, −1/5 per second in the shade) and the pipeline's `heat` uniform (shimmer, warm tint, bleach, burn vignette); above 0.6 the walker slows. Scratching (`story/sounds.js`): its own `AudioContext`, synthesised strokes/taps/knocks through a glass low-pass and an HRTF `PannerNode` at a skylight chosen by `pickSkylight`; the listener follows the camera; every 25–60 s on the paths, 70–150 s elsewhere; `scratchVisual` shows the shape on the glass and dims that beam. Setting `audio.scratch`.
 - **Save**: `progress.path` in `ls:save:v1` — `{ x, z, yaw, seen: [zone ids] }`.
 
 ## Persistence (localStorage)

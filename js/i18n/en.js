@@ -152,7 +152,7 @@ export default {
   'path.hub': 'Start in the Hub',
   'path.wastes': 'Start at the Wastelands door',
   'path.keys': 'Mouse: look · WASD: walk · Shift: run · Space: jump · F: flashlight · L: work lights · M: map · Esc: pause',
-  'path.credit': 'Fan-made world based on the story “Rudon’s Plane – Part 1” by Solar Sands (YouTube). No people, no sound yet.',
+  'path.credit': 'Fan-made world based on the story “Rudon’s Plane – Part 1” by Solar Sands (YouTube). No people. The only sound: something scratching at the skylights.',
   'path.loading': 'Building Luceron…',
   'path.failed': 'Could not build the world (see the browser console).',
   'pause.pathInfo': 'Place: {zone} (story {time})\nWalked: {m} m · places found: {n}/{total}',
@@ -216,4 +216,7 @@ export default {
   'gp.n.deadEnd': 'DEAD END\nA blank wall. Behind the first layer there is only more of the ceiling metal: Agarite.',
   'gp.n.cableEnd': 'THE CABLE ENDS\nNo stations beyond this point. Ahead, the light turns deep blue.',
   'gp.n.chapel': 'THE CHAPEL\nAn enormous room. The floor drops about 20 ft, podiums of every height rise from the floor and hang from the ceiling, and a beam of sunlight falls on the builders’ map. The podium steps on the left lead down.',
+  'gp.sunWarm': 'It is getting hot. The sun through the glass is not safe for long.',
+  'gp.sunBurn': 'It burns! Get out of the light.',
+  'audio.scratch': 'Great Path: scratching at the skylights',
 };
