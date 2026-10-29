@@ -4,6 +4,11 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new version (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.4.1] - 2026-10-29
+### Fixed
+- Great Path map: explored places stay revealed. The full map (M) now opens framed on everything you have explored (plus where you are) instead of a fixed zoom around you, so earlier places no longer seem to disappear when you walk away; zoom out further than before.
+- The explored map is saved in the browser (`ls:pathmap:v1`) and restored on the next visit; “Reset saved progress” also clears it.
+
 ## [0.4.0] - 2026-10-29
 ### Added
 - The Great Path: **scratching at the skylights** (story 04:17). Now and then something scratches at a skylight near you: synthesised claw strokes, taps and knocks, positioned at that skylight (HRTF) and muffled by the glass; a dark shape slides over the glass and the sunbeam dims. More often along the Great Path and the West Path. It is the only sound in this world; Options > Audio can turn it off.

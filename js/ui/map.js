@@ -19,7 +19,7 @@ export function createMapUi(root) {
   let story = null, zones = null, colors = null;
   const cache = new Map();             // chunk -> { cv, key }
   let view = { x: 0, z: 0, s: 2 };     // full map centre (m) and pixels per cell
-  let open = false, drag = null, follow = true;
+  let open = false, drag = null, follow = false, fit = false;
 
   function chunkImage(c) {
     const key = c.version + '|' + (c.seenV || 0);
@@ -86,7 +86,7 @@ export function createMapUi(root) {
     }
   }
 
-  big.addEventListener('wheel', (e) => { e.preventDefault(); view.s = Math.max(0.5, Math.min(12, view.s * Math.exp(-e.deltaY * 0.0015))); }, { passive: false });
+  big.addEventListener('wheel', (e) => { e.preventDefault(); view.s = Math.max(0.3, Math.min(12, view.s * Math.exp(-e.deltaY * 0.0015))); }, { passive: false });
   big.addEventListener('mousedown', (e) => { drag = { x: e.clientX, y: e.clientY, vx: view.x, vz: view.z }; follow = false; });
   addEventListener('mouseup', () => { drag = null; });
   addEventListener('mousemove', (e) => { if (!drag) return; view.x = drag.vx - (e.clientX - drag.x) / view.s * CS; view.z = drag.vz - (e.clientY - drag.y) / view.s * CS; });
@@ -103,14 +103,22 @@ export function createMapUi(root) {
     get open() { return open; },
     setOpen(on) {
       open = on && !!story; full.hidden = !open;
-      if (open) { follow = true; fillJournal(); }
+      if (open) { follow = false; fit = true; fillJournal(); }
     },
     update(dt, player) {
       if (!story) return;
       if (open) {
-        if (follow) { view.x = player.x; view.z = player.z; }
         const w = big.clientWidth, hh = big.clientHeight;
         if (big.width !== w || big.height !== hh) { big.width = w; big.height = hh; }
+        // on opening: frame everything explored (and the player); afterwards the view stays where you put it
+        if (fit && w > 0) {
+          fit = false;
+          const b = story.seenBounds() || { x0: player.x - 30, z0: player.z - 30, x1: player.x + 30, z1: player.z + 30 };
+          b.x0 = Math.min(b.x0, player.x - 20); b.x1 = Math.max(b.x1, player.x + 20); b.z0 = Math.min(b.z0, player.z - 20); b.z1 = Math.max(b.z1, player.z + 20);
+          view.x = (b.x0 + b.x1) / 2; view.z = (b.z0 + b.z1) / 2;
+          view.s = Math.max(0.3, Math.min(6, Math.min(w / ((b.x1 - b.x0) / CS), hh / ((b.z1 - b.z0) / CS)) * 0.9));
+        }
+        if (follow) { view.x = player.x; view.z = player.z; }
         drawWorld(big.getContext('2d'), w, hh, view.x, view.z, view.s, player, true);
         return;
       }

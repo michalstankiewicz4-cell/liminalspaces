@@ -80,7 +80,11 @@ export function createApp({ appEl, uiEl }) {
       this.path = p && [p.x, p.z, p.yaw].every(Number.isFinite) && Math.abs(p.x) < 1e7 && Math.abs(p.z) < 1e7
         ? { x: p.x, z: p.z, yaw: p.yaw, seen: Array.isArray(p.seen) ? p.seen.filter((n) => Number.isInteger(n) && n > 0 && n < 64).slice(0, 64) : [] } : null;
     },
-    wipe() { this.dist = 0; this.odd = 0; this.last = null; this.path = null; this.save(); menu.refresh(); },
+    wipe() {
+      this.dist = 0; this.odd = 0; this.last = null; this.path = null; this.save(); write(KEYS.pathMap, null);
+      if (story) for (const c of story.grid.chunks.values()) { c.seen.fill(0); c.seenV = (c.seenV || 0) + 1; }
+      menu.refresh();
+    },
   };
   progress.load();
 
@@ -121,7 +125,10 @@ export function createApp({ appEl, uiEl }) {
     rememberWalk();
   }
   function rememberWalk() {
-    if (mode === 'play' && kind === 'path') progress.path = { x: +walker.x.toFixed(2), z: +walker.z.toFixed(2), yaw: +walker.yaw.toFixed(3), seen: [...story.visited.keys()] };
+    if (mode === 'play' && kind === 'path') {
+      progress.path = { x: +walker.x.toFixed(2), z: +walker.z.toFixed(2), yaw: +walker.yaw.toFixed(3), seen: [...story.visited.keys()] };
+      if (story.seenDirty) write(KEYS.pathMap, story.exportSeen());     // explored map cells, kept for good
+    }
     else if (mode === 'play' && !session) progress.last = { seed, x: +player.x.toFixed(2), z: +player.z.toFixed(2), yaw: +player.yaw.toFixed(3) };
     progress.save();
   }
@@ -146,6 +153,7 @@ export function createApp({ appEl, uiEl }) {
           story = createStory(renderer);
           walker = createWalker(story);
           story.onZone = (id, first) => { if (first && mode === 'play') hud.toast(t('gp.newPlace', { place: t('gp.z.' + story.zones[id].key), time: story.zones[id].t || '' }), 4.5); };
+          story.importSeen(read(KEYS.pathMap));
           mapUi.attach(story);
           startPath(where);
         }).catch((e) => { console.error(e); if (app.onPathStatus) app.onPathStatus('path.failed'); });
