@@ -25,10 +25,19 @@ export const ZONES = [
   { key: 'cave', amb: 0.001, tint: [0.4, 0.37, 0.33], rough: 0.9, fog: [0.005, 0.005, 0.005], map: '#706860', far: 40 },
   { key: 'esthett', amb: 0.03, tint: [0.86, 0.84, 0.8], rough: 2.35, fog: [0.07, 0.065, 0.06], map: '#e8e0f0', far: 60 },     // rough >= 2: carved walls, inlaid floor
   { key: 'pit', amb: 0.004, tint: [0.42, 0.38, 0.33], rough: 0.7, fog: [0.02, 0.02, 0.02], map: '#c0b090', far: 44 },
-  { key: 'surface', amb: 1.0, tint: [0.56, 0.5, 0.42], rough: 0.95, fog: [0.66, 0.74, 0.82], map: '#d8c8a0', far: 320, sky: true },
+  // the Surface at sunset: warm light, a red sun low over the trees; brown dust by the pit, grass further out (grass)
+  { key: 'surface', amb: 1.0, ambC: [1.0, 0.74, 0.58], sun: [0.95, 0.21, 0.25, 0.55, 0.22, 0.1], tint: [0.5, 0.38, 0.27], grass: [0.22, 0.34, 0.12], rough: 0.95, fog: [0.62, 0.48, 0.44], map: '#d8c8a0', far: 320, sky: true },
   { key: 'esthettRoom', amb: 0.01, tint: [0.3, 0.38, 0.6], rough: 0.7, fog: [0.03, 0.035, 0.05], map: '#6080c0', far: 40 },
   { key: 'square', amb: 0.1, tint: [0.9, 0.88, 0.84], rough: 2.25, fog: [0.08, 0.075, 0.07], map: '#f0e8d8', far: 90 },
   { key: 'upper', amb: 0.002, tint: [0.4, 0.35, 0.3], rough: 0.6, fog: [0.01, 0.01, 0.01], map: '#807060', far: 40 },
+  // chapter 6: the road of the car, the abandoned corridors, the feast room, the hall of black stone
+  { key: 'road', amb: 0.04, tint: [0.8, 0.76, 0.7], rough: 0.25, fog: [0.08, 0.075, 0.07], map: '#f0e0c0', far: 70 },
+  { key: 'metal', amb: 0.03, tint: [0.56, 0.6, 0.64], rough: 0.08, fog: [0.06, 0.065, 0.07], map: '#a0b0c8', far: 70 },
+  { key: 'roughRoad', amb: 0.001, tint: [0.4, 0.37, 0.33], rough: 0.9, fog: [0.005, 0.005, 0.005], map: '#706860', far: 44 },
+  { key: 'hymn', amb: 0.04, tint: [0.94, 0.92, 0.9], rough: 2.3, fog: [0.08, 0.075, 0.075], map: '#ffffff', far: 70 },
+  { key: 'abandoned', amb: 0.002, tint: [0.52, 0.48, 0.42], rough: 0.85, fog: [0.02, 0.019, 0.017], map: '#a09070', far: 44 },
+  { key: 'feast', amb: 0.006, tint: [0.56, 0.5, 0.46], rough: 0.6, fog: [0.012, 0.01, 0.01], map: '#c08080', far: 50 },
+  { key: 'black', amb: 0.003, tint: [0.26, 0.26, 0.28], rough: 0.3, fog: [0.01, 0.01, 0.012], map: '#505068', far: 40 },
 ];
 export const Z = Object.fromEntries(ZONES.map((z, i) => [z.key, i]));
 
@@ -403,7 +412,7 @@ export function buildCaves() {
     labels.push({ key: 'lathrumidor', x: ax, y: WY, z: az - 6 });
   }
   // the great square: a hall over a hundred yards across, a floor of tessellated marble, statues on pedestals of many
-  // colours, tapestries in the doorways — and in the middle the car of the sheiks
+  // colours, tapestries in the doorways — and in the middle the car of the shelks
   const sq = { x: w0[0] + 90 + 40, y: WY, z: w0[2] };
   cavern(sq.x, sq.y, sq.z, 42, 14, 42, sq.y, Z.square, 0.03);
   for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2; wallLamp(sq.x + Math.cos(a) * 39, sq.y + 2.2, sq.z + Math.sin(a) * 39, k); }
@@ -413,61 +422,136 @@ export function buildCaves() {
   for (const a of [0.9, 2.3, 3.9, 5.3]) props.push({ kind: 'tapestry', x: sq.x + Math.cos(a) * 40.5, y: sq.y, z: sq.z + Math.sin(a) * 40.5, rot: -a - Math.PI / 2 });
   labels.push({ key: 'esthettSquare', x: sq.x, y: sq.y, z: sq.z });
   mark('square', 5, sq.x - 34, sq.y, sq.z + 2);
-  mark('sheiks', 5, sq.x - 6, sq.y, sq.z + 6);
+  mark('shelks', 5, sq.x - 6, sq.y, sq.z + 6);
   mark('car', 5, sq.x + 7, sq.y, sq.z - 3);
   starts.esthetts = { x: w0[0] + 4, y: WY, z: w0[2], yaw: -Math.PI / 2 };
-  const halls = [[sq.x, sq.z, 41, 41]];
-  const [h2x, h2z, h2w] = halls[0];
-  const EY2 = sq.y;
-  // the pit: from the last hall a narrow flight of stairs climbs, landing by landing, towards the Surface
+  /* ---- chapter 6: the slaying of the shelk — the one broad main corridor to the Surface, the way the car went:
+     halls brighter than any, halls of polished metal, unpolished rock, the marble passage of the singing Esthetts;
+     then corridors abandoned for years (the feast room), the last pit, the hall of black stone, the narrowing stairs,
+     and the Surface at sunset ---- */
+  const RW = { ...COR, w: 3.2, h: 6, rt: 2.6, rb: 0.3, amp: 0.02 };
+  let rx = sq.x + 40, ry = sq.y, rz = sq.z;
+  const leg = (len, rise, o, bend = 0) => {
+    const a = [rx, ry, rz], b = [rx + len, ry + rise, rz];
+    path([a, [rx + len / 2, ry + rise / 2, rz + bend], b], { ...RW, ...o });
+    rx = b[0]; ry = b[1];
+  };
+  mark('ride', 6, rx + 8, ry, rz + 2.4);
+  labels.push({ key: 'road', x: rx + 30, y: ry, z: rz });
+  leg(80, 0, { zone: Z.road, lamp: 6, dead: 0, lampP: 1.0, col: [1.0, 0.97, 0.9] });                     // brighter than any
+  leg(60, 1, { zone: Z.metal, lamp: 7, dead: 0, lampP: 0.85, col: [0.85, 0.95, 1.0], rt: 1.2, amp: 0.004 });   // polished metal
+  leg(80, 3, { zone: Z.roughRoad, w: 3, h: 5.5, rt: 2.4, amp: 0.4 }, 7);                                     // unpolished rock, dark
+  {
+    const x0 = rx;
+    leg(60, 0.5, { zone: Z.hymn, amp: 0.01 });                                                               // the marble passage
+    for (let x = x0 + 4; x < x0 + 58; x += 6) { wallLamp(x, ry + 3.4, rz - 3.0, 4); wallLamp(x + 3, ry + 3.4, rz + 3.0, 4); }
+    mark('hymn', 6, x0 + 30, ry, rz + 2.4);
+    labels.push({ key: 'hymn', x: x0 + 30, y: ry, z: rz });
+  }
+  // the abandoned corridors: dust, dead lamps, empty apartments (the door is a doorway; behind it one room, sometimes two)
+  const flat = (x, side, back, y = ry) => {
+    const rz0 = rz + side * (3.2 + 1.2 + 2.6);
+    tube([x, y, rz + side * 2.6], [x, y, rz + side * 4.6], { w: 0.75, h: 2.4, rt: 0.5, rb: 0.15, amp: 0.03, zone: Z.abandoned, ext: 0.2 });
+    room(x, y, rz0, 2.8, 2.6, 2.8, { rr: 0.8, zone: Z.abandoned, amp: 0.05 });
+    if (!back) return [x, y, rz0];
+    tube([x + 2, y, rz0], [x + 5, y, rz0], { w: 0.7, h: 2.3, rt: 0.5, rb: 0.15, amp: 0.03, zone: Z.abandoned, ext: 0.2 });
+    room(x + 7, y, rz0, 2.2, 2.2, 2.6, { rr: 0.8, zone: Z.abandoned, amp: 0.05 });
+    return [x + 7, y, rz0];
+  };
+  {
+    const x0 = rx, AB = { zone: Z.abandoned, lamp: 9, dead: 0.75, lampP: 0.4 };
+    leg(120, 0, AB);
+    // where he dropped off the car: the nearest open door, a dusty apartment bare of furniture
+    { const r = flat(x0 + 12, 1); mark('dropOff', 6, r[0] - 1, r[1], r[2] - 1.2); labels.push({ key: 'dropOff', x: r[0], y: r[1], z: r[2] }); }
+    for (const [dx, sd] of [[30, -1], [44, 1], [62, 1], [70, -1], [112, -1]]) flat(x0 + dx, sd);
+    // not a hundred yards on, the car stands before the only door with a curtain: the feast room — eighty feet long,
+    // half as wide, its ceiling lost in gloom; lights all round at the height of a shoulder
+    const fx = x0 + 92, fz = rz - 3.2 - 2.4 - 6;
+    props.push({ kind: 'car', x: fx + 7, y: ry, z: rz + 0.9 });
+    tube([fx, ry, rz - 2.6], [fx, ry, rz - 6.2], { w: 1.3, h: 3.4, rt: 0.9, rb: 0.15, amp: 0.02, zone: Z.feast, ext: 0.3 });
+    props.push({ kind: 'tapestry', x: fx - 1.3, y: ry, z: rz - 3.35 }, { kind: 'tapestry', x: fx + 1.3, y: ry, z: rz - 3.35 });
+    room(fx, ry, fz, 12, 6, 18, { rr: 1.5, zone: Z.feast, amp: 0.03 });
+    for (let k = 0; k < 6; k++) {
+      const x = fx - 10 + k * 4;
+      lamps.push({ x, y: ry + 1.5, z: fz - 5.6, ceil: ry + 1.8, p: 0.4, dead: false, flicker: false, r: 1, g: 0.8, b: 0.6, hidden: true });
+      lamps.push({ x: x + 2, y: ry + 1.5, z: fz + 5.6, ceil: ry + 1.8, p: 0.4, dead: false, flicker: false, r: 1, g: 0.8, b: 0.6, hidden: true });
+    }
+    props.push({ kind: 'feastTable', x: fx - 1, y: ry, z: fz }, { kind: 'bloodJars', x: fx + 8.6, y: ry, z: fz + 0.4 });
+    mark('feast', 6, fx + 2.2, ry, fz + 4.4);
+    labels.push({ key: 'feastRoom', x: fx, y: ry, z: fz });
+    // up the corridor he ran, farther and farther — and slept in the rear room of an apartment
+    leg(140, 2, AB);
+    const yAt = (x) => ry - 2 * (rx - x) / 140;
+    const r = flat(rx - 50, 1, true, yAt(rx - 50));
+    mark('sleep', 6, r[0] - 0.8, r[1], r[2] - 1.0);
+    for (const [dx, sd] of [[-120, 1], [-96, -1], [-80, 1], [-30, -1], [-12, 1]]) flat(rx + dx, sd, false, yAt(rx + dx));
+  }
+  // the passage ends; a ladder of metal set into the wall rises higher and higher in the gloom: the last pit
+  const top = ry + 14, sx = rx + 1;
+  shaft(sx, rz, ry, top + 2.5, 1.4, Z.pit);
+  mark('lastPit', 6, rx - 3, ry, rz + 2.2);
+  labels.push({ key: 'pit', x: rx - 2, y: ry, z: rz });
+  // a hall of strange black stone; then a corridor narrower than any, the walls closing in to two feet wide
+  tube([sx, top, rz], [sx + 4, top, rz], { w: 1.1, h: 3, rt: 0.8, rb: 0.15, amp: 0.02, zone: Z.black, ext: 0.3 });
+  room(sx + 9, top, rz, 5, 4, 5, { rr: 1.2, zone: Z.black, amp: 0.02 });
+  addLamp(sx + 9, top + 5, rz, { lampP: 0.6, dead: 0 });
+  mark('blackHall', 6, sx + 7, top, rz + 2.6);
+  labels.push({ key: 'blackHall', x: sx + 9, y: top, z: rz });
+  let q = [sx + 13.5, top, rz];
+  const ws = [1.1, 0.95, 0.8, 0.68, 0.56, 0.48];
+  for (let k = 0; k < 6; k++) {
+    const nq = [q[0] + 7, q[1] + 0.35 + k * 0.18, q[2]];
+    tube(q, nq, { w: ws[k], h: 3.2 - k * 0.12, rt: 0.42, rb: 0.12, amp: 0.02, zone: Z.black, ext: 0.3 });
+    q = nq;
+  }
+  mark('narrow', 6, q[0] - 10, q[1] - 0.6, q[2]);
+  // the grade becomes a flight of stairs; the ceiling comes lower and lower; far ahead, a red light from above
+  labels.push({ key: 'toSurface', x: q[0], y: q[1], z: q[2] });
   const RISE = 0.24, RUN = 0.36;
-  let sp = [h2x + h2w - 1, EY2, h2z];
-  labels.push({ key: 'pit', x: sp[0], y: EY2, z: sp[2] });
-  for (let k = 0; k < 4; k++) {
-    const dir = k % 2 ? -1 : 1, len = 26, end = [sp[0] + dir * len, sp[1] + len / RUN * RISE, sp[2]];
-    tube(sp, end, { w: 0.75, h: 2.7, rt: 0.6, rb: 0.15, amp: 0.06, zone: Z.pit, ext: 0.2, run: RUN });
-    // a landing, and the next flight goes back the other way a little further on
-    room(end[0] + dir * 1.2, end[1], end[2], 1.8, 1.4, 2.8, { rr: 0.7, zone: Z.pit, amp: 0.06 });
-    addLamp(end[0] + dir * 1.2, end[1] + 2.8, end[2], { lampP: 0.35, dead: 0.5 });
-    sp = [end[0] + dir * 1.2, end[1], end[2] + 2.4];
-    tube([end[0] + dir * 1.2, end[1], end[2]], sp, { w: 0.75, h: 2.7, rt: 0.6, rb: 0.15, amp: 0.06, zone: Z.pit, ext: 0.2 });
+  for (const [len, hh] of [[6, 2.4], [5, 2.15], [4.32, 1.95]]) {
+    const nq = [q[0] + len, q[1] + len / RUN * RISE, q[2]];
+    tube(q, nq, { w: 0.46, h: hh, rt: 0.4, rb: 0.12, amp: 0.015, zone: Z.black, ext: 0.2, run: RUN });
+    q = nq;
   }
-  p = sp;
-  labels.push({ key: 'toSurface', x: p[0], y: p[1], z: p[2] });
-  // the last steps come out through the ground (the hatch stands open beside the opening)
-  const topY = p[1] + 4.2;                           // the ground level of the Surface around the pit
-  tube(p, [p[0] - 7, topY + 0.6, p[2]], { w: 0.85, h: 3.2, rt: 0.6, rb: 0.15, amp: 0.05, zone: Z.pit, ext: 0.4, run: 0.36 });
-  const exit = { x: p[0] - 8.5, y: topY, z: p[2] };
-  props.push({ kind: 'hatch', x: exit.x + 1.6, y: topY + 0.05, z: exit.z + 1.9, open: true });
+  // the light of the Surface, falling in from above (and, fainter, down the last flight)
+  lamps.push({ x: q[0] + 1.2, y: q[1] + 2.2, z: q[2], ceil: q[1] + 2.5, p: 2.0, dead: false, flicker: false, r: 1.0, g: 0.5, b: 0.32, hidden: true });
+  lamps.push({ x: q[0] - 2.5, y: q[1] + 0.6, z: q[2], ceil: q[1] + 0.9, p: 0.5, dead: false, flicker: false, r: 1.0, g: 0.5, b: 0.32, hidden: true });
 
-  /* ---- chapter 7: the Surface — the sky, the trees, the leaning towers of the shelks; the shelk; the way back ---- */
+  /* ---- the Surface: a shallow pit not five feet deep; dust round it, then grass; trees in the middle distance under
+     the low red sun; behind, the towers of the shelks — thin, windowless, leaning, joined by cables ---- */
+  const PIT = 1.5;
+  const topY = q[1] + PIT;                           // the ground level of the Surface around the pit
+  const exit = { x: q[0] + 2, y: topY, z: q[2] };
   const surf = { k: 'surface', zone: Z.surface, amp: 0.25, floorAt: (x, z) => ground(x, z) };
-  starts.surface = { x: exit.x - 4, y: topY, z: exit.z, yaw: Math.PI / 2 };
-  labels.push({ key: 'surface', x: exit.x - 4, y: topY, z: exit.z });
-  mark('surface', 7, exit.x - 3, topY, exit.z + 2.2);
-  // a dead shelk not far from the pit: ten legs, a hairless head like a man's (the head is gone: he took it)
-  const sk = { x: exit.x - 30, z: exit.z - 18 };
-  props.push({ kind: 'shelk', x: sk.x, y: topY, z: sk.z });
-  mark('shelk', 7, sk.x + 3, topY, sk.z + 2);
-  labels.push({ key: 'shelk', x: sk.x, y: topY, z: sk.z });
-  mark('return', 7, exit.x + 2.5, topY, exit.z - 2.2);
-  // trees with green, billowing crowns; Shawm, the town of the shelks, on the horizon: tall four-sided towers that lean
+  starts.surface = { x: exit.x + 4.5, y: topY, z: exit.z + 2, yaw: -Math.PI / 2 };
+  labels.push({ key: 'surface', x: exit.x + 4, y: topY, z: exit.z });
+  mark('surface', 6, exit.x + 5.5, topY, exit.z - 2.5);
+  // the shelk that stole up behind him: seven shots, and it tumbled into the pit; he cut off its head with his sword
+  props.push({ kind: 'shelk', x: exit.x - 0.6, y: topY - PIT, z: exit.z + 0.9 });
+  mark('shelk', 6, exit.x - 4.6, topY - 0.3, exit.z + 2.6);
+  labels.push({ key: 'shelk', x: exit.x - 1, y: topY - PIT, z: exit.z });
+  mark('return', 6, exit.x + 0.4, topY - PIT, exit.z - 1.6);
+  // trees: tall irregular pillars topped with green, in the middle distance (towards the sun)
   const trees = [];
-  for (let k = 0; k < 140; k++) {
-    const a = R() * Math.PI * 2, r = 12 + Math.sqrt(R()) * 230;
-    const x = exit.x + Math.cos(a) * r, z = exit.z + Math.sin(a) * r;
-    if (Math.hypot(x - sk.x, z - sk.z) < 8) continue;
-    trees.push({ x, z, h: 5 + R() * 6, r: 2 + R() * 2.5 });
+  for (let k = 0; k < 110; k++) {
+    const a = (R() - 0.5) * 2.4, r = 35 + Math.sqrt(R()) * 200;
+    trees.push({ x: exit.x + Math.cos(a) * r, z: exit.z + Math.sin(a) * r, h: 7 + R() * 7, r: 2 + R() * 2.5 });
   }
+  // the homes of the shelks, the other way: a dozen and more obelisks of metal, fifty to two hundred feet high, not
+  // fifteen feet round, built at angles up to thirty degrees, a small round door at the bottom
   const towers = [];
-  const shawm = { x: exit.x - 260, z: exit.z - 120 };
-  for (let k = 0; k < 16; k++) towers.push({ x: shawm.x + (R() - 0.5) * 120, z: shawm.z + (R() - 0.5) * 90, h: 26 + R() * 10, rot: R() * Math.PI * 2, lean: 0.42 + (R() - 0.5) * 0.1 });
+  for (let k = 0; k < 15; k++) {
+    const a = Math.PI + (R() - 0.5) * 1.6, r = 32 + R() * 110;
+    towers.push({ x: exit.x + Math.cos(a) * r, z: exit.z + Math.sin(a) * r, h: 15 + R() * 46, rot: R() * Math.PI * 2, lean: R() < 0.2 ? R() * 0.04 : 0.08 + R() * 0.44 });
+  }
+  const shawm = { x: exit.x - 80, z: exit.z };
   labels.push({ key: 'shawm', x: shawm.x, y: topY, z: shawm.z });
-  // the ground: bare packed dust, gently uneven, flat around the pit
+  // the ground: packed dust, gently uneven, flat around the pit — and the pit itself, a shallow bowl
   const GX = exit.x, GZ = exit.z;
   function ground(x, z) {
-    const flat = Math.min(1, Math.hypot(x - GX, z - GZ) / 30);
-    return topY + (fbm3(x * 0.012, 0.5, z * 0.012, 3) * 3.2 + noise3(x * 0.08, 1.5, z * 0.08) * 0.25) * flat;
+    const d = Math.hypot(x - GX, z - GZ), flat = Math.min(1, d / 30);
+    const t = Math.min(1, Math.max(0, (d - 2.4) / 2.6)), pit = PIT * (1 - t * t * (3 - 2 * t));
+    return topY - pit + (fbm3(x * 0.012, 0.5, z * 0.012, 3) * 3.2 + noise3(x * 0.08, 1.5, z * 0.08) * 0.25) * flat;
   }
   const SURF_R = 330;                                  // how far from the pit the Surface is meshed (the rest is a far plane)
   const surfaceChunk = (i, j, k) => j * CH <= topY + 6 && (j + 1) * CH >= topY - 6 && Math.hypot((i + 0.5) * CH - GX, (k + 0.5) * CH - GZ) < SURF_R;

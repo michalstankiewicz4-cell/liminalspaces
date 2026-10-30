@@ -4,6 +4,18 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.26.0] - 2026-10-30
+Parts: Tumithak of the Corridors 1.9.0
+### Changed — chapter 6 after the original text (the old stair pit and the noon Surface are gone)
+- **The road of the shelks**: from the great square of the Esthetts one broad main corridor leads to the Surface, the way the car went — halls brighter than any, halls of polished metal, dark corridors of unpolished rock, and the marble passage where the Esthetts sang their hymn.
+- **The abandoned corridors**: dead lamps, dust, empty apartments; the bare room where he dropped off the car; the car standing before the only curtained door — **the feast room**, eighty feet by forty, its ceiling lost in gloom, lights at the height of a shoulder: the long low table under a white cloth heaped with food, the divans, and the jars and pumps of the shelks. Further on, the rear room where he slept.
+- **The last pit**: the passage ends at a metal ladder rising into the gloom; above it **the hall of black stone**, then a corridor narrowing to two feet, a grade turning into stairs, the ceiling coming lower, and a red light from above.
+- **The Surface at sunset**: a shallow pit not five feet deep (the dead, headless shelk lies in it); brown dust round the pit and grass beyond; trees in the middle distance under a low red sun; clouds of white and rose drifting across a blue sky. The other way, **the towers of the shelks**: thin windowless needles of metal 15–60 m high, leaning up to thirty degrees, a small round door at the bottom, cables hanging between their tops.
+- New steles of chapter 6 (the ride, the hymn, off the car, the feast, flight, the last pit, the hall of black stone, the narrow way, the Surface, the slaying of the shelk — seven shots, as in the book — and down the steps); new places on the 3D map.
+- The sky dome's sun is now drawn sharp (the direction is renormalised per pixel).
+### Fixed
+- The stele of the shelks in the great square (chapter 5) showed its key instead of the text in English: the key is now `shelks` everywhere.
+
 ## [0.25.0] - 2026-10-30
 Parts: Tumithak of the Corridors 1.8.0
 ### Changed — chapter 5 after the original text

@@ -5,6 +5,7 @@
 // light and the lamp plates (wrap Lambert, distance falloff, occlusion by rock tested along the ray), times ambient
 // occlusion from the field.
 import { CH, VOX } from './field.js';
+import { noise3 } from './noise.js';
 
 const N = Math.round(CH / VOX);      // cells per chunk side (32)
 const S = N + 3;                     // samples per side: grid points -1 .. N+1
@@ -93,6 +94,8 @@ export function meshCaveChunk(W, ci, cj, ck) {
     const a1 = -W.field(x + nx * 0.6, y + ny * 0.6, z + nz * 0.6), a2 = -W.field(x + nx * 1.6, y + ny * 1.6, z + nz * 1.6);
     const ao = Math.max(0.25, Math.min(1, 0.35 + Math.max(0, a1) * 0.45 + Math.max(0, a2) * 0.2));
     let r = zd.amb, g = zd.amb, b = zd.amb;
+    if (zd.ambC) { r = zd.ambC[0]; g = zd.ambC[1]; b = zd.ambC[2]; }
+    if (zd.sun) { const s = zd.sun, l = Math.max(0, nx * s[0] + ny * s[1] + nz * s[2]); r += s[3] * l; g += s[4] * l; b += s[5] * l; }   // the low sun on what faces it
     const sx = x + nx * 0.25, sy = y + ny * 0.25, sz = z + nz * 0.25;
     for (const l of lamps) {
       const dx = l.x - sx, dy = l.y - sy, dz = l.z - sz, d2 = dx * dx + dy * dy + dz * dz;
@@ -107,7 +110,13 @@ export function meshCaveChunk(W, ci, cj, ck) {
       r += l.r * k; g += l.g * k; b += l.b * k;
     }
     col[v * 3] = r * ao; col[v * 3 + 1] = g * ao; col[v * 3 + 2] = b * ao;
-    tint[v * 4] = zd.tint[0]; tint[v * 4 + 1] = zd.tint[1]; tint[v * 4 + 2] = zd.tint[2]; tint[v * 4 + 3] = zd.rough;
+    let t0 = zd.tint[0], t1 = zd.tint[1], t2 = zd.tint[2];
+    if (zd.grass) {           // dust by the pit, then a carpet of grass (in patches at its edge)
+      const d = Math.hypot(x - W.exit.x, z - W.exit.z) + noise3(x * 0.3, 0.7, z * 0.3) * 3;
+      const k = Math.min(1, Math.max(0, (d - 8) / 4)) * (ny > 0.6 ? 1 : 0.3);
+      t0 += (zd.grass[0] - t0) * k; t1 += (zd.grass[1] - t1) * k; t2 += (zd.grass[2] - t2) * k;
+    }
+    tint[v * 4] = t0; tint[v * 4 + 1] = t1; tint[v * 4 + 2] = t2; tint[v * 4 + 3] = zd.rough;
   }
   const big = nv > 65535;
   return { p: new Float32Array(P), n: new Float32Array(Nn), c: col, t: tint, i: big ? new Uint32Array(I) : new Uint16Array(I) };

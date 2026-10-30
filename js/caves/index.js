@@ -76,29 +76,46 @@ export function createCaves() {
   for (const m of W.markers) scene.add(buildMarker(m));
   for (const m of W.murals) scene.add(buildMural(m));
 
-  /* ---- the Surface (chapter 7): sky, a far ground plane, trees, the leaning towers of Shawm and their cables ---- */
+  /* ---- the Surface: the sky at sunset (blue overhead, billowy clouds of white and rose that drift, a red sun low over
+     the trees), a far ground plane, trees, the leaning towers of the shelks and their cables ---- */
+  const SUN = new THREE.Vector3(...W.zones.find((z) => z.key === 'surface').sun.slice(0, 3)).normalize();
   const sky = new THREE.Mesh(new THREE.SphereGeometry(290, 32, 16), new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false, fog: false,
-    uniforms: { sun: { value: new THREE.Vector3(-0.5, 0.62, -0.6).normalize() } },
+    uniforms: { sun: { value: SUN }, time: { value: 0 } },
     vertexShader: 'varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: `uniform vec3 sun; varying vec3 vD;
-      void main(){ float h = clamp(vD.y, 0.0, 1.0);
-        vec3 c = mix(vec3(0.72, 0.8, 0.88), vec3(0.3, 0.5, 0.82), pow(h, 0.6));
-        float s = max(dot(vD, sun), 0.0); c += vec3(1.0, 0.98, 0.9) * (pow(s, 900.0) * 6.0 + pow(s, 60.0) * 0.12);
-        if (vD.y < 0.0) c = mix(vec3(0.72, 0.8, 0.88), vec3(0.5, 0.48, 0.42), clamp(-vD.y * 6.0, 0.0, 1.0));
+    fragmentShader: `uniform vec3 sun; uniform float time; varying vec3 vD;
+      float h2(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(h2(i), h2(i + vec2(1, 0)), f.x), mix(h2(i + vec2(0, 1)), h2(i + vec2(1, 1)), f.x), f.y); }
+      float fbm(vec2 p){ float s = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { s += vn(p) * a; p = p * 2.03 + 7.1; a *= 0.5; } return s; }
+      void main(){ vec3 d = normalize(vD);          // (the interpolated direction is shorter than 1 inside a triangle)
+        float h = clamp(d.y, 0.0, 1.0);
+        float s = max(dot(d, sun), 0.0);
+        vec3 hor = mix(vec3(0.86, 0.6, 0.55), vec3(1.0, 0.45, 0.2), pow(s, 6.0));
+        vec3 c = mix(hor, vec3(0.28, 0.48, 0.86), pow(h, 0.45));
+        // clouds: on a plane high up, drifting slowly; lit white and rose, red towards the sun
+        if (d.y > 0.02) {
+          vec2 q = d.xz / (d.y + 0.08) * 1.6 + vec2(time * 0.004, time * 0.0015);
+          float cl = smoothstep(0.5, 0.78, fbm(q));
+          vec3 cc = mix(vec3(1.0, 0.9, 0.9), vec3(1.0, 0.55, 0.45), 0.35 + 0.5 * pow(s, 3.0));
+          c = mix(c, cc, cl * smoothstep(0.02, 0.15, d.y) * 0.85);
+        }
+        c = mix(c, vec3(1.0, 0.36, 0.14), smoothstep(0.9988, 0.9992, s)); c += vec3(0.9, 0.3, 0.1) * pow(s, 30.0) * 0.4;
+        if (d.y < 0.0) c = mix(hor, vec3(0.42, 0.32, 0.26), clamp(-d.y * 6.0, 0.0, 1.0));
         gl_FragColor = vec4(c, 1.0); }`,
   }));
   sky.renderOrder = -1; sky.frustumCulled = false; sky.visible = false;
   scene.add(sky);
   const surfaceGroup = new THREE.Group(); surfaceGroup.visible = false; scene.add(surfaceGroup);
   {
-    const dust = new THREE.MeshStandardMaterial({ color: new THREE.Color(0.5, 0.45, 0.37), roughness: 1 });
+    const warm = new THREE.Color(1.0, 0.76, 0.6);
+    const dust = new THREE.MeshStandardMaterial({ color: new THREE.Color(0.24, 0.3, 0.13).multiply(warm), roughness: 1 });
     const far = new THREE.Mesh(new THREE.CircleGeometry(1400, 48).rotateX(-Math.PI / 2), dust);
     far.position.set(W.exit.x, W.surfaceY - 3.6, W.exit.z); surfaceGroup.add(far);
     // trees: a trunk and a few round green masses
     const trunkGeo = new THREE.CylinderGeometry(0.18, 0.28, 1, 7).translate(0, 0.5, 0), crownGeo = new THREE.IcosahedronGeometry(1, 1);
-    const trunks = new THREE.InstancedMesh(trunkGeo, new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 0.9 }), W.trees.length);
-    const crowns = new THREE.InstancedMesh(crownGeo, new THREE.MeshStandardMaterial({ color: 0x3e6a2e, roughness: 0.85, flatShading: true }), W.trees.length * 3);
+    const trunks = new THREE.InstancedMesh(trunkGeo, new THREE.MeshStandardMaterial({ color: new THREE.Color(0x4a3a2a).multiply(warm), roughness: 0.9 }), W.trees.length);
+    const crowns = new THREE.InstancedMesh(crownGeo, new THREE.MeshStandardMaterial({ color: new THREE.Color(0x3e6a2e).multiply(warm), roughness: 0.85, flatShading: true }), W.trees.length * 3);
     const d = new THREE.Object3D();
     W.trees.forEach((t, i) => {
       const gy = W.ground(t.x, t.z);
@@ -111,22 +128,47 @@ export function createCaves() {
     });
     trunks.castShadow = crowns.castShadow = true;
     surfaceGroup.add(trunks, crowns);
-    // the towers of the shelks: four-sided, very tall, leaning steeply, of a metal no one knows; cables between them
-    const metal = new THREE.MeshStandardMaterial({ color: 0x7a8a7a, roughness: 0.35, metalness: 0.85 });
-    const tops = [];
+    // the towers of the shelks: needles of metal about 1.2 m thick, 15-60 m high, leaning, windowless, a small round
+    // door at the bottom; the faces turned to the sun gleam red (vertex colours: there is no sun light in this scene)
+    const metal = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: 0.2 });
+    const doorMat = new THREE.MeshBasicMaterial({ color: 0x0c0a0a });
+    const tops = [], nrm = new THREE.Vector3(), nm = new THREE.Matrix3();
     for (const t of W.towers) {
       const gy = W.ground(t.x, t.z);
-      const g = new THREE.Group(); g.position.set(t.x, gy, t.z); g.rotation.y = t.rot;
-      const m = new THREE.Mesh(new THREE.BoxGeometry(4.5, t.h, 4.5).translate(0, t.h / 2, 0), metal);
+      const g = new THREE.Group(); g.position.set(t.x, gy - 0.5, t.z); g.rotation.y = t.rot;
+      const geo = new THREE.BoxGeometry(1.2, t.h, 1.2).translate(0, t.h / 2, 0).toNonIndexed();
+      const m = new THREE.Mesh(geo, metal);
       m.rotation.z = t.lean; g.add(m);
+      const door = new THREE.Mesh(new THREE.CircleGeometry(0.42, 20), doorMat); door.position.set(0, 1.1, 0.605); m.add(door);
       surfaceGroup.add(g);
       g.updateMatrixWorld(true);
-      tops.push(new THREE.Vector3(0, t.h * 0.95, 0).applyMatrix4(m.matrixWorld));
+      nm.getNormalMatrix(m.matrixWorld);
+      const n = geo.attributes.normal, col = new Float32Array(n.count * 3);
+      for (let i = 0; i < n.count; i++) {
+        nrm.fromBufferAttribute(n, i).applyMatrix3(nm).normalize();
+        const l = Math.max(0, nrm.dot(SUN)), up = Math.max(0, nrm.y);
+        col[i * 3] = 0.2 + l * 0.85 + up * 0.1; col[i * 3 + 1] = 0.17 + l * 0.28 + up * 0.08; col[i * 3 + 2] = 0.17 + l * 0.12 + up * 0.08;
+      }
+      geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      tops.push(new THREE.Vector3(0, t.h * 0.97, 0).applyMatrix4(m.matrixWorld));
     }
-    const cable = [];
-    for (let i = 0; i < tops.length; i++) for (let j = i + 1; j < tops.length; j++) if (tops[i].distanceTo(tops[j]) < 42) cable.push(tops[i].x, tops[i].y, tops[i].z, tops[j].x, tops[j].y - 3, tops[j].z);
+    // long cables hang from the tops, linking all the towers together (each to its two nearest, sagging)
+    const cable = [], seen = new Set();
+    for (let i = 0; i < tops.length; i++) {
+      const near = tops.map((p, j) => [p.distanceTo(tops[i]), j]).filter(([, j]) => j !== i).sort((a, b) => a[0] - b[0]).slice(0, 2);
+      for (const [dist, j] of near) {
+        const k = Math.min(i, j) + ',' + Math.max(i, j);
+        if (seen.has(k)) continue; seen.add(k);
+        const A = tops[i], B = tops[j], sag = dist * 0.12;
+        for (let n = 0; n < 12; n++) {
+          const u0 = n / 12, u1 = (n + 1) / 12;
+          const P = (u) => [A.x + (B.x - A.x) * u, A.y + (B.y - A.y) * u - sag * 4 * u * (1 - u), A.z + (B.z - A.z) * u];
+          cable.push(...P(u0), ...P(u1));
+        }
+      }
+    }
     const cg = new THREE.BufferGeometry(); cg.setAttribute('position', new THREE.Float32BufferAttribute(cable, 3));
-    surfaceGroup.add(new THREE.LineSegments(cg, new THREE.LineBasicMaterial({ color: 0x3a3a34 })));
+    surfaceGroup.add(new THREE.LineSegments(cg, new THREE.LineBasicMaterial({ color: 0x2a2220 })));
   }
 
   /* ---- streaming (two workers; main-thread fallback) ---- */
@@ -278,8 +320,9 @@ export function createCaves() {
     }
     const zd = W.zones[zone] || W.zones[0];
     const out = pos.y > W.surfaceY - 2.5 && Math.hypot(pos.x - W.exit.x, pos.z - W.exit.z) < 600;
-    sky.visible = surfaceGroup.visible = out || pos.y > W.surfaceY - 9;
-    if (sky.visible) sky.position.set(pos.x, pos.y, pos.z);
+    // (from the stairs below the pit, the sky shows through the opening ahead)
+    sky.visible = surfaceGroup.visible = out || (pos.y > W.surfaceY - 16 && Math.hypot(pos.x - W.exit.x, pos.z - W.exit.z) < 40);
+    if (sky.visible) { sky.position.set(pos.x, pos.y, pos.z); sky.material.uniforms.time.value = t; }
     fogT.setRGB(zd.fog[0], zd.fog[1], zd.fog[2]);
     scene.fog.color.lerp(fogT, 1 - Math.exp(-1.2 * dt));
     const far = (zd.far || 30) * FOG_K;
@@ -410,12 +453,46 @@ export function createCaves() {
     } else if (p.kind === 'rug') {
       const r = add(new THREE.PlaneGeometry(3.2, 2.2), mat(0x8a3a2a, { roughness: 1 }), 0, 0.015, 0); r.rotation.x = -Math.PI / 2;
     } else if (p.kind === 'car') {
-      // the car of the sheiks: a metal cylinder some twenty feet long on four thickly tyred wheels, a round opening on top
+      // the car of the shelks: a metal cylinder some twenty feet long on four thickly tyred wheels, a round opening on top
       const met = mat(0x6a7078, { metalness: 0.85, roughness: 0.3 });
       const body = add(new THREE.CylinderGeometry(1.0, 1.0, 6.2, 24), met, 0, 1.55, 0); body.rotation.z = Math.PI / 2;
       for (const sx of [-1, 1]) { const cap = add(new THREE.SphereGeometry(1.0, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), met, sx * 3.1, 1.55, 0); cap.rotation.z = -sx * Math.PI / 2; }
       for (const [x, z] of [[-2.2, -1.0], [2.2, -1.0], [-2.2, 1.0], [2.2, 1.0]]) { const w = add(new THREE.CylinderGeometry(0.55, 0.55, 0.4, 18), mat(0x1e1e1e, { roughness: 0.9 }), x, 0.55, z); w.rotation.x = Math.PI / 2; }
       add(new THREE.CylinderGeometry(0.45, 0.45, 0.06, 18), mat(0x2a2a2e, { metalness: 0.6 }), 0, 2.56, 0);
+    } else if (p.kind === 'feastTable') {
+      // the feast of the Esthetts: a great low table under a snowy cloth, heaped with the foods of the Surface, and a
+      // dozen low divans around it — empty now
+      const cloth = mat(0xe8e4dc, { roughness: 0.9 }), wood = mat(0x4a3428);
+      add(box(14, 0.08, 1.8), cloth, 0, 0.5, 0);
+      for (const sx of [-1, 1]) add(box(14, 0.4, 0.02), cloth, 0, 0.32, sx * 0.9);
+      for (const [x, z] of [[-6.8, -0.8], [6.8, -0.8], [-6.8, 0.8], [6.8, 0.8], [0, -0.8], [0, 0.8]]) add(box(0.1, 0.46, 0.1), wood, x, 0.23, z);
+      const foods = [0xb04a30, 0xd8a040, 0x7a9a40, 0xc06070, 0xe0c080, 0x8a5030, 0xa0c060];
+      for (let i = 0; i < 26; i++) {
+        const x = -6.4 + i * 0.5 + Math.sin(i * 7.3) * 0.15, z = Math.sin(i * 3.1) * 0.5;
+        add(new THREE.CylinderGeometry(0.2, 0.16, 0.03, 14), mat(0xd8d0c0, { roughness: 0.4 }), x, 0.555, z);
+        const f = add(new THREE.SphereGeometry(0.1 + (i % 3) * 0.03, 10, 8), mat(foods[i % foods.length], { roughness: 0.6 }), x, 0.62, z); f.scale.y = 0.6;
+      }
+      const silk = [0x8a4a6a, 0x4a6a8a, 0x6a8a4a, 0x8a7a4a];
+      for (let i = 0; i < 6; i++) for (const sz of [-1, 1]) {
+        const x = -5.5 + i * 2.2;
+        add(box(1.9, 0.3, 0.9), mat(silk[(i + (sz > 0 ? 1 : 0)) % 4], { roughness: 0.85 }), x, 0.15, sz * 1.75);
+        add(box(1.9, 0.3, 0.15), mat(silk[(i + 2) % 4], { roughness: 0.85 }), x, 0.42, sz * 2.15);
+      }
+    } else if (p.kind === 'bloodJars') {
+      // what the shelks drew from beneath the table: huge transparent jars, dark red, and the small pumps with their hoses
+      const glass = new THREE.MeshStandardMaterial({ color: new THREE.Color(0.75, 0.8, 0.82).multiplyScalar(k), roughness: 0.15, transparent: true, opacity: 0.35, depthWrite: false });
+      const blood = mat(0x4a0a0c, { roughness: 0.3 });
+      for (let i = 0; i < 4; i++) {
+        const z = -2.4 + i * 1.6;
+        add(new THREE.CylinderGeometry(0.35, 0.35, 0.95, 18), glass, 0, 0.475, z);
+        add(new THREE.CylinderGeometry(0.33, 0.33, 0.6 + (i % 2) * 0.25, 18), blood, 0, (0.6 + (i % 2) * 0.25) / 2 + 0.01, z);
+      }
+      const pumpM = mat(0x5a5a5e, { metalness: 0.7, roughness: 0.4 }), hoseM = mat(0x2a2624, { roughness: 0.8 });
+      for (let i = 0; i < 6; i++) {
+        const z = -2.8 + i * 1.1;
+        add(box(0.3, 0.22, 0.25), pumpM, -1.0, 0.11, z);
+        const hose = add(new THREE.TorusGeometry(0.7 + (i % 3) * 0.2, 0.025, 6, 20, Math.PI), hoseM, -1.6, 0.03, z); hose.rotation.x = -Math.PI / 2; hose.rotation.z = i;
+      }
     } else if (p.kind === 'pedestal') {
       // the stone pedestal in the square from which speakers address the city
       add(new THREE.CylinderGeometry(1.1, 1.3, 0.9, 16), mat(0x8a7a66, { roughness: 0.8 }), 0, 0.45, 0);
@@ -441,19 +518,19 @@ export function createCaves() {
     }
     return g;
   }
-  // pictures painted on the walls of the Esthetts' corridor (chapter 5): a dance around a sheik, the car on wheels
-  // with eager people, sheiks among talking men — the world as the Esthetts see it
+  // pictures painted on the walls of the Esthetts' corridor (chapter 5): a dance around a shelk, the car on wheels
+  // with eager people, shelks among talking men — the world as the Esthetts see it
   function buildMural(m) {
     const c = document.createElement('canvas'); c.width = 256; c.height = 128;
     const x = c.getContext('2d');
     x.fillStyle = '#e8dcc0'; x.fillRect(0, 0, 256, 128);
     x.strokeStyle = '#8a6a3a'; x.lineWidth = 6; x.strokeRect(3, 3, 250, 122);
     const fat = (px, py, col) => { x.fillStyle = col; x.beginPath(); x.ellipse(px, py + 14, 11, 16, 0, 0, 7); x.fill(); x.beginPath(); x.arc(px, py - 6, 7, 0, 7); x.fillStyle = '#e0b090'; x.fill(); };
-    const sheik = (px, py) => { x.strokeStyle = '#2a2420'; x.lineWidth = 2; for (let i = 0; i < 10; i++) { const a = (i < 5 ? Math.PI * 0.75 : Math.PI * 0.25) + (i % 5 - 2) * 0.22; x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(a) * -26 * (i < 5 ? 1 : -1), py + 26); x.stroke(); } x.fillStyle = '#d8b898'; x.beginPath(); x.arc(px, py - 4, 8, 0, 7); x.fill(); x.fillStyle = '#4a3a30'; x.beginPath(); x.ellipse(px, py + 8, 6, 9, 0, 0, 7); x.fill(); };
+    const shelk = (px, py) => { x.strokeStyle = '#2a2420'; x.lineWidth = 2; for (let i = 0; i < 10; i++) { const a = (i < 5 ? Math.PI * 0.75 : Math.PI * 0.25) + (i % 5 - 2) * 0.22; x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(a) * -26 * (i < 5 ? 1 : -1), py + 26); x.stroke(); } x.fillStyle = '#d8b898'; x.beginPath(); x.arc(px, py - 4, 8, 0, 7); x.fill(); x.fillStyle = '#4a3a30'; x.beginPath(); x.ellipse(px, py + 8, 6, 9, 0, 0, 7); x.fill(); };
     const cols = ['#c06070', '#70a0c0', '#90c070', '#d0b050', '#b080c0'];
-    if (m.pic === 'dance') { for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; fat(128 + Math.cos(a) * 80, 60 + Math.sin(a) * 22, cols[i % 5]); } sheik(128, 52); }
+    if (m.pic === 'dance') { for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; fat(128 + Math.cos(a) * 80, 60 + Math.sin(a) * 22, cols[i % 5]); } shelk(128, 52); }
     else if (m.pic === 'car') { x.fillStyle = '#6a7078'; x.fillRect(70, 50, 120, 30); x.beginPath(); x.arc(70, 65, 15, 0, 7); x.arc(190, 65, 15, 0, 7); x.fill(); x.fillStyle = '#222'; for (const wx of [90, 170]) { x.beginPath(); x.arc(wx, 86, 9, 0, 7); x.fill(); } for (let i = 0; i < 6; i++) fat(30 + i * 40 + (i > 2 ? 40 : 0), 92, cols[i % 5]); }
-    else { sheik(70, 50); sheik(110, 54); sheik(150, 50); for (let i = 0; i < 4; i++) fat(40 + i * 60, 88, cols[(i + 2) % 5]); }
+    else { shelk(70, 50); shelk(110, 54); shelk(150, 50); for (let i = 0; i < 4; i++) fat(40 + i * 60, 88, cols[(i + 2) % 5]); }
     const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
     const k = Math.min(1, 0.06 + lightAt(m.x, m.y + 1, m.z) * 1.4);
     const W2 = 1.5, H = 1.5;
