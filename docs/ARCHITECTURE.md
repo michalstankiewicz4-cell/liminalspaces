@@ -17,6 +17,7 @@ Published at: repo <https://github.com/michalstankiewicz4-cell/liminalspaces>, s
 | `js/main.js` | Entry point: `createApp()` |
 | `js/version.js` | `VERSION` (semver) — must stay at this path (the check script reads it) |
 | `js/core/app.js` | App shell: renderer, camera + flashlight, world, player, audio, menus, session; modes `menu`/`play`, pause, frame loop, HUD text, save format (`SAVE_VERSION`, `migrate`) and the new-version check |
+| `js/ui/hotbar.js` | Hotbar: 8 slots with pixel-art item icons drawn on canvases (flashlight, map), selection by keys `hotbar1…8` and the wheel, item state (lit flashlight) |
 | `js/ui/loader.js` | Loading screen (the `#boot` element of `index.html`, reused when a walk starts): step text, progress bar, `hideAfter(n)` frames; `nextPaint()` |
 | `js/core/path-mode.js` | The Great Path world as a game mode: builds it on first use, start points, walker, sun exposure, guide, statues, sound, events, notes, map, teleport, its HUD lines (`createPathMode`) |
 | `js/core/settings.js`, `storage.js`, `util.js` | Sanitised settings store, localStorage wrappers, helpers (PRNG `mulberry32`, stateless hashes `hash4`/`rand4`, `seedFrom`) |

@@ -19,6 +19,7 @@ import { VERSION } from '../version.js';
 import { createMapUi } from '../ui/map.js';
 import { createPathMode } from './path-mode.js';
 import { createLoader, nextPaint } from '../ui/loader.js';
+import { createHotbar } from '../ui/hotbar.js';
 
 const MENU_SEED = 20251031;
 const SAVE_VERSION = 2;
@@ -99,6 +100,7 @@ export function createApp({ appEl, uiEl }) {
   const mapUi = createMapUi(uiEl);
   // loading screen: the boot screen of index.html, hidden once the menu has drawn a few frames
   const loader = createLoader(document.getElementById('boot'));
+  const hotbar = createHotbar(uiEl);
   loader.show('load.boot', null); loader.hideAfter(4);
   // the Great Path world (built the first time it is opened)
   const path = createPathMode({ renderer, camera, pipe, input, hud, mapUi, settings, progress });
@@ -126,6 +128,7 @@ export function createApp({ appEl, uiEl }) {
     world.setViewDist(settings.data.gfx.viewDist);
     world.preload(player.x, player.z);
     mode = 'play'; paused = false; lastDist = 0;
+    hotbar.setItems(['flashlight']); hotbar.select(0);
     input.clear(); menu.hide();
     audio.unlock(); audio.setMuted(false);
     input.lock();
@@ -170,6 +173,7 @@ export function createApp({ appEl, uiEl }) {
     closeSession();
     useWorld('path');
     path.start(where);
+    hotbar.setItems(['flashlight', 'map']); hotbar.select(0);
     mode = 'play'; paused = false; lastDist = 0;
     input.clear(); menu.hide();
     audio.setMuted(true);                                          // this world has its own sound (story/audio.js)
@@ -276,9 +280,17 @@ export function createApp({ appEl, uiEl }) {
   input.onPress = (act) => {
     if (mode !== 'play' || paused) return;
     if (act === 'toggleHud') settings.update((d) => { d.hud.show = !d.hud.show; });
+    else if (act.startsWith('hotbar')) useSlot(+act.slice(6) - 1);
     else if (kind === 'path') path.onPress(act);
     else if (act === 'flashlight') { flash.visible = !flash.visible; audio.click(); }
   };
+  // a hotbar key selects its slot and uses the item in it
+  function useSlot(i) {
+    const item = hotbar.select(i);
+    if (item === 'flashlight') input.onPress('flashlight');
+    else if (item === 'map' && kind === 'path') path.onPress('map');
+  }
+  input.onWheel = (d) => { if (mode === 'play' && !paused && !mapUi.open) hotbar.scroll(d); };
   addEventListener('beforeunload', () => { if (mode === 'play') rememberWalk(); if (session) session.close(); });
 
   /* ---- settings -> systems ---- */
@@ -373,6 +385,8 @@ export function createApp({ appEl, uiEl }) {
   // HUD parts shared by both worlds: crosshair, "click to look", toasts, FPS counter
   function commonHud(dt, now, walking, chunks) {
     hud.showPlay(walking, hudOn);
+    hotbar.show(walking && hudOn); hotbar.tick(dt);
+    hotbar.setOn('flashlight', kind === 'path' ? path.hand.spot.visible : flash.visible);
     hud.showClick(walking && !input.locked && !input.dragging && 'requestPointerLock' in canvas);
     hud.setClick(t('hud.click'));
     hud.tick(dt);

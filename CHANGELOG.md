@@ -4,6 +4,13 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.13.0] - 2026-10-30
+Parts: start screen 1.3.0 · Endless Liminal Spaces 1.2.0 · The Great Path (Rudon's Plane) 1.2.0
+### Added
+- **Hotbar** at the bottom of the screen (like Minecraft's, in this game's style): eight slots with pixel-art icons — the flashlight (it lights up when on) and, in the Great Path world, the map; the other slots are empty, for things to come. Keys 1–8 select a slot and use its item (flashlight on/off, map open/close); the mouse wheel moves the selection; the selected item's name shows above the bar for a moment. The slot keys can be rebound in Options > Controls. The hotbar hides with the HUD (H).
+### Changed
+- The control hint and the paper note being read sit higher, above the hotbar.
+
 ## [0.12.0] - 2026-10-30
 Parts: start screen 1.2.0 · Endless Liminal Spaces 1.1.0 · The Great Path (Rudon's Plane) 1.1.0
 ### Added

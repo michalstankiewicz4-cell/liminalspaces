@@ -16,6 +16,7 @@ export class Input {
     this.skip = 0; this.recent = 0;     // mouse spike filter (see mousemove)
     this.onPress = null;                // (actionId) => void
     this.onLockChange = null;           // (locked) => void
+    this.onWheel = null;                // (direction ±1) => void, with the mouse captured (hotbar)
     this.#rebuild();
     settings.onChange(() => this.#rebuild());
 
@@ -30,6 +31,7 @@ export class Input {
       if (e.button === 0) this.onPress('use'); else if (e.button === 2) this.onPress('flashlight');
     });
     addEventListener('mouseup', () => { this.dragging = false; });
+    addEventListener('wheel', (e) => { if (this.locked && this.onWheel && e.deltaY) this.onWheel(Math.sign(e.deltaY)); }, { passive: true });
     addEventListener('mousemove', (e) => {
       if (!(this.locked || this.dragging)) return;
       const dx = e.movementX || 0, dy = e.movementY || 0;

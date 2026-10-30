@@ -14,6 +14,14 @@ export const ACTIONS = [
   { id: 'map', keys: ['KeyM', null] },
   { id: 'guide', keys: ['KeyG', null] },
   { id: 'use', keys: ['KeyE', null] },
+  { id: 'hotbar1', keys: ['Digit1', null] },
+  { id: 'hotbar2', keys: ['Digit2', null] },
+  { id: 'hotbar3', keys: ['Digit3', null] },
+  { id: 'hotbar4', keys: ['Digit4', null] },
+  { id: 'hotbar5', keys: ['Digit5', null] },
+  { id: 'hotbar6', keys: ['Digit6', null] },
+  { id: 'hotbar7', keys: ['Digit7', null] },
+  { id: 'hotbar8', keys: ['Digit8', null] },
   { id: 'toggleHud', keys: ['KeyH', null] },
 ];
 export const RESERVED = new Set(['Escape']);
