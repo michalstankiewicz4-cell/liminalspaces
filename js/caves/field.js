@@ -23,6 +23,8 @@ export const ZONES = [
   { key: 'yakra', amb: 0.01, tint: [0.45, 0.3, 0.22], rough: 0.42, fog: [0.035, 0.028, 0.024], map: '#b07850', far: 54 },
   { key: 'dark', amb: 0.0015, tint: [0.36, 0.31, 0.27], rough: 0.75, fog: [0.006, 0.006, 0.006], map: '#605850', far: 40 },
   { key: 'cave', amb: 0.001, tint: [0.4, 0.37, 0.33], rough: 0.9, fog: [0.005, 0.005, 0.005], map: '#706860', far: 40 },
+  { key: 'esthett', amb: 0.02, tint: [0.72, 0.64, 0.54], rough: 0.4, fog: [0.06, 0.05, 0.04], map: '#e0b0c0', far: 56 },
+  { key: 'pit', amb: 0.004, tint: [0.42, 0.38, 0.33], rough: 0.7, fog: [0.02, 0.02, 0.02], map: '#c0b090', far: 44 },
   { key: 'upper', amb: 0.002, tint: [0.4, 0.35, 0.3], rough: 0.6, fog: [0.01, 0.01, 0.01], map: '#807060', far: 40 },
 ];
 export const Z = Object.fromEntries(ZONES.map((z, i) => [z.key, i]));
@@ -40,7 +42,8 @@ function dTube(s, x, y, z) {
   let t = px * s.dx + pz * s.dz;                      // along the axis (m)
   const u = Math.abs(px * s.dz - pz * s.dx);          // across (horizontal)
   const tc = t < 0 ? 0 : t > s.L ? s.L : t;
-  const v = y - (s.ay + s.sy * tc);                   // above the floor line
+  // above the floor line (stairs: the line goes up in steps of `run` metres)
+  const v = y - (s.ay + s.sy * (s.run ? Math.min(s.L, Math.floor(tc / s.run + 0.5) * s.run) : tc));
   const beyond = t < -s.ext ? -s.ext - t : t > s.L + s.ext ? t - s.L - s.ext : 0;
   const hh = s.h / 2, rr = v > hh ? s.rt : s.rb;
   const qx = u - s.w + rr, qy = Math.abs(v - hh) - hh + rr;
@@ -74,7 +77,7 @@ export function buildCaves() {
   function tube(a, b, o) {
     const dx = b[0] - a[0], dz = b[2] - a[2], L = Math.hypot(dx, dz) || 1e-3;
     const s = { k: 'tube', ax: a[0], ay: a[1], az: a[2], bx: b[0], by: b[1], bz: b[2], dx: dx / L, dz: dz / L, L, sy: (b[1] - a[1]) / L,
-      w: o.w, h: o.h, rt: Math.min(o.rt ?? o.w * 0.75, o.w - 0.01, o.h / 2 - 0.01), rb: o.rb ?? 0.35, ext: o.ext ?? o.w * 0.6, amp: o.amp ?? 0.05, zone: o.zone };
+      w: o.w, h: o.h, rt: Math.min(o.rt ?? o.w * 0.75, o.w - 0.01, o.h / 2 - 0.01), rb: o.rb ?? 0.35, ext: o.ext ?? o.w * 0.6, amp: o.amp ?? 0.05, zone: o.zone, run: o.run || 0 };
     const pad = Math.max(o.w, o.h) + 2.5;
     s.box = [Math.min(a[0], b[0]) - pad, Math.min(a[1], b[1]) - 2.5, Math.min(a[2], b[2]) - pad, Math.max(a[0], b[0]) + pad, Math.max(a[1], b[1]) + o.h + 2.5, Math.max(a[2], b[2]) + pad];
     s.floorAt = (x, z) => { const t = Math.max(0, Math.min(L, (x - s.ax) * s.dx + (z - s.az) * s.dz)); return s.ay + s.sy * t; };
@@ -110,7 +113,8 @@ export function buildCaves() {
   function addLamp(x, ceil, z, o) {
     const r = R(), dead = r < (o.dead ?? 0.06), flicker = !dead && r < (o.dead ?? 0.06) + 0.05;
     const p = (o.lampP ?? 0.75) * (flicker ? 0.6 : 1);
-    lamps.push({ x, y: ceil - 0.08, z, ceil, p: dead ? 0 : p, dead, flicker, r: 0.86, g: 0.92, b: 1.0 });
+    const c = o.col || [0.86, 0.92, 1.0];
+    lamps.push({ x, y: ceil - 0.08, z, ceil, p: dead ? 0 : p, dead, flicker, r: c[0], g: c[1], b: c[2] });
   }
   // a wandering line of control points from `p` heading `ang` (radians, 0 = +x), `n` steps of `step` m, rising `rise` per step
   function wander(p, ang, n, step, rise, turn = 0.35, bias = 0) {
@@ -306,11 +310,46 @@ export function buildCaves() {
   }
   { const m = pts[10]; mark('climb', 5, m[0], m[1], m[2] + 0.9); }
   p = pts[pts.length - 1];
-  shaft(p[0] + 2, p[2], p[1], p[1] + 30, 1.5, Z.upper);
-  tube([p[0], p[1], p[2]], [p[0] + 2, p[1], p[2]], { ...NAR, zone: Z.upper, ext: 0.4 });
-  props.push({ kind: 'hatch', x: p[0] + 2, y: p[1] + 30, z: p[2] });
-  labels.push({ key: 'toSurface', x: p[0] + 2, y: p[1], z: p[2] });
-  const topY = p[1] + 30;
+
+  /* ---- chapter 6: the Halls of the Esthetts — the fat, idle artists the shelks keep like cattle — and the pit ---- */
+  const WARM = { col: [1.0, 0.86, 0.66], lampP: 0.8, dead: 0.02 };
+  const EY = p[1];
+  path([p, [p[0] + 14, EY, p[2] + 2], [p[0] + 32, EY, p[2]]], { ...COR, w: 1.8, h: 4, amp: 0.04, zone: Z.esthett, lamp: 8, ...WARM });
+  const halls = [];
+  let hx = p[0] + 40, hz = p[2];
+  for (let k = 0; k < 3; k++) {
+    const hw = 10 + k * 2, hd = 8 + (k % 2) * 3;
+    room(hx, EY, hz, hw, hd, 6.5, { rr: 3, zone: Z.esthett, amp: 0.03 });
+    for (const [dx, dz] of [[-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5], [0.5, 0.5]]) addLamp(hx + dx * hw, EY + 6.5, hz + dz * hd, WARM);
+    halls.push([hx, hz, hw, hd]);
+    if (k < 2) { path([[hx + hw - 1, EY, hz], [hx + hw + 12, EY, hz + (k ? -3 : 3)]], { ...COR, w: 1.8, h: 4, amp: 0.04, zone: Z.esthett, lamp: 8, ...WARM }); hx += hw + 12 + 10 + (k + 1) * 2; }
+  }
+  const [h0x, h0z] = halls[0], [h1x, h1z] = halls[1], [h2x, h2z, h2w] = halls[2];
+  props.push({ kind: 'cushions', x: h0x - 4, y: EY, z: h0z + 3 }, { kind: 'cushions', x: h0x + 5, y: EY, z: h0z - 4 }, { kind: 'statue', x: h0x, y: EY, z: h0z },
+    { kind: 'easel', x: h1x - 5, y: EY, z: h1z + 2 }, { kind: 'easel', x: h1x + 3, y: EY, z: h1z - 5 }, { kind: 'statue', x: h1x + 6, y: EY, z: h1z + 4 },
+    { kind: 'cushions', x: h2x - 6, y: EY, z: h2z - 3 }, { kind: 'feast', x: h2x + 2, y: EY, z: h2z + 4 });
+  mark('halls', 6, p[0] + 20, EY, p[2] + 1.2);
+  mark('esthetts', 6, h0x - 2, EY, h0z + 5);
+  mark('art', 6, h1x - 2, EY, h1z - 2);
+  labels.push({ key: 'halls', x: h1x, y: EY, z: h1z });
+  // the pit: from the last hall a narrow flight of stairs climbs, landing by landing, towards the Surface
+  const RISE = 0.24, RUN = 0.36;
+  let sp = [h2x + h2w - 1, EY, h2z];
+  mark('pit', 6, sp[0] - 3, EY, sp[2] + 1.6);
+  labels.push({ key: 'pit', x: sp[0], y: EY, z: sp[2] });
+  for (let k = 0; k < 4; k++) {
+    const dir = k % 2 ? -1 : 1, len = 26, end = [sp[0] + dir * len, sp[1] + len / RUN * RISE, sp[2]];
+    tube(sp, end, { w: 0.75, h: 2.7, rt: 0.6, rb: 0.15, amp: 0.06, zone: Z.pit, ext: 0.2, run: RUN });
+    // a landing, and the next flight goes back the other way a little further on
+    room(end[0] + dir * 1.2, end[1], end[2], 1.8, 1.4, 2.8, { rr: 0.7, zone: Z.pit, amp: 0.06 });
+    addLamp(end[0] + dir * 1.2, end[1] + 2.8, end[2], { lampP: 0.35, dead: 0.5 });
+    sp = [end[0] + dir * 1.2, end[1], end[2] + 2.4];
+    tube([end[0] + dir * 1.2, end[1], end[2]], sp, { w: 0.75, h: 2.7, rt: 0.6, rb: 0.15, amp: 0.06, zone: Z.pit, ext: 0.2 });
+  }
+  p = sp;
+  props.push({ kind: 'hatch', x: p[0], y: p[1] + 2.7, z: p[2] });
+  labels.push({ key: 'toSurface', x: p[0], y: p[1], z: p[2] });
+  const topY = p[1] + 2.7;
 
   // side caves: natural branching tunnels (rough, unlit), some ending in caverns
   function sideCaves(from, depth) {

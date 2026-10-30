@@ -4,6 +4,12 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.22.0] - 2026-10-30
+Parts: Tumithak of the Corridors 1.5.0
+### Added — chapter 6
+- **The Halls of the Esthetts** above the black corridors: three wide halls in warm, plentiful light joined by short corridors, with heaps of bright cushions, sculptures, easels with paintings and a laid table; steles about the halls, the Esthetts (the fat, idle artists the shelks keep like cattle) and their art.
+- **The pit**: from the last hall a narrow flight of stairs climbs landing by landing (four flights, about 70 m up) to a hatch under the Surface. It replaces the old last ladder shaft. The engine's tubes can now have real steps (`run`).
+
 ## [0.21.0] - 2026-10-30
 Parts: Tumithak of the Corridors 1.4.0
 ### Added — chapter 5

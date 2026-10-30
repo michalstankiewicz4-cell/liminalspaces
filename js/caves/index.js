@@ -282,6 +282,30 @@ export function createCaves() {
         b.rotation.z = Math.PI / 2;
       }
       if (p.kind === 'bones') add(new THREE.TorusGeometry(0.22, 0.006, 6, 24), mat(0x6a5a40), 0, 0.01, 0).rotation.x = Math.PI / 2;
+    } else if (p.kind === 'cushions') {
+      // the Esthetts' heaps of soft cushions in bright colours
+      const cols = [0xb04a5a, 0xd0a040, 0x5a7ab0, 0x7aa060, 0xc07ab0, 0xe0d0b0];
+      for (let i = 0; i < 9; i++) {
+        const a = i * 2.2, r = 0.3 + (i % 3) * 0.35;
+        const c = add(new THREE.SphereGeometry(0.42, 12, 8), mat(cols[i % cols.length], { roughness: 0.95 }), Math.cos(a) * r, 0.18 + (i > 5 ? 0.3 : 0), Math.sin(a) * r);
+        c.scale.set(1.3, 0.45, 1.0); c.rotation.y = a;
+      }
+    } else if (p.kind === 'statue') {
+      // a sculpture: a smooth twisting shape on a plinth (the Esthetts make art all day)
+      add(box(0.9, 0.8, 0.9), mat(0xd8d0c0, { roughness: 0.5 }), 0, 0.4, 0);
+      const k2 = add(new THREE.TorusKnotGeometry(0.42, 0.13, 80, 10, 2, 3), mat(0xe8e0d0, { roughness: 0.35 }), 0, 1.45, 0);
+      k2.rotation.x = 0.4;
+    } else if (p.kind === 'easel') {
+      // an easel with a bright painting
+      const wood = mat(0x7a5a3a);
+      for (const [x, rz] of [[-0.35, 0.12], [0.35, -0.12]]) { const l = add(box(0.05, 1.8, 0.05), wood, x, 0.9, 0); l.rotation.z = rz; }
+      const back = add(box(0.05, 1.7, 0.05), wood, 0, 0.85, -0.35); back.rotation.x = -0.25;
+      const cv = document.createElement('canvas'); cv.width = cv.height = 64;
+      const gx = cv.getContext('2d');
+      gx.fillStyle = '#f0e8d0'; gx.fillRect(0, 0, 64, 64);
+      for (let i = 0; i < 14; i++) { gx.fillStyle = `hsl(${(i * 47 + p.x * 13) % 360},70%,55%)`; gx.beginPath(); gx.arc((i * 23) % 64, (i * 37) % 64, 6 + (i % 4) * 4, 0, 7); gx.fill(); }
+      const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+      add(box(0.9, 0.7, 0.03), new THREE.MeshStandardMaterial({ map: tex, color: new THREE.Color(1, 1, 1).multiplyScalar(k), roughness: 0.8 }), 0, 1.35, 0.08);
     } else if (p.kind === 'bonds') {
       // the cords he untied
       const rope = mat(0x7a6a4a);
