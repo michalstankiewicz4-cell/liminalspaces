@@ -88,7 +88,7 @@ All UI is built with `h(tag, props, ...kids)` (`js/ui/dom.js`) — no `innerHTML
 Screens (`js/ui/menu.js`, `js/ui/multi.js`): `main`, `single`, `multi`, `host`, `join`, `room`, `pause`, `options`, with a small history stack (`go`/`back`). Each screen may have an `onShow` refresher. Options tabs (`js/ui/options/`): Graphics, Controls, Mouse, Audio, Language, Privacy & data.
 
 ## Settings (`js/core/settings.js`)
-Stored in `localStorage` key `ls:settings:v1`: `v` (format version, 2), `lang`, `gfx` (pixelH, levels, dither, edge, bright, fov (default 60°), viewDist, headBob, showFps, fine, grain), `mouse` (sens, invertY), `audio` (volume, hum), `hud.show`, `net` (name, stun), `keys` (action → two `KeyboardEvent.code` slots). Everything passes through `sanitize()` (clamps, whitelists, a key code can be used by one slot only; `Escape` is reserved; names are filtered by `cleanName`). Change settings only via `settings.update(draft => …)`.
+Stored in `localStorage` key `ls:settings:v1`: `v` (format version, 2), `lang`, `gfx` (pixelH, levels, dither, edge, bright, fov (default 60°), viewDist, headBob, showFps, fine, grain), `mouse` (sens, invertY), `audio` (volume, steps — footstep volume, default 50 %, hum, scratch), `hud.show`, `net` (name, stun), `keys` (action → two `KeyboardEvent.code` slots). Everything passes through `sanitize()` (clamps, whitelists, a key code can be used by one slot only; `Escape` is reserved; names are filtered by `cleanName`). Change settings only via `settings.update(draft => …)`.
 Key actions (`js/input/bindings.js`): moveFwd/Back/Left/Right, turnLeft/Right, sprint, jump, flashlight, toggleHud.
 
 ## Rendering (`js/render/pixel-pipeline.js`)

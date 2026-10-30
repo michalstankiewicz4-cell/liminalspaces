@@ -100,6 +100,7 @@ export default {
   'mouse.reset': 'Przywróć mysz',
 
   'audio.volume': 'Głośność',
+  'audio.steps': 'Kroki',
   'audio.hum': 'Brzęczenie świetlówek',
   'audio.reset': 'Przywróć dźwięk',
 

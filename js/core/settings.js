@@ -7,7 +7,7 @@ export const DEFAULTS = {
   lang: 'en',
   gfx: { pixelH: 200, levels: 7, dither: 0.8, edge: 0.6, bright: 1.15, fov: 60, viewDist: 2, headBob: true, showFps: false, fine: true, grain: true },
   mouse: { sens: 1, invertY: false },
-  audio: { volume: 0.6, hum: true, scratch: true },
+  audio: { volume: 0.6, steps: 0.5, hum: true, scratch: true },
   hud: { show: true },
   story: { guide: true, events: true },
   net: { name: '', stun: false },
@@ -15,7 +15,7 @@ export const DEFAULTS = {
 // numeric ranges used by both the sanitiser and the option sliders
 export const RANGES = {
   pixelH: [100, 400, 10], levels: [3, 16, 1], dither: [0, 1, 0.05], edge: [0, 1, 0.05], bright: [0.5, 3, 0.05], fov: [50, 110, 1],
-  viewDist: [1, 3, 1], sens: [0.2, 3, 0.1], volume: [0, 1, 0.05],
+  viewDist: [1, 3, 1], sens: [0.2, 3, 0.1], volume: [0, 1, 0.05], steps: [0, 1, 0.05],
 };
 const num = (v, key, d) => { const [lo, hi] = RANGES[key]; v = +v; return Number.isFinite(v) ? clamp(v, lo, hi) : d; };
 
@@ -40,7 +40,7 @@ export function sanitize(raw) {
       headBob: g.headBob !== false, showFps: g.showFps === true, fine: g.fine !== false, grain: g.grain !== false,
     },
     mouse: { sens: num(m.sens, 'sens', 1), invertY: m.invertY === true },
-    audio: { volume: num(a.volume, 'volume', D.audio.volume), hum: a.hum !== false, scratch: a.scratch !== false },
+    audio: { volume: num(a.volume, 'volume', D.audio.volume), steps: num(a.steps, 'steps', D.audio.steps), hum: a.hum !== false, scratch: a.scratch !== false },
     hud: { show: u.show !== false },
     story: { guide: !(r.story && r.story.guide === false), events: !(r.story && r.story.events === false) },
     net: { name: cleanName(n.name), stun: n.stun === true },

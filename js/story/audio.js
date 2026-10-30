@@ -280,11 +280,12 @@ export function createPathAudio(settings) {
   /* ---- footsteps ---- */
   function step(mat, wet2) {
     if (!ctx) return;
-    const s = STEPS[wet2 ? 'water' : MAT_STEP[mat] || 'carpet'], t = now();
-    burst(wet, t, { type: s[0], f: s[1] * (0.9 + Math.random() * 0.2), q: s[2], dur: s[3], gain: s[4] * 0.55 });
-    if (s[5]) burst(wet, t, { type: 'highpass', f: 4000, dur: 0.02, gain: 0.12 });
+    const s = STEPS[wet2 ? 'water' : MAT_STEP[mat] || 'carpet'], t = now(), k = settings.data.audio.steps;   // footstep volume
+    if (k <= 0) return;
+    burst(wet, t, { type: s[0], f: s[1] * (0.9 + Math.random() * 0.2), q: s[2], dur: s[3], gain: s[4] * 0.55 * k });
+    if (s[5]) burst(wet, t, { type: 'highpass', f: 4000, dur: 0.02, gain: 0.12 * k });
   }
-  function land(mat) { if (!ctx) return; tone(wet, now(), { f: 80, f2: 40, dur: 0.18, gain: 0.5 }); step(mat); }
+  function land(mat) { if (!ctx) return; if (settings.data.audio.steps > 0) tone(wet, now(), { f: 80, f2: 40, dur: 0.18, gain: 0.5 * settings.data.audio.steps }); step(mat); }
 
   /* ---- scratching at the skylights ---- */
   let next = 30, active = null;

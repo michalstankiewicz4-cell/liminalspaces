@@ -100,6 +100,7 @@ export default {
   'mouse.reset': 'Reset mouse',
 
   'audio.volume': 'Volume',
+  'audio.steps': 'Footsteps',
   'audio.hum': 'Fluorescent hum',
   'audio.reset': 'Reset audio',
 

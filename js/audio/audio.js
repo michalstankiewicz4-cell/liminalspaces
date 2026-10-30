@@ -85,10 +85,12 @@ export function createAudio(settings) {
     // Flickering tubes buzz harder when they drop out.
     setFlicker(v) { if (ctx && nodes && settings.data.audio.hum) nodes.buzz.gain.setTargetAtTime(0.012 * ZONE[zone].buzz * (v < 0.5 ? 2.5 : 1), ctx.currentTime, 0.02); },
     step(inWater) {
-      if (inWater) { burst(1300, 0.7, 0.28, 0.35); return; }
-      const [f, q, d] = ZONE[zone].step; burst(f, q, d, 0.5);
+      const k = settings.data.audio.steps;                  // footstep volume (Options > Audio)
+      if (k <= 0) return;
+      if (inWater) { burst(1300, 0.7, 0.28, 0.35 * k); return; }
+      const [f, q, d] = ZONE[zone].step; burst(f, q, d, 0.5 * k);
     },
-    land() { burst(260, 0.8, 0.16, 0.7); },
+    land() { if (settings.data.audio.steps > 0) burst(260, 0.8, 0.16, 0.7 * settings.data.audio.steps); },
     click() { burst(3200, 4, 0.03, 0.25); },
     chime() { if (!ctx || muted) return; const t = ctx.currentTime; tone(660, t, 0.9, 0.08); tone(990, t + 0.14, 1.1, 0.06); },
     get running() { return !!ctx && ctx.state === 'running'; },

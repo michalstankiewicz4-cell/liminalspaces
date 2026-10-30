@@ -4,6 +4,10 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new version (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.8.0] - 2026-10-30
+### Added
+- Options > Audio: **Footsteps** volume slider (both worlds: your footsteps and landing). Default 50 % — footsteps are half as loud as before. Footsteps heard as part of scary events are not affected.
+
 ## [0.7.1] - 2026-10-30
 ### Fixed (Great Path world, found with a layout audit: props in walls, overlaps, floating things, notes in the air)
 - West Path: the patch of missing ceiling panels could touch a skylight, so the raised ceiling cut into the skylight well; patches now sit between two skylights.
