@@ -1,7 +1,7 @@
-// The surface (107:27 – 112:00): the roof over the halls — a white, flat, desolate plane under a blue sky with big
+// The surface (1:47:27 – 1:52:00): the roof over the halls — a white, flat, desolate plane under a blue sky with big
 // clouds, wind, the sun warm but not burning. A dark bluish building with a domed roof stands on timbers half-way
 // between our stair hole and its mirror; under it a plaque covers the floor with carved symbols — a circle with a
-// line down the middle and a dot at its midpoint — and one inscription in our language (110:15). Lines in the floor
+// line down the middle and a dot at its midpoint — and one inscription in our language (1:50:15). Lines in the floor
 // run off into the distance. This is its own scene and its own little world for the walker ({ blocked, support }).
 import * as THREE from '../../vendor/three.module.js';
 import { JX, STAIRS, base, SURFACE_Y } from './journey.js';
@@ -72,7 +72,7 @@ export function createSurface(mats) {
   let px = cx - EXT;
   for (const h of holes) { rect(px, zc - 0.75, h[0], zc + 0.75); px = h[1]; }
   rect(px, zc - 0.75, cx + EXT, zc + 0.75);
-  // lines marked in the floor that go out into the distance (109:06): along the path below, and at 90° and 45°
+  // lines marked in the floor that go out into the distance (1:49:06): along the path below, and at 90° and 45°
   // drawn on the plane with a depth offset (a few mm above it would flicker far away)
   const lineMat = new THREE.MeshBasicMaterial({ color: 0x8a8c90, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 });
   const line = (a, len, w = 0.14) => {
@@ -127,7 +127,7 @@ export function createSurface(mats) {
   dome.position.y = y0 + drumH; dome.castShadow = true; B.add(dome);
   const tip = new THREE.Mesh(new THREE.ConeGeometry(0.25, 1.2, 8), blue); tip.position.y = y0 + drumH + DOME.r + 0.5; B.add(tip);
   // the plaque covering the footprint: an army of carved symbols; in the centre a circle, a line down the middle,
-  // a dot at its midpoint (108:53); one inscription in our language
+  // a dot at its midpoint (1:48:53); one inscription in our language
   const plaqueTex = canvasTexture(1024, 1024, (g, w, h) => {
     g.fillStyle = '#7d7a72'; g.fillRect(0, 0, w, h);
     const rnd = ((s) => () => (s = (s * 16807) % 2147483647) / 2147483647)(23);

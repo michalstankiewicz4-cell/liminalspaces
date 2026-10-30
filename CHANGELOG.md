@@ -4,6 +4,12 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new version (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.9.0] - 2026-10-30
+### Added
+- **Compass on the minimap** (Great Path world): N E S W on the rim (N in red), ticks every 22.5°, a marker and the number of degrees you are facing (0° = north, clockwise).
+### Changed
+- Story times of an hour or more are written as h:mm:ss (1:45:42 instead of 105:42) — in the HUD, the map, the guide, the notes and the docs.
+
 ## [0.8.1] - 2026-10-30
 ### Fixed
 - **Round shapes were inside-out** in the Great Path world (columns, plants, stools, funnels and bowls, pipes, cups, lamps, wheels…): their faces were wound the wrong way, so the outside was culled and you saw their inside — the columns in the room of columns looked hollow and you could walk "into" them. All such faces are now correct (checked: every one of ~940 000 mesh triangles faces the way its normal points).

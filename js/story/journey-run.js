@@ -1,11 +1,11 @@
 // What happens while you walk the journey down the Great Path (the places are painted by journey.js):
-//  - the gate shuts behind you a quarter-mile in (60:03) and opens again if you come back to it,
-//  - something scurries across the skylights and knocks (74:07),
+//  - the gate shuts behind you a quarter-mile in (1:00:03) and opens again if you come back to it,
+//  - something scurries across the skylights and knocks (1:14:07),
 //  - in the blackout a pale shape that wears Mel Dogger's face stands in the dark; when you turn or come close it is
-//    gone and running steps follow you until you reach the light of a skylight (81:30 – 83:26),
-//  - the flashlight's battery dies in the squeeze (101:04) and you get stuck for a while (101:25),
+//    gone and running steps follow you until you reach the light of a skylight (1:21:30 – 1:23:26),
+//  - the flashlight's battery dies in the squeeze (1:41:04) and you get stuck for a while (1:41:25),
 //  - the round room: the plate, the platform with the switch under its case, the lever, the staircase that comes
-//    down from the ceiling and the sky above it (106:04 – 107:27); the mirror room's staircase is already down.
+//    down from the ceiling and the sky above it (1:46:04 – 1:47:27); the mirror room's staircase is already down.
 // It also builds the staircases, which the surface (surface.js) shares, and tells the game mode when the player
 // climbs out onto the roof or back down.
 import * as THREE from '../../vendor/three.module.js';
@@ -77,7 +77,7 @@ export function createJourney({ story, walker, hand, sound, pipe, hud, t, progre
   const sunIn = new THREE.SpotLight(0xfff4dc, 0, 22, 0.55, 0.6, 1.2);
   sunIn.position.set((A.hole[0] + A.hole[1]) / 2, rf + H + 4, rz); sunIn.target.position.set(JX.roomA + 3, rf, rz);
   scene.add(sunIn, sunIn.target);
-  // the platform rises from the floor north of the plate; on it the switch under a clear case (106:09)
+  // the platform rises from the floor north of the plate; on it the switch under a clear case (1:46:09)
   const plat = new THREE.Group();
   const pm = mats.steel.clone(); pm.vertexColors = false; pm.color.setScalar(0.45);
   const post = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.95, 0.5), pm); post.position.y = 0.475;
@@ -113,7 +113,7 @@ export function createJourney({ story, walker, hand, sound, pipe, hud, t, progre
   }
   if (leverDone) openedState(false); else setStairsA(STAIRS.steps * STAIRS.rise + 0.2);
 
-  /* ---- the apparition in the dark (81:36) ---- */
+  /* ---- the apparition in the dark (1:21:36) ---- */
   const ghostMat = new THREE.MeshBasicMaterial({ color: 0xa8a8a0, transparent: true, opacity: 0.0, fog: false });
   const ghostLine = new THREE.LineDashedMaterial({ color: 0xd0d0c0, transparent: true, opacity: 0.0, dashSize: 0.04, gapSize: 0.06, depthWrite: false });
   const ghost = humanoid({ s: 1.04, g: 0.82, pose: 'limp', hair: 'short' }, ghostMat, ghostLine);

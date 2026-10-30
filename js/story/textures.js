@@ -81,7 +81,7 @@ const GEN = {
   },
   carpetGrey(seed) { return GEN.carpet(seed, [0.36, 0.37, 0.4]); },
   carpetTaupe(seed) { return GEN.carpet(seed, [0.42, 0.37, 0.31]); },
-  // black square tiles, polished (they reflect the sunlight — story 105:22)
+  // black square tiles, polished (they reflect the sunlight — story 1:45:22)
   blackTile(seed) {
     const n = fbm(seed, 8, 3);
     return (u, v, o) => {
@@ -91,7 +91,7 @@ const GEN = {
       o.h = grout ? 0.1 : 0.85; o.rough = grout ? 0.9 : 0.06 + n(u, v) * 0.05; o.metal = grout ? 0 : 0.35;
     };
   },
-  // old floorboards: long planks, worn (story 73:44)
+  // old floorboards: long planks, worn (story 1:13:44)
   boards(seed) {
     const w = GEN.wood(seed, [0.5, 0.36, 0.22]), wear = fbm(seed + 9, 3, 3);
     return (u, v, o) => { w(u, v, o); const k = 0.9 + wear(u, v) * 0.2; o.r *= k; o.g *= k; o.b *= k; o.rough = Math.min(1, o.rough + 0.15); };

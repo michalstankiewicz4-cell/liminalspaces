@@ -90,6 +90,34 @@ export function createMapUi(root) {
     g.restore();
   }
 
+  // Compass on the rim of the (north-up) minimap: N E S W, ticks every 45°, and the heading you look at.
+  function drawCompass(g, w, hgt, yaw) {
+    const cx = w / 2, cy = hgt / 2, r = w / 2 - 2;
+    const names = t('map.compass').split(' ');
+    g.save();
+    g.lineWidth = 1.5; g.strokeStyle = 'rgba(244,232,184,.55)';
+    for (let k = 0; k < 16; k++) {
+      const a = k * Math.PI / 8, l = k % 4 === 0 ? 0 : k % 2 === 0 ? 7 : 4;
+      if (!l) continue;
+      g.beginPath(); g.moveTo(cx + Math.sin(a) * r, cy - Math.cos(a) * r); g.lineTo(cx + Math.sin(a) * (r - l), cy - Math.cos(a) * (r - l)); g.stroke();
+    }
+    g.font = 'bold 13px ui-monospace,Consolas,monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    for (let k = 0; k < 4; k++) {
+      const a = k * Math.PI / 2, x = cx + Math.sin(a) * (r - 10), y = cy - Math.cos(a) * (r - 10);
+      g.fillStyle = 'rgba(0,0,0,.75)'; g.beginPath(); g.arc(x, y, 8, 0, Math.PI * 2); g.fill();
+      g.fillStyle = k === 0 ? '#ff6a4a' : '#f4e8b8'; g.fillText(names[k] || '', x, y + 1);
+    }
+    // heading (0° = north, clockwise): a marker on the rim and the number under the centre
+    const b = ((-yaw * 180 / Math.PI) % 360 + 360) % 360, ba = b * Math.PI / 180;
+    g.fillStyle = '#ffd27a';
+    g.beginPath(); g.moveTo(cx + Math.sin(ba) * r, cy - Math.cos(ba) * r);
+    g.lineTo(cx + Math.sin(ba - 0.07) * (r - 9), cy - Math.cos(ba - 0.07) * (r - 9)); g.lineTo(cx + Math.sin(ba + 0.07) * (r - 9), cy - Math.cos(ba + 0.07) * (r - 9)); g.fill();
+    g.font = '11px ui-monospace,Consolas,monospace';
+    g.fillStyle = 'rgba(0,0,0,.65)'; g.fillRect(cx - 18, cy + r - 34, 36, 14);
+    g.fillStyle = '#f4e8b8'; g.fillText(Math.round(b) % 360 + '°', cx, cy + r - 26);
+    g.restore();
+  }
+
   // Journal of places found; each one with a label position is a button that teleports there.
   function fillJournal() {
     list.textContent = '';
@@ -153,6 +181,7 @@ export function createMapUi(root) {
       if (mini.hidden || miniT > 0) return;
       miniT = 0.1;
       drawWorld(mini.getContext('2d'), 180, 180, player.x, player.z, 1.4, player, false);
+      drawCompass(mini.getContext('2d'), 180, 180, player.yaw);
     },
   };
 }

@@ -179,7 +179,7 @@ export function createPathAudio(settings) {
       const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = 220; o.connect(g); o.start();
       return { stop: () => o.stop() };
     },
-    // water rushing under the glass path (89:54) and the ocean through the opening (90:41)
+    // water rushing under the glass path (1:29:54) and the ocean through the opening (1:30:41)
     water(pn) {
       const s = ctx.createBufferSource(); s.buffer = brown; s.loop = true;
       const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900;
@@ -197,7 +197,7 @@ export function createPathAudio(settings) {
       s.connect(f).connect(g).connect(pn); s.start(0, Math.random() * 3);
       return { stop: () => { s.stop(); l.stop(); } };
     },
-    // the howling wind through the grate (91:07)
+    // the howling wind through the grate (1:31:07)
     abyss(pn) {
       const s = ctx.createBufferSource(); s.buffer = pink; s.loop = true;
       const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 380; f.Q.value = 3;
@@ -205,7 +205,7 @@ export function createPathAudio(settings) {
       const g = ctx.createGain(); g.gain.value = 0.5; s.connect(f).connect(g).connect(pn); s.start(0, Math.random() * 3);
       return { stop: () => { s.stop(); l.stop(); } };
     },
-    // muffled commotion in an empty district (92:50): murmurs and thumps that stop when you come close
+    // muffled commotion in an empty district (1:32:50): murmurs and thumps that stop when you come close
     commotion(pn, e) {
       const g = ctx.createGain(); g.gain.value = 0; g.connect(pn); e.out = g;
       const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 700; lp.connect(g);

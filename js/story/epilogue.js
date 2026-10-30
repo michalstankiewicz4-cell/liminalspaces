@@ -1,4 +1,4 @@
-// The ending (111:47 – 113:12): Rudon lies on his back and stares at the sky; then the view rises above him — a black
+// The ending (1:51:47 – 1:53:12): Rudon lies on his back and stares at the sky; then the view rises above him — a black
 // speck on a white sheet — up through the clouds, until the plane curves into a white sphere in an endless black
 // void, circled by machines in low orbit; and ships appear out of the darkness, first a few, then more and more,
 // and speed towards the planet. A cut scene with its own scenes and camera; text lines come from i18n.

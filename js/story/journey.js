@@ -4,9 +4,9 @@
 // deterministic (no Math.random). Months of walking are shortened to metres; a paper note says so at every episode.
 // Every element is listed with its story time in docs/GREAT_PATH.md.
 //
-// The hallway runs east along z = zc (0, later -1 after the offset at 89:48). Floor height f follows the story: a
-// step down at the offset, the 7 m drop into the shaft (93:17), then a slow descent while the ceiling comes down
-// to a crawl (96:08–103:13). The round room (105:42) has the lever and the stairs up to the surface (surface.js).
+// The hallway runs east along z = zc (0, later -1 after the offset at 1:29:48). Floor height f follows the story: a
+// step down at the offset, the 7 m drop into the shaft (1:33:17), then a slow descent while the ceiling comes down
+// to a crawl (1:36:08–1:43:13). The round room (1:45:42) has the lever and the stairs up to the surface (surface.js).
 
 /* ---- x positions of the episodes (metres from the Hub; the gate is at 58) ---- */
 export const JX = {
@@ -17,14 +17,14 @@ export const JX = {
   districtEnd: 2264, shaft: 2304, gap: 2308, trash: 2340, descent: 2400, squeeze: 2600, stuck: 2676, emerge: 2700,
   lightAgain: 2712, lastMeal: 2760, black: 2800, roomA: 2896, roomB: 2976, beyond: 2986,
 };
-export const ROOM_R = 10;                         // the round rooms (105:42), radius in metres
-// the collapsible staircases (106:46): 13 steps of 0.3 m up to the roof; A rises east of the centre, B (the mirror) west
+export const ROOM_R = 10;                         // the round rooms (1:45:42), radius in metres
+// the collapsible staircases (1:46:46): 13 steps of 0.3 m up to the roof; A rises east of the centre, B (the mirror) west
 export const STAIRS = {
   steps: 13, rise: 0.3, run: 0.3, w: 1.2,
   A: { x0: JX.roomA + 2, dir: 1, hole: [JX.roomA + 3, JX.roomA + 6.5] },
   B: { x0: JX.roomB - 2, dir: -1, hole: [JX.roomB - 6.5, JX.roomB - 3] },
 };
-// the loop at the fork (85:22): a branch at a shallow angle into a ring that comes back to itself
+// the loop at the fork (1:25:22): a branch at a shallow angle into a ring that comes back to itself
 export const LOOP = { fx: JX.fork, cx: 1478, cz: -34, r: 24, phi: -0.6 };
 LOOP.tx = LOOP.cx + LOOP.r * Math.sin(LOOP.phi); LOOP.tz = LOOP.cz + LOOP.r * Math.cos(LOOP.phi);
 
@@ -38,8 +38,8 @@ export function base(x) {
   return { zc, f: Math.round(f * 100) / 100 };
 }
 export const DEEP_F = -9.45;                    // floor of the round rooms
-export const SURFACE_Y = DEEP_F + 3.35 + 0.55;  // the roof: the white plane (107:27)
-// ceiling height above the floor along the deep part (96:08 – 103:13): the ceiling comes down to a crawl
+export const SURFACE_Y = DEEP_F + 3.35 + 0.55;  // the roof: the white plane (1:47:27)
+// ceiling height above the floor along the deep part (1:36:08 – 1:43:13): the ceiling comes down to a crawl
 export function ceilRel(x) {
   const H = 3.35;
   if (x < JX.descent + 40) return H;
@@ -63,38 +63,38 @@ const W = [1.0, 0.92, 0.76];
 const DAY = { amb: 0.06, tint: W, fog: [0.22, 0.19, 0.12], fm: 'concrete', wm: 'wallpaper', cm: 'ceiling', lamp: null };
 const z = (key, t, o, lx, lz) => ({ key, t, ...DAY, ...o, lx, lz });
 export const JOURNEY_ZONES = [
-  z('gpCable', '60:31', { map: '#d8bc60' }, JX.cable, 0),
-  z('gpDusk', '61:13', { amb: 0.035, tint: [1, 0.78, 0.55], fog: [0.15, 0.1, 0.06], map: '#c89a58', skyGlow: [3.2, 1.9, 1.0] }, 226, 0),
-  z('gpNight', '62:14', { amb: 0.012, tint: [0.55, 0.65, 1], fog: [0.015, 0.02, 0.04], map: '#4a5070', night: true, skyGlow: [0.5, 0.55, 0.8] }, JX.camp, 0),
-  z('gpMorning', '62:58', { map: '#e0c060' }, 380, 0),
-  z('gpNiches', '65:57', { map: '#d8b860' }, 460, 0),
-  z('gpCracks', '67:12', { map: '#c0b080' }, 530, 0),
-  z('gpCarpet', '67:28', { fm: 'carpetTaupe', map: '#b8a078' }, 600, 0),
-  z('gpCross', '69:32', { fm: 'carpetTaupe', map: '#c8b070' }, JX.cross1, -20),
-  z('gpLongNight', '72:25', { fm: 'carpetTaupe', amb: 0.014, tint: [0.55, 0.65, 1], fog: [0.02, 0.025, 0.045], map: '#505878', night: true, skyGlow: [0.5, 0.55, 0.8] }, 850, 0),
-  z('gpFloors', '73:44', { fm: 'boards', map: '#b89060' }, 1000, 0),
-  z('gpSkylights', '74:07', { map: '#d8c070' }, JX.bulge, 0),
-  z('gpTurn', '75:33', { map: '#c8a868' }, JX.turn, 12),
-  z('gpBlackout', '76:05', { amb: 0.0, tint: [1, 1, 1], fog: [0.0, 0.0, 0.0], far: 30, map: '#222' }, 1236, 0),
-  z('gpLight', '83:16', { map: '#e8d070' }, JX.firstSky, 0),
-  z('gpYear', '83:58', { map: '#d0b868' }, JX.year, 0),
-  z('gpFork', '85:22', { map: '#c0a060' }, LOOP.cx, LOOP.cz),
-  z('gpHalf', '88:47', { map: '#d0b868' }, JX.half, 0),
-  z('gpBar', '89:25', { fm: 'boards', map: '#a87850' }, JX.bar + 16, -3.5),
-  z('gpOffset', '89:48', { map: '#d0b868' }, 1700, -1),
-  z('gpGlass', '89:54', { amb: 0.12, tint: [0.8, 0.92, 1.05], fog: [0.45, 0.6, 0.72], far: 380, map: '#5a9ac8', fm: 'steel' }, 1780, -1),
-  z('gpCarpet2', '90:55', { fm: 'carpetTaupe', map: '#b8a078' }, 1868, -1),
-  z('gpGrate', '91:07', { amb: 0.05, fog: [0.08, 0.08, 0.08], map: '#606060', wm: 'concrete' }, 1928, -1),
-  z('gpColumns', '91:28', { amb: 0.03, tint: [1, 0.85, 0.65], fog: [0.04, 0.032, 0.024], far: 60, map: '#8a8070', wm: 'concrete', cm: 'concrete' }, 2028, 12),
-  z('gpDistrict', '92:07', { amb: 0.05, map: '#b0a080', fm: 'carpetGrey', wm: 'wallpaperOld', lamp: ['panel', 6, 0.9] }, 2184, 12),
-  z('gpShaft', '93:17', { amb: 0.05, map: '#908060', wm: 'concrete' }, JX.shaft, -1),
-  z('gpDeep', '96:08', { amb: 0.025, fog: [0.08, 0.07, 0.05], map: '#807050' }, 2360, -1),
-  z('gpSqueeze', '98:18', { amb: 0.004, tint: [1, 1, 1], fog: [0.0, 0.0, 0.0], far: 24, map: '#3a3020' }, 2640, -1),
-  z('gpEmerge', '103:25', { map: '#d8c070' }, 2740, -1),
-  z('gpBlack', '105:22', { fm: 'blackTile', map: '#202028' }, 2840, -1),
-  z('gpRound', '105:42', { fm: 'blackTile', wm: 'plaster', amb: 0.1, map: '#d8d0c0' }, JX.roomA, -1),
-  z('gpMirror', '109:36', { fm: 'blackTile', wm: 'plaster', amb: 0.1, map: '#c8c0b0' }, JX.roomB, -1),
-  z('gpBeyond', '109:42', { map: '#e0c060' }, 3040, -1),
+  z('gpCable', '1:00:31', { map: '#d8bc60' }, JX.cable, 0),
+  z('gpDusk', '1:01:13', { amb: 0.035, tint: [1, 0.78, 0.55], fog: [0.15, 0.1, 0.06], map: '#c89a58', skyGlow: [3.2, 1.9, 1.0] }, 226, 0),
+  z('gpNight', '1:02:14', { amb: 0.012, tint: [0.55, 0.65, 1], fog: [0.015, 0.02, 0.04], map: '#4a5070', night: true, skyGlow: [0.5, 0.55, 0.8] }, JX.camp, 0),
+  z('gpMorning', '1:02:58', { map: '#e0c060' }, 380, 0),
+  z('gpNiches', '1:05:57', { map: '#d8b860' }, 460, 0),
+  z('gpCracks', '1:07:12', { map: '#c0b080' }, 530, 0),
+  z('gpCarpet', '1:07:28', { fm: 'carpetTaupe', map: '#b8a078' }, 600, 0),
+  z('gpCross', '1:09:32', { fm: 'carpetTaupe', map: '#c8b070' }, JX.cross1, -20),
+  z('gpLongNight', '1:12:25', { fm: 'carpetTaupe', amb: 0.014, tint: [0.55, 0.65, 1], fog: [0.02, 0.025, 0.045], map: '#505878', night: true, skyGlow: [0.5, 0.55, 0.8] }, 850, 0),
+  z('gpFloors', '1:13:44', { fm: 'boards', map: '#b89060' }, 1000, 0),
+  z('gpSkylights', '1:14:07', { map: '#d8c070' }, JX.bulge, 0),
+  z('gpTurn', '1:15:33', { map: '#c8a868' }, JX.turn, 12),
+  z('gpBlackout', '1:16:05', { amb: 0.0, tint: [1, 1, 1], fog: [0.0, 0.0, 0.0], far: 30, map: '#222' }, 1236, 0),
+  z('gpLight', '1:23:16', { map: '#e8d070' }, JX.firstSky, 0),
+  z('gpYear', '1:23:58', { map: '#d0b868' }, JX.year, 0),
+  z('gpFork', '1:25:22', { map: '#c0a060' }, LOOP.cx, LOOP.cz),
+  z('gpHalf', '1:28:47', { map: '#d0b868' }, JX.half, 0),
+  z('gpBar', '1:29:25', { fm: 'boards', map: '#a87850' }, JX.bar + 16, -3.5),
+  z('gpOffset', '1:29:48', { map: '#d0b868' }, 1700, -1),
+  z('gpGlass', '1:29:54', { amb: 0.12, tint: [0.8, 0.92, 1.05], fog: [0.45, 0.6, 0.72], far: 380, map: '#5a9ac8', fm: 'steel' }, 1780, -1),
+  z('gpCarpet2', '1:30:55', { fm: 'carpetTaupe', map: '#b8a078' }, 1868, -1),
+  z('gpGrate', '1:31:07', { amb: 0.05, fog: [0.08, 0.08, 0.08], map: '#606060', wm: 'concrete' }, 1928, -1),
+  z('gpColumns', '1:31:28', { amb: 0.03, tint: [1, 0.85, 0.65], fog: [0.04, 0.032, 0.024], far: 60, map: '#8a8070', wm: 'concrete', cm: 'concrete' }, 2028, 12),
+  z('gpDistrict', '1:32:07', { amb: 0.05, map: '#b0a080', fm: 'carpetGrey', wm: 'wallpaperOld', lamp: ['panel', 6, 0.9] }, 2184, 12),
+  z('gpShaft', '1:33:17', { amb: 0.05, map: '#908060', wm: 'concrete' }, JX.shaft, -1),
+  z('gpDeep', '1:36:08', { amb: 0.025, fog: [0.08, 0.07, 0.05], map: '#807050' }, 2360, -1),
+  z('gpSqueeze', '1:38:18', { amb: 0.004, tint: [1, 1, 1], fog: [0.0, 0.0, 0.0], far: 24, map: '#3a3020' }, 2640, -1),
+  z('gpEmerge', '1:43:25', { map: '#d8c070' }, 2740, -1),
+  z('gpBlack', '1:45:22', { fm: 'blackTile', map: '#202028' }, 2840, -1),
+  z('gpRound', '1:45:42', { fm: 'blackTile', wm: 'plaster', amb: 0.1, map: '#d8d0c0' }, JX.roomA, -1),
+  z('gpMirror', '1:49:36', { fm: 'blackTile', wm: 'plaster', amb: 0.1, map: '#c8c0b0' }, JX.roomB, -1),
+  z('gpBeyond', '1:49:42', { map: '#e0c060' }, 3040, -1),
 ];
 
 /* ---- painting ---- */
@@ -118,7 +118,7 @@ export function paintJourney(h, xa, xb) {
     solid(x, zc - 3, x + step, zc + 3);
     room(zk, x, zc - w / 2, x + step, zc + w / 2, { floor: f, ceil: f + cr, flags: 0 });
   }
-  // beyond the mirror room: the other hallway, endless (109:42)
+  // beyond the mirror room: the other hallway, endless (1:49:42)
   if (xb > JX.beyond) {
     const a = Math.max(xa, JX.beyond), { zc, f } = base(a);
     solid(a, zc - 3, xb, zc + 3);
@@ -144,7 +144,7 @@ export function paintJourney(h, xa, xb) {
     if (x >= JX.squeeze && x < JX.emerge) continue;
     prop('chalk', x + 2, zc - width(x + 2) / 2, 0, { n: 1, red: true, y: f });
   }
-  // rain water collectors under a skylight every 160 m (64:28, 104:35)
+  // rain water collectors under a skylight every 160 m (1:04:28, 1:44:35)
   for (const x of [84, 244, 404, 724, 884, 1044, 1364, 1524, 1844, 2164, 2324, JX.lastMeal - 4]) if (x >= xa && x < xb) prop('funnel', x, base(x).zc, 0, { top: grid.ceilAt(x, base(x).zc) - base(x).f, y: base(x).f });
 
   /* ================= 59:21 departure: decay and trash that thin out ================= */
@@ -158,34 +158,34 @@ export function paintJourney(h, xa, xb) {
     note(66, 0, 0, -1, 'gp.n.greatPath');
     note(98, 0, 0, 1, 'gp.n.j.depart');
   }
-  /* 60:31 the first and last Vibra-cable */
+  /* 1:00:31 the first and last Vibra-cable */
   if (over(150, 200)) {
     for (let a = 150; a < 186; a += 12) { const w = h.wallAt(a + 6, 0, 0, -1); prop('cable', a + 6, w.z + 0.005, 0, { len: 12, frayed: a + 12 >= 186, y: 0 }); }
     onWall('station', JX.cable, 0, 0, -1);
     note(JX.cable + 3, 0, 0, -1, 'gp.n.j.cable');
   }
-  /* 61:13 dusk, a meal (61:18); 62:14 the first night: the camp */
+  /* 1:01:13 dusk, a meal (1:01:18); 1:02:14 the first night: the camp */
   if (over(196, 340)) {
     note(200, 0, 0, 1, 'gp.n.j.dusk');
     prop('meal', 229, 1.0, Math.PI);
     note(263, 0, 0, -1, 'gp.n.j.night');
     prop('camp', JX.camp, 0.4, Math.PI / 2);
   }
-  /* 62:58 morning: the explorers' marks, Rudon starts his own red marks (63:15) */
+  /* 1:02:58 morning: the explorers' marks, Rudon starts his own red marks (1:03:15) */
   if (over(336, 420)) {
     for (let k = 0; k < 5; k++) prop('chalk', JX.marks - 2 + k * 0.6, -1.5, 0, { n: 2 + k, y: 0, low: true });
     note(JX.marks + 4, 0, 0, -1, 'gp.n.j.morning');
   }
-  /* 65:57 the toilet niches, "every hour or so" */
+  /* 1:05:57 the toilet niches, "every hour or so" */
   for (const x of [JX.niches + 12, JX.niches + 52, 1012, 1396, 1572, 2236, 2780]) if (x >= xa - 2 && x < xb + 2) niche(x);
   if (over(410, 430)) note(JX.niches + 8, 0, 0, 1, 'gp.n.j.niches');
-  /* 67:12 cracks in the concrete; 67:28 the floor turns to carpet at a line between skylights */
+  /* 1:07:12 cracks in the concrete; 1:07:28 the floor turns to carpet at a line between skylights */
   if (over(500, 570)) {
     for (let k = 0; k < 16; k++) { const x = 502 + k * 3.4 + R(k, 0, 81) * 1.5; prop('crack', x, (R(k, 1, 82) - 0.5) * 1.6, R(k, 2, 83) < 0.5 ? 0 : Math.PI, { seed: k }); }
     note(504, 0, 0, -1, 'gp.n.j.cracks');
     note(JX.carpet + 3, 0, 0, 1, 'gp.n.j.carpet');
   }
-  /* 69:32 – 72:04 intersections; the side halls end after "20 minutes" (shortened): shelves, a ramp */
+  /* 1:09:32 – 1:12:04 intersections; the side halls end after "20 minutes" (shortened): shelves, a ramp */
   if (over(JX.cross1 - 2, JX.cross1 + 2)) { crossHall(JX.cross1, -38, 38); note(JX.cross1 - 3, 0, 0, -1, 'gp.n.j.cross'); }
   if (over(JX.cross2 - 2, JX.cross2 + 2)) {
     crossHall(JX.cross2, -20, 30);
@@ -198,9 +198,9 @@ export function paintJourney(h, xa, xb) {
     for (let k = 0; k < 12; k++) room('gpCross', JX.cross3 - 1.5, -24 - k * 0.5 - 0.5, JX.cross3 + 1.5, -24 - k * 0.5, { floor: -0.3 * (k + 1), ceil: H, flags: 0 });
     note(JX.cross3 + 1.5, -22, 1, 0, 'gp.n.j.ramp');
   }
-  /* 72:25 days shorter, nights longer */
+  /* 1:12:25 days shorter, nights longer */
   if (over(JX.longNight, JX.longNight + 6)) note(JX.longNight + 3, 0, 0, -1, 'gp.n.j.longNight');
-  /* 73:44 concrete → carpet → floorboards → concrete; 73:53 counting skylights */
+  /* 1:13:44 concrete → carpet → floorboards → concrete; 1:13:53 counting skylights */
   if (over(904, 1046)) {
     room('gpFloors', 904, -1.5, 944, 1.5, { fm: M.concrete, floor: 0, ceil: H, flags: 0 });
     room('gpFloors', 944, -1.5, 984, 1.5, { fm: M.carpetTaupe, floor: 0, ceil: H, flags: 0 });
@@ -208,30 +208,30 @@ export function paintJourney(h, xa, xb) {
     note(908, 0, 0, 1, 'gp.n.j.floors');
     note(1001, 0, 0, -1, 'gp.n.j.count');
   }
-  /* 74:07 something scurries across the skylights, knocking; 74:42 a skylight curved outward, a stack of books */
+  /* 1:14:07 something scurries across the skylights, knocking; 1:14:42 a skylight curved outward, a stack of books */
   if (over(1046, 1090)) {
     prop('bulge', JX.bulge, 0, 0, { y: H + 0.55 });
     prop('books', JX.bulge + 0.3, 0.2, 0.4);
     note(JX.bulge + 3, 0, 0, 1, 'gp.n.j.bulge');
   }
-  /* 75:33 the turn-around point; "blackout" beyond */
+  /* 1:15:33 the turn-around point; "blackout" beyond */
   if (over(JX.turn - 2, JX.turn + 2)) {
     crossHall(JX.turn, -14, 40);
     note(JX.turn + 1.5, 38, 1, 0, 'gp.n.j.turnEnd');
     note(JX.turn - 3, 0, 0, -1, 'gp.n.j.turn');
   }
   if (over(JX.blackA - 6, JX.blackA)) note(JX.blackA - 4, 0, 0, 1, 'gp.n.j.blackout');
-  /* 83:16 the first skylight after the dark; 83:58 one year passed: a broken skateboard */
+  /* 1:23:16 the first skylight after the dark; 1:23:58 one year passed: a broken skateboard */
   if (over(JX.firstSky, JX.year + 6)) {
     note(JX.firstSky + 3, 0, 0, -1, 'gp.n.j.light');
     prop('skateboard', JX.year, 1.0, 0.3, { broken: true });
     note(JX.year + 2, 0, 0, 1, 'gp.n.j.year');
   }
-  /* 85:22 the split: a branch at a shallow angle that curves back into itself */
+  /* 1:25:22 the split: a branch at a shallow angle that curves back into itself */
   if (over(JX.fork - 2, LOOP.cx + LOOP.r + 3)) paintLoop();
-  /* 88:47 half the food is gone */
+  /* 1:28:47 half the food is gone */
   if (over(JX.half - 2, JX.half + 4)) { prop('boxes', JX.half, 1.1, 0); note(JX.half + 2, 0, 0, 1, 'gp.n.j.half'); }
-  /* 89:25 a long shallow room on the left: bar stools bolted to the floor, a counter, cupboards */
+  /* 1:29:25 a long shallow room on the left: bar stools bolted to the floor, a counter, cupboards */
   if (over(JX.bar, JX.bar + 34)) {
     room('gpBar', JX.bar + 2, -4.5, JX.bar + 30, -1.5, { floor: 0, ceil: H, flags: F.SKIRT });
     prop('counter', JX.bar + 16, -3.55, 0, { w: 24 });
@@ -239,11 +239,11 @@ export function paintJourney(h, xa, xb) {
     for (let k = 0; k < 9; k++) prop('cupboard', JX.bar + 4.5 + k * 2.7, -4.5, 0, { y: 0 });
     note(JX.bar + 1, 0, 0, -1, 'gp.n.j.bar');
   }
-  /* 89:48 the hall moves a few feet to the left and down */
+  /* 1:29:48 the hall moves a few feet to the left and down */
   if (over(JX.offset - 4, JX.offset + 4)) note(JX.offset + 2, -1, 0, 1, 'gp.n.j.offset');
-  /* 89:54 a glass floor over flowing water; 90:13 an opening to the outside, the ocean */
+  /* 1:29:54 a glass floor over flowing water; 1:30:13 an opening to the outside, the ocean */
   if (over(JX.glass - 2, JX.glassEnd + 30)) paintGlass();
-  /* 91:07 a metal grate over an abyss, wind howling through it */
+  /* 1:31:07 a metal grate over an abyss, wind howling through it */
   if (over(JX.grate - 2, JX.grateEnd + 2)) {
     const { zc, f } = base(JX.grate);
     room('gpGrate', JX.grate, zc - 1.5, JX.grateEnd, zc + 1.5, { floor: f, ceil: f + H, flags: F.NOFLOOR, fm: M.steel });
@@ -252,11 +252,11 @@ export function paintJourney(h, xa, xb) {
     emitter('abyss', (JX.grate + JX.grateEnd) / 2, f - 2, zc);
     note(JX.grate - 2, zc, 0, -1, 'gp.n.j.grate');
   }
-  /* 91:28 a room of columns, a soft glow along the path */
+  /* 1:31:28 a room of columns, a soft glow along the path */
   if (over(JX.columns, JX.columnsEnd)) paintColumns();
-  /* 92:07 an abandoned district */
+  /* 1:32:07 an abandoned district */
   if (over(JX.district, JX.districtEnd)) paintDistrict();
-  /* 93:17 the floor gives way: the path continues 20–30 ft below */
+  /* 1:33:17 the floor gives way: the path continues 20–30 ft below */
   if (over(JX.shaft - 8, JX.gap + 4)) {
     const top = base(JX.shaft - 1), low = base(JX.shaft);
     room('gpShaft', JX.shaft, low.zc - 1.5, JX.gap, low.zc + 1.5, { floor: low.f, ceil: top.f + H, flags: 0 });
@@ -264,23 +264,23 @@ export function paintJourney(h, xa, xb) {
     note(JX.shaft - 3, top.zc, 0, -1, 'gp.n.j.shaft');
     note(JX.gap + 3, low.zc, 0, 1, 'gp.n.j.deep', {}, { h: 1.55 });
   }
-  /* 96:30 bits of trash: broken glass, torn material, string */
+  /* 1:36:30 bits of trash: broken glass, torn material, string */
   if (over(JX.trash, JX.trash + 40)) for (let k = 0; k < 14; k++) {
     const x = JX.trash + k * 2.8 + R(k, 0, 91) * 1.5, { zc } = base(x);
     prop(['shards', 'cloth', 'string'][k % 3], x, zc + (R(k, 1, 92) - 0.5) * 2, R(k, 2, 93) * 6, { seed: k });
   }
-  /* 97:17 deeper and darker; the ceiling comes down (98:18); crawling, stuck (101:25); light again (103:25) */
+  /* 1:37:17 deeper and darker; the ceiling comes down (1:38:18); crawling, stuck (1:41:25); light again (1:43:25) */
   if (over(JX.descent, JX.descent + 4)) note(JX.descent + 2, base(JX.descent).zc, 0, -1, 'gp.n.j.descent');
   if (over(JX.squeeze - 4, JX.squeeze)) note(JX.squeeze - 2, base(JX.squeeze).zc, 0, 1, 'gp.n.j.squeeze', {}, { h: 0.9 });
   if (over(JX.lightAgain, JX.lightAgain + 6)) note(JX.lightAgain + 3, base(JX.lightAgain).zc, 0, -1, 'gp.n.j.emerge');
   if (over(JX.lastMeal - 6, JX.lastMeal + 6)) note(JX.lastMeal + 2, base(JX.lastMeal).zc, 0, 1, 'gp.n.j.lastMeal');
-  /* 105:22 black tiles that reflect the sun */
+  /* 1:45:22 black tiles that reflect the sun */
   if (over(JX.black, JX.roomA - ROOM_R)) {
     const { zc, f } = base(JX.black);
     room('gpBlack', JX.black, zc - 1.5, JX.roomA - ROOM_R + 0.5, zc + 1.5, { floor: f, ceil: f + H, flags: 0 });
     note(JX.black + 3, zc, 0, -1, 'gp.n.j.black');
   }
-  /* 105:42 the round rooms (ours and the mirror), the switch, the stairs up; 109:42 the other hallway */
+  /* 1:45:42 the round rooms (ours and the mirror), the switch, the stairs up; 1:49:42 the other hallway */
   if (over(JX.roomA - ROOM_R, JX.roomB + ROOM_R)) { roundRoom('gpRound', JX.roomA, STAIRS.A); roundRoom('gpMirror', JX.roomB, STAIRS.B); }
   if (over(JX.beyond, JX.beyond + 6)) note(JX.beyond + 3, base(JX.beyond).zc, 0, -1, 'gp.n.j.beyond');
   if (over(JX.roomA - 12, JX.roomA - 8)) note(JX.roomA - ROOM_R - 1, base(JX.roomA).zc, 0, 1, 'gp.n.j.round');
@@ -316,13 +316,13 @@ export function paintJourney(h, xa, xb) {
     room('gpCross', x - 1.5, z0, x + 1.5, z1, { floor: 0, ceil: H, flags: 0 });
     for (let zz = z0 + 6; zz < z1 - 4; zz += 8) if (Math.abs(zz) > 3) skylight(x - 1, zz, x + 1, zz + 2, 0.85, 0.7);
   }
-  // a small human-sized alcove in the right wall with a hole at the bottom (65:57)
+  // a small human-sized alcove in the right wall with a hole at the bottom (1:05:57)
   function niche(x) {
     const { zc, f } = base(x), w = width(x);
     room(zoneAtX(x), x - 0.5, zc + w / 2, x + 0.5, zc + w / 2 + 1, { floor: f, ceil: f + 2.2, flags: 0 });
     prop('toilet', x, zc + w / 2 + 0.5, Math.PI, { y: f });
   }
-  // the fork and the loop (85:22 – 88:02)
+  // the fork and the loop (1:25:22 – 1:28:02)
   function paintLoop() {
     const fx = LOOP.fx, fz = -1.5, tx = LOOP.tx, tz = LOOP.tz;
     const dx = tx - fx, dz = tz - fz, L = Math.hypot(dx, dz);
@@ -349,7 +349,7 @@ export function paintJourney(h, xa, xb) {
     room('gpGlass', JX.glass, zc - 1.5, JX.glassEnd, zc + 1.5, { floor: f, ceil: f + H, flags: F.NOFLOOR, fm: M.steel, wm: M.concrete });
     for (let x = JX.glass; x < JX.glassEnd; x += 4) prop('glassFloor', x + 2, zc, 0, { w: 3, len: 4, y: f });
     h.water.push({ kind: 'channel', x0: Math.max(xa, JX.glass), x1: Math.min(xb, JX.glassEnd), z0: zc - 1.5, z1: zc + 1.5, y: f - 0.45, top: f });
-    // the opening (90:13): the wall is cut out; beyond it the open air above the ocean (no ceiling, no walls)
+    // the opening (1:30:13): the wall is cut out; beyond it the open air above the ocean (no ceiling, no walls)
     room('gpGlass', JX.winA, zc - 2.0, JX.winB, zc - 1.5, { floor: f, ceil: f + 2.9, flags: 0, fm: M.concrete });
     grid.paint(JX.winA - 60, zc - 140, JX.winB + 60, zc - 2.0, { ...zo('gpGlass'), floor: f - 30, ceil: f + 300, flags: F.OUT, fm: M.dark });
     prop('blocker', (JX.winA + JX.winB) / 2, zc - 1.9, 0, { w: JX.winB - JX.winA, h: 3, y: f });
@@ -361,7 +361,7 @@ export function paintJourney(h, xa, xb) {
     note(JX.winB + 2, zc, 0, 1, 'gp.n.j.window');
     note(JX.glassEnd + 3, zc, 0, -1, 'gp.n.j.carpet2');
   }
-  // forests of concrete columns in a dim room (91:28)
+  // forests of concrete columns in a dim room (1:31:28)
   function paintColumns() {
     const { zc, f } = base(JX.columns), z0 = zc - 40, z1 = zc + 40;
     room('gpColumns', JX.columns, z0, JX.columnsEnd, z1, { floor: f, ceil: f + 5.5, flags: 0 });
@@ -373,7 +373,7 @@ export function paintJourney(h, xa, xb) {
     for (let x = JX.columns + 4; x < JX.columnsEnd; x += 6) for (const s of [-1, 1]) grid.addLight({ x, z: zc + s * 1.9, y: f + 0.12, r: 1, g: 0.8, b: 0.55, p: 0.32 });
     note(JX.columns + 0.5, zc - 3.4, -1, 0, 'gp.n.j.columns', {}, {});          // on the west wall, beside the way in
   }
-  // an empty district: halls branch off more and more often; rooms with windows, dusty furniture (92:07)
+  // an empty district: halls branch off more and more often; rooms with windows, dusty furniture (1:32:07)
   function paintDistrict() {
     const { zc, f } = base(JX.district);
     note(JX.district + 2, zc, 0, -1, 'gp.n.j.district');
@@ -400,7 +400,7 @@ export function paintJourney(h, xa, xb) {
       skylight(x - 1, s < 0 ? zc - 1.5 - len / 2 - 1 : zc + 1.5 + len / 2 - 1, x + 1, s < 0 ? zc - 1.5 - len / 2 + 1 : zc + 1.5 + len / 2 + 1, 0.6, 0.6);
     }
   }
-  // a round room with skylights along its curved border, the plate, and the stair hole to the roof (105:42)
+  // a round room with skylights along its curved border, the plate, and the stair hole to the roof (1:45:42)
   function roundRoom(zk, cx, st) {
     const { zc, f } = base(cx);
     const inside = (px, pz) => Math.hypot(px - cx, pz - zc) < ROOM_R;
@@ -415,7 +415,7 @@ export function paintJourney(h, xa, xb) {
     // the hole for the stairs: open to the sky once the stairs are down (stairs and lid are built in journey-run.js)
     grid.paint(st.hole[0], zc - 0.75, st.hole[1], zc + 0.75, { ...zo(zk), floor: f, ceil: f + 300, flags: F.OUT });
     prop('plate', cx, zc, 0, { y: f });
-    if (zk === 'gpRound') prop('backpack', st.x0 - 0.6, zc + 1.1, Math.PI / 2, { y: f });     // he lets it slide off (107:11)
+    if (zk === 'gpRound') prop('backpack', st.x0 - 0.6, zc + 1.1, Math.PI / 2, { y: f });     // he lets it slide off (1:47:11)
   }
 }
 

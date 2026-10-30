@@ -1,4 +1,4 @@
-// Moving water of the Great Path journey (89:54 – 90:46): blue water with white foam flowing under the glass path,
+// Moving water of the Great Path journey (1:29:54 – 1:30:46): blue water with white foam flowing under the glass path,
 // and, through the opening in the wall, the open air: an ocean flowing violently to the horizon under a sky with
 // clouds. Shaders only (no textures); built when the player comes near, hidden when far.
 import * as THREE from '../../vendor/three.module.js';
@@ -82,7 +82,7 @@ export function createWater(scene, list) {
       g.add(mesh); mats.push(m);
       sides(e.top - e.y + 0.05, new THREE.MeshStandardMaterial({ color: 0x55606a, roughness: 0.6 }));
     } else if (e.kind === 'pit') {
-      // the abyss under the grate (91:07): walls fading into black, no bottom in sight
+      // the abyss under the grate (1:31:07): walls fading into black, no bottom in sight
       const wall = new THREE.MeshStandardMaterial({ color: 0x4a4844, roughness: 0.95 });
       sides(e.top - e.y, wall);
       const bottom = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x000000 }));

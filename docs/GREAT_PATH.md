@@ -83,46 +83,46 @@ Layout: `js/story/journey.js` (painted per 32 m column; x positions in `JX`), ev
 |---|---|---|
 | 57:51 – 59:13 | The layered doors, the judge, "No sir", Adam, Nestor, Rebecca and the family; the long yellow-beige hallway with squares of sunlight | The gate of the court (part 1); statue scene and plaque at x ≈ 96 |
 | 59:21 – 59:57 | Dull concrete, yellow walls, skylights every ~15 ft; scuff marks, trash that thins out | x 60 – 140: concrete floor, old wallpaper, trash and papers fading out (`trash`, `papers`) |
-| 60:03 | The doors clank shut behind him a quarter-mile back | The gate closes when you pass x = 112; it opens again if you walk back to it |
-| 60:31 | The first and last Vibra-cable, two miles in: "You are clear to proceed" | x 150 – 186: cable on the left wall, a station at x = 170 |
-| 61:03 – 61:54 | No more decay; the sun weakens, 6 PM; the food cube on the stove | x 196 – 256: dusk zone (warm, weaker skylights), the meal at x = 229 |
-| 62:00 – 62:58 | Night: he can hardly see; mattress, sleeping bag, one pillow; the silence | x 256 – 336: night zone — stars in the skylights, starlight only; the camp at x = 300; near-silent ambience |
-| 63:15 – 63:42 | Explorers' marks at waist level on the left wall; he starts his own red chalk marks | x = 344: a group of white marks low on the left wall; red marks every 32 m from here to the end |
-| 64:28 | Skateboarding; a rain funnel, water through the filter | Rain collectors under skylights every 160 m (x 84, 244, 404, …) |
-| 65:21 – 66:21 | Reading while walking; human-sized niches with a hole at the bottom, every hour or so | Niches in the right wall at x 424, 464, 1012, 1396, 1572, 2236, 2780 (`toilet`) |
-| 67:12 | An area with more cracks in the concrete | x 500 – 560: cracks in the floor (`crack`) |
-| 67:28 – 68:06 | The floor turns to brownish-grey carpet at a straight line between skylights | x = 560 (between the skylights at 556 and 564) |
-| 69:32 – 69:58 | The first intersection; side halls end after ~20 minutes | x = 640: a cross hall 38 m each way, dead ends |
-| 71:20 – 72:15 | More intersections; one side hall ends with shelves built in, one with a ramp down to a wall ~12 ft deep | x = 720 (south arm: built-in shelves), x = 784 (north arm: 6 m ramp down 3.6 m) |
-| 72:25 – 72:55 | Days shorter, nights longer, the light of the stars | x 808 – 896: night zone again |
-| 73:44 – 73:59 | Concrete → carpet for a week → wooden floorboards → concrete; skylights always the same; counting them | x 904 – 1046: concrete, carpet, floorboards (`boards`), concrete |
-| 74:07 – 74:36 | Something scurries across the skylights, a shadow, knocking | Passing x ≈ 1048 triggers a scratching episode at a skylight and knocks |
-| 74:42 – 75:10 | A skylight curved outward; books stacked to peek over the edge | x = 1076: a glass dome over the skylight, a stack of books under it |
-| 75:33 – 75:59 | Day 92: the turn-around intersection (explorers went right for 6 hours); "blackout" on the map | x = 1120: cross hall, south arm 40 m with a note at its end |
-| 76:05 – 83:20 | No skylights: pitch black for more than a day; he turns back; a pale shape wearing Mel Dogger's face blocks the way; running steps behind him until the first skylight | x 1168 – 1304: no light at all (fog black). After ~14 s inside, a pale, wrong-proportioned figure stands ahead; when you come close or look away it is gone and running steps follow you until you leave the dark or reach a sun square |
-| 83:16 – 83:46 | The first skylight; no force could make him turn back | x = 1308 |
-| 83:58 – 84:34 | One year; the watch stopped; the skateboard broke | x = 1360: the broken skateboard |
-| 85:22 – 88:09 | A split: a path to the left at a shallow angle; days later a three-way intersection with his own red mark — the path curved back into itself | x = 1442: a branch to a ring corridor (radius 24 m) that comes back to the branch; red marks on the ring |
-| 88:47 – 89:05 | Half the food is gone | x = 1540: half a stack of empty boxes |
-| 89:25 – 89:42 | A long shallow room on the left: bar stools bolted to the floor, a counter, cupboards | x 1610 – 1638, open to the hall |
-| 89:48 | The hall continues offset a few feet to the left and down | x = 1680: 1 m to the left, 0.45 m down |
-| 89:54 – 90:55 | A glass path with blue water and white foam flowing underneath; an opening to the outside: sun, an ocean flowing violently | x 1728 – 1832: glass panes over an animated water channel; x 1764 – 1796: an opening in the left wall with a sill; outside an animated ocean to the horizon and a sky with clouds (`water.js`; cells outside are "open to the sky", `F.OUT`) |
-| 90:55 – 91:05 | Brownish carpet again | x 1832 – 1904 |
-| 91:07 – 91:22 | A metal grate over a dark abyss, howling wind | x 1904 – 1952: a walkable grate over a 40 m deep pit, wind sound |
-| 91:28 – 92:05 | A room of columns in a grid, no windows, a gentle glow along the path, footsteps like a roaring animal | x 1968 – 2088: 80 m wide room, columns every 5 m, glow strips, huge reverb |
-| 92:07 – 93:06 | Halls branch off more and more; rooms with windows, dusty furniture; an empty district; muffled commotion that stops when he comes near | x 2104 – 2264: side halls every 16 m with two rooms each (interior windows, tables, chairs, beds, shelves); murmurs that fade as you approach |
-| 93:17 – 95:16 | What seemed a wall goes down below the floor: a shaft, the path continues 20–30 ft below; he drops and breaks his arm; holds carved into the wall | x = 2304: a 4 m gap, the lower hall 7 m down; holds on the wall below the ledge; a hard landing shakes the view |
-| 95:47 – 96:46 | Skylights built much higher into the ceiling; darker; broken glass, torn material, string | x 2308 – 2400: skylights in 2–4 m deep wells, trash at x 2340 – 2380 |
-| 96:47 – 99:43 | Going deeper at a rate too slow to see; skylights higher, smaller, dimmer; the ceiling comes down; crouching, crawling | x 2400 – 2600: the floor sinks 2 m, the skylight wells deepen to 10 m, the ceiling comes down to 1.25 m; the walker stoops, crouches and crawls by itself |
-| 99:43 – 103:19 | Pitch black squeeze; the flashlight runs out; stuck; "Help!"; a faint light beyond the backpack; through | x 2600 – 2700: the hall narrows to 1 m and the ceiling to 0.65 m; the flashlight dies; at x = 2676 you are stuck for a few seconds; then the ceiling rises again |
-| 103:25 – 104:21 | The first skylight; a straight uninterrupted path | x = 2712 |
-| 104:30 – 104:41 | The last meal at a rain spout | x = 2756 |
-| 105:22 – 105:40 | Black square tiles that reflect the sunlight | x 2800 – 2886 (`blackTile`) |
-| 105:42 – 106:51 | A large round room with skylights along its curved border; the hallway ends; a plate in the floor; a platform with a switch under a transparent case; the lever; a collapsible staircase comes down from the ceiling | Round room (radius 10 m) at x = 2896; step on the plate, the platform rises; **E** opens the case and pulls the lever; the lid slides away, the stairs come down, sunlight |
-| 106:59 – 108:17 | Direct sunlight is warm, not burning; a white, flat, desolate plane forever; wind; the great blue sky | The surface (`surface.js`): white panels to the horizon, sky with moving clouds, wind; no sun burn up here |
-| 108:17 – 109:06 | A dark bluish building with a domed roof, window spaces without glass, timbers underneath; a plaque covering the footprint: symbols, a circle with a line down the middle and a dot at its midpoint | The dome half-way between the two hatches, on 18 timber posts; the plaque under it |
-| 109:06 – 109:49 | Lines in the floor into the distance; another gap and staircase — a mirror of his; his backpack; another hallway | Lines at 45° and 90°; the mirror room at x = 2976 with its stairs already down, and a hallway beyond it that never ends; his backpack lies in the first room |
-| 109:57 – 110:48 | Letters, then our language: "You are at the half-way point of this Design – 20 … Codename: Rat Maze … Congratulations traveler"; technical jargon | Standing under the dome shows the inscription |
-| 111:47 – 113:12 | He lies down and stares at the sky; rising above: a black speck on a white sheet, clouds, the plane curves into a sphere in a black void, machines in low orbit, ships arriving in ever greater numbers | After reading the inscription, **E** outside the dome: the ending cut scene (`epilogue.js`) |
+| 1:00:03 | The doors clank shut behind him a quarter-mile back | The gate closes when you pass x = 112; it opens again if you walk back to it |
+| 1:00:31 | The first and last Vibra-cable, two miles in: "You are clear to proceed" | x 150 – 186: cable on the left wall, a station at x = 170 |
+| 1:01:03 – 1:01:54 | No more decay; the sun weakens, 6 PM; the food cube on the stove | x 196 – 256: dusk zone (warm, weaker skylights), the meal at x = 229 |
+| 1:02:00 – 1:02:58 | Night: he can hardly see; mattress, sleeping bag, one pillow; the silence | x 256 – 336: night zone — stars in the skylights, starlight only; the camp at x = 300; near-silent ambience |
+| 1:03:15 – 1:03:42 | Explorers' marks at waist level on the left wall; he starts his own red chalk marks | x = 344: a group of white marks low on the left wall; red marks every 32 m from here to the end |
+| 1:04:28 | Skateboarding; a rain funnel, water through the filter | Rain collectors under skylights every 160 m (x 84, 244, 404, …) |
+| 1:05:21 – 1:06:21 | Reading while walking; human-sized niches with a hole at the bottom, every hour or so | Niches in the right wall at x 424, 464, 1012, 1396, 1572, 2236, 2780 (`toilet`) |
+| 1:07:12 | An area with more cracks in the concrete | x 500 – 560: cracks in the floor (`crack`) |
+| 1:07:28 – 1:08:06 | The floor turns to brownish-grey carpet at a straight line between skylights | x = 560 (between the skylights at 556 and 564) |
+| 1:09:32 – 1:09:58 | The first intersection; side halls end after ~20 minutes | x = 640: a cross hall 38 m each way, dead ends |
+| 1:11:20 – 1:12:15 | More intersections; one side hall ends with shelves built in, one with a ramp down to a wall ~12 ft deep | x = 720 (south arm: built-in shelves), x = 784 (north arm: 6 m ramp down 3.6 m) |
+| 1:12:25 – 1:12:55 | Days shorter, nights longer, the light of the stars | x 808 – 896: night zone again |
+| 1:13:44 – 1:13:59 | Concrete → carpet for a week → wooden floorboards → concrete; skylights always the same; counting them | x 904 – 1046: concrete, carpet, floorboards (`boards`), concrete |
+| 1:14:07 – 1:14:36 | Something scurries across the skylights, a shadow, knocking | Passing x ≈ 1048 triggers a scratching episode at a skylight and knocks |
+| 1:14:42 – 1:15:10 | A skylight curved outward; books stacked to peek over the edge | x = 1076: a glass dome over the skylight, a stack of books under it |
+| 1:15:33 – 1:15:59 | Day 92: the turn-around intersection (explorers went right for 6 hours); "blackout" on the map | x = 1120: cross hall, south arm 40 m with a note at its end |
+| 1:16:05 – 1:23:20 | No skylights: pitch black for more than a day; he turns back; a pale shape wearing Mel Dogger's face blocks the way; running steps behind him until the first skylight | x 1168 – 1304: no light at all (fog black). After ~14 s inside, a pale, wrong-proportioned figure stands ahead; when you come close or look away it is gone and running steps follow you until you leave the dark or reach a sun square |
+| 1:23:16 – 1:23:46 | The first skylight; no force could make him turn back | x = 1308 |
+| 1:23:58 – 1:24:34 | One year; the watch stopped; the skateboard broke | x = 1360: the broken skateboard |
+| 1:25:22 – 1:28:09 | A split: a path to the left at a shallow angle; days later a three-way intersection with his own red mark — the path curved back into itself | x = 1442: a branch to a ring corridor (radius 24 m) that comes back to the branch; red marks on the ring |
+| 1:28:47 – 1:29:05 | Half the food is gone | x = 1540: half a stack of empty boxes |
+| 1:29:25 – 1:29:42 | A long shallow room on the left: bar stools bolted to the floor, a counter, cupboards | x 1610 – 1638, open to the hall |
+| 1:29:48 | The hall continues offset a few feet to the left and down | x = 1680: 1 m to the left, 0.45 m down |
+| 1:29:54 – 1:30:55 | A glass path with blue water and white foam flowing underneath; an opening to the outside: sun, an ocean flowing violently | x 1728 – 1832: glass panes over an animated water channel; x 1764 – 1796: an opening in the left wall with a sill; outside an animated ocean to the horizon and a sky with clouds (`water.js`; cells outside are "open to the sky", `F.OUT`) |
+| 1:30:55 – 1:31:05 | Brownish carpet again | x 1832 – 1904 |
+| 1:31:07 – 1:31:22 | A metal grate over a dark abyss, howling wind | x 1904 – 1952: a walkable grate over a 40 m deep pit, wind sound |
+| 1:31:28 – 1:32:05 | A room of columns in a grid, no windows, a gentle glow along the path, footsteps like a roaring animal | x 1968 – 2088: 80 m wide room, columns every 5 m, glow strips, huge reverb |
+| 1:32:07 – 1:33:06 | Halls branch off more and more; rooms with windows, dusty furniture; an empty district; muffled commotion that stops when he comes near | x 2104 – 2264: side halls every 16 m with two rooms each (interior windows, tables, chairs, beds, shelves); murmurs that fade as you approach |
+| 1:33:17 – 1:35:16 | What seemed a wall goes down below the floor: a shaft, the path continues 20–30 ft below; he drops and breaks his arm; holds carved into the wall | x = 2304: a 4 m gap, the lower hall 7 m down; holds on the wall below the ledge; a hard landing shakes the view |
+| 1:35:47 – 1:36:46 | Skylights built much higher into the ceiling; darker; broken glass, torn material, string | x 2308 – 2400: skylights in 2–4 m deep wells, trash at x 2340 – 2380 |
+| 1:36:47 – 1:39:43 | Going deeper at a rate too slow to see; skylights higher, smaller, dimmer; the ceiling comes down; crouching, crawling | x 2400 – 2600: the floor sinks 2 m, the skylight wells deepen to 10 m, the ceiling comes down to 1.25 m; the walker stoops, crouches and crawls by itself |
+| 1:39:43 – 1:43:19 | Pitch black squeeze; the flashlight runs out; stuck; "Help!"; a faint light beyond the backpack; through | x 2600 – 2700: the hall narrows to 1 m and the ceiling to 0.65 m; the flashlight dies; at x = 2676 you are stuck for a few seconds; then the ceiling rises again |
+| 1:43:25 – 1:44:21 | The first skylight; a straight uninterrupted path | x = 2712 |
+| 1:44:30 – 1:44:41 | The last meal at a rain spout | x = 2756 |
+| 1:45:22 – 1:45:40 | Black square tiles that reflect the sunlight | x 2800 – 2886 (`blackTile`) |
+| 1:45:42 – 1:46:51 | A large round room with skylights along its curved border; the hallway ends; a plate in the floor; a platform with a switch under a transparent case; the lever; a collapsible staircase comes down from the ceiling | Round room (radius 10 m) at x = 2896; step on the plate, the platform rises; **E** opens the case and pulls the lever; the lid slides away, the stairs come down, sunlight |
+| 1:46:59 – 1:48:17 | Direct sunlight is warm, not burning; a white, flat, desolate plane forever; wind; the great blue sky | The surface (`surface.js`): white panels to the horizon, sky with moving clouds, wind; no sun burn up here |
+| 1:48:17 – 1:49:06 | A dark bluish building with a domed roof, window spaces without glass, timbers underneath; a plaque covering the footprint: symbols, a circle with a line down the middle and a dot at its midpoint | The dome half-way between the two hatches, on 18 timber posts; the plaque under it |
+| 1:49:06 – 1:49:49 | Lines in the floor into the distance; another gap and staircase — a mirror of his; his backpack; another hallway | Lines at 45° and 90°; the mirror room at x = 2976 with its stairs already down, and a hallway beyond it that never ends; his backpack lies in the first room |
+| 1:49:57 – 1:50:48 | Letters, then our language: "You are at the half-way point of this Design – 20 … Codename: Rat Maze … Congratulations traveler"; technical jargon | Standing under the dome shows the inscription |
+| 1:51:47 – 1:53:12 | He lies down and stares at the sky; rising above: a black speck on a white sheet, clouds, the plane curves into a sphere in a black void, machines in low orbit, ships arriving in ever greater numbers | After reading the inscription, **E** outside the dome: the ending cut scene (`epilogue.js`) |
 
 Not built from part 2: his parents' goodbye in person, the books' content, washing clothes, the beard; the watch and day counting are only in the notes.

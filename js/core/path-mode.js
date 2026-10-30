@@ -138,7 +138,7 @@ export function createPathMode(shared) {
   // One frame. ctl: walker controls (or the "still" controls when not walking).
   function frame(dt, t0, walking, ctl, onReached) {
     if (epilogue.active) { cutScene(dt); return; }
-    // the sun through the glass: standing in it slowly burns (story 05:40-05:58); on the roof it does not (107:52)
+    // the sun through the glass: standing in it slowly burns (story 05:40-05:58); on the roof it does not (1:47:52)
     const sunHere = onSurface ? 0 : story.sunAt(walker.x, walker.z);
     if (walking) sun = sunHere > 0 ? Math.min(1, sun + dt * sunHere / 14) : Math.max(0, sun - dt / 5);
     pipe.heat = sun;
@@ -195,7 +195,7 @@ export function createPathMode(shared) {
     hudT += dt;
     if (hudT > 0.2 && walking) {
       hudT = 0;
-      const zd = onSurface ? { key: 'surface', t: '107:27' } : story.zones[story.zone] || story.zones[0];
+      const zd = onSurface ? { key: 'surface', t: '1:47:27' } : story.zones[story.zone] || story.zones[0];
       hud.setLine(t('hud.pathLine', { zone: t('gp.z.' + zd.key), time: zd.t || '—', m: Math.round(walker.dist) }) + (story.workLights ? t('hud.workTag') : ''));
     }
     if (showGuide && walking && guide.target) {
@@ -205,7 +205,7 @@ export function createPathMode(shared) {
     else hud.setGoal(null);
   }
 
-  // the ending (111:47): the epilogue renders instead of the world; afterwards you lie on the roof again
+  // the ending (1:51:47): the epilogue renders instead of the world; afterwards you lie on the roof again
   function cutScene(dt) {
     const r = epilogue.update(dt, camera.aspect);
     if (r.line) hud.toast(t(r.line), 8);
