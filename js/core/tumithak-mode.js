@@ -26,6 +26,7 @@ export function createTumithakMode(shared) {
       pipe.glitch = 0.8; hud.toast(t('map.teleported'), 2);
       return;
     }
+    hud.toast(t('map.noTeleport'), 2);
   };
   let caves = null, walker = null, hudT = 0, lightT = 0, lastDist = 0, safe = null, pendingView = null;
 
@@ -64,7 +65,7 @@ export function createTumithakMode(shared) {
     const k = settings.data.keys;
     hud.setHint(t('hud.tmHint', { move: moveLabel(k), light: firstKey(k, 'flashlight'), map: firstKey(k, 'map') }), 12);
   }
-  function leave() { hand.group.visible = false; hand.spot.visible = false; map.setOpen(false); map.save(); }
+  function leave() { pipe.glitch = 0; hand.group.visible = false; hand.spot.visible = false; map.setOpen(false); map.save(); }
   function remember() {
     map.save();
     progress.tumi = { x: +walker.x.toFixed(2), y: +walker.y.toFixed(2), z: +walker.z.toFixed(2), yaw: +walker.yaw.toFixed(3), seen: [...caves.visited.keys()] };
@@ -83,6 +84,7 @@ export function createTumithakMode(shared) {
   function frame(dt, t0, walking, ctl) {
     exploreT -= dt;
     if (exploreT <= 0) { exploreT = 0.4; map.explore(walker.x, walker.y, walker.z); }
+    pipe.glitch = Math.max(0, pipe.glitch - dt * 1.6);          // the teleport's glitch fades (nothing else here keeps it)
     walker.update(dt, ctl, settings.data.mouse);
     if (walker.ground && !walker.climbing) safe = { x: walker.x, y: walker.y, z: walker.z };
     if (safe && walker.y < safe.y - 30) { walker.place(safe.x, safe.z, walker.yaw); walker.y = safe.y; pipe.glitch = 0.5; }

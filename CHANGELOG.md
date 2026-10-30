@@ -4,6 +4,14 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.19.3] - 2026-10-30
+Parts: Tumithak of the Corridors 1.2.1 · The Great Path (Rudon's Plane) 1.6.3 · Endless Liminal Spaces 2.0.2
+### Fixed
+- Tumithak: **the screen stayed striped after a teleport** — the teleport's glitch never faded in this world; now it fades in half a second (and is cleared when you leave).
+- Tumithak: **falling through the rock** — walking along the curved foot of a wall, the body could step up onto the curve, end up inside the rock and fall through it. Floors are now looked for near the middle of the body only, a step up happens only where the whole body fits, a body clipped into rock is lifted out, and a body inside rock may only move outwards (never deeper).
+- Tumithak: the abandoned rooms by the forgotten corridor were lower than the corridor (a drop you could not climb back); they are now at its floor level. The places “the narrow passages” and “the Dark Corridors” are marked on the way itself (teleporting there works); when there is nowhere to stand, the map says so.
+- The shared walker (all worlds): a step up only where the body fits.
+
 ## [0.19.2] - 2026-10-30
 Parts: Tumithak of the Corridors 1.2.0
 ### Added

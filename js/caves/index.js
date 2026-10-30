@@ -157,9 +157,17 @@ export function createCaves() {
   // highest floor under the box at or below yMax (-Infinity: nothing within 8 m)
   function support(x0, z0, x1, z1, yMax) {
     let best = -Infinity;
-    for (const [x, z] of [[(x0 + x1) / 2, (z0 + z1) / 2], [x0, z0], [x1, z0], [x0, z1], [x1, z1]]) {
+    // the centre and four points halfway to the edges: the box corners would find "floor" on the curve where a cave
+    // floor bends up into the wall, and the walker would climb the wall step by step (and end up inside the rock)
+    const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, hx = (x1 - x0) / 4, hz = (z1 - z0) / 4;
+    for (const [x, z] of [[cx, cz], [cx - hx, cz], [cx + hx, cz], [cx, cz - hz], [cx, cz + hz]]) {
       let y = yMax, prev = f(x, y, z) > 0;
-      if (prev) continue;                                  // the point itself is in rock: a wall, not a floor
+      if (prev) {
+        // the point is in rock (the walker clipped the bottom of a curved wall, or noise in the floor): the surface just
+        // above it (within 0.5 m) counts as floor, so you are lifted out instead of falling through the rock
+        for (let s = 1; s <= 5; s++) if (f(x, yMax + s * 0.1, z) <= 0) { const fy = yMax + s * 0.1; if (fy > best) best = fy; break; }
+        continue;
+      }
       for (let s = 0; s < 32; s++) {
         const y2 = y - 0.25, solid = f(x, y2, z) > 0;
         if (solid) {                                       // air above, rock below: refine the floor
@@ -172,6 +180,12 @@ export function createCaves() {
       }
     }
     return best;
+  }
+  // how deep a standing body at (x, z, y) is in rock (<= 0: free): lets an embedded walker move only outwards
+  function penetration(x, z, y) {
+    let m = -1;
+    for (const [dx, dz] of [[0, 0], [0.2, 0], [-0.2, 0], [0, 0.2], [0, -0.2]]) for (const h of [0.6, 1.2]) m = Math.max(m, f(x + dx, y + h, z + dz));
+    return m;
   }
   // a ladder to climb at (x, z) and height y (inside its shaft)
   function ladder(x, z, y) {
@@ -233,7 +247,7 @@ export function createCaves() {
   }
 
   return {
-    W, scene, blocked, support, ladder, lightAt, update, stream, preload, zones: W.zones, starts: W.starts, labels: W.labels,
+    W, scene, blocked, support, ladder, penetration, lightAt, update, stream, preload, zones: W.zones, starts: W.starts, labels: W.labels,
     get zone() { return zone; }, get visited() { return visited; }, set onZone(fn) { onZone = fn; }, resetVisits() { visited.clear(); zone = 0; },
     get loadedCount() { let n = 0; for (const e of loaded.values()) if (e.mesh) n++; return n; },
     get pending() { return inFlight.size; },

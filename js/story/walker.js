@@ -21,9 +21,11 @@ export function createWalker(world) {
     for (let i = 1; i < HEIGHTS.length - 1; i++) if (free(x, z, y, HEIGHTS[i])) return HEIGHTS[i];
     return low;
   };
-  // if the body is already inside something (a collider that changed, a teleport), it may move freely until it is out
+  // if the body is already inside something (a collider that changed, a teleport), it may move freely until it is out;
+  // a world with `penetration(x, z, y)` (the caves: how deep the body is in rock) only lets it move outwards
   let embedded = false;
-  const hits = (x, z, y) => { if (embedded) return false; const h = fit(x, z, y); if (!h) return true; if (h < P.body) P.body = h; return false; };
+  const deeper = (x, z, y) => P.world.penetration && P.world.penetration(x, z, y) > P.world.penetration(P.x, P.z, P.y) + 1e-4;
+  const hits = (x, z, y) => { if (embedded) return deeper(x, z, y); const h = fit(x, z, y); if (!h) return true; if (h < P.body) P.body = h; return false; };
 
   P.place = (x, z, yaw = 0) => {
     P.x = x; P.z = z; P.yaw = yaw; P.pitch = 0; P.vx = P.vz = P.vy = 0; P.dist = 0;
@@ -59,7 +61,7 @@ export function createWalker(world) {
       if (!hits(P.x, nz, P.y)) P.z = nz; else P.vz *= 0.3;
       // step up onto anything within STEP
       const sup = P.world.support(P.x - R, P.z - R, P.x + R, P.z + R, P.y + STEP);
-      if (sup > P.y && P.vy <= 0.01) { P.y = sup; P.vy = 0; P.ground = true; }
+      if (sup > P.y && P.vy <= 0.01 && fit(P.x, P.z, sup)) { P.y = sup; P.vy = 0; P.ground = true; }   // only where the body fits up there
     }
     // vertical (on a ladder: climbing instead of falling)
     P.climbing = !!(P.world.ladder && P.world.ladder(P.x, P.z, P.y));      // (again: the walker may have moved)
@@ -74,6 +76,7 @@ export function createWalker(world) {
     const hr = P.climbing ? R * 0.5 : R;      // on a ladder the body leans in to the rungs: only the head can bump
     if (P.vy > 0 && P.world.blocked(P.x - hr, P.z - hr, P.x + hr, P.z + hr, ny + P.body - 0.05, ny + P.body + 0.02)) { P.vy = 0; ny = P.y; }   // head bump
     if (ny <= sup) { if (!P.ground && P.vy < -4) { P.lastFall = P.vy; if (P.onLand) P.onLand(-P.vy); } P.y = sup; P.vy = 0; P.ground = true; }
+    else if (embedded && ny < P.y && deeper(P.x, P.z, ny)) { P.vy = 0; }      // never sink further into rock
     else { P.y = ny; P.ground = ny - sup < 0.03; }
 
     const moved = Math.hypot(P.x - ox, P.z - oz);

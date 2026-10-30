@@ -167,9 +167,16 @@ export function buildCaves() {
   for (const [x, z] of [[-48, 31], [-32, 31], [-48, 45], [-32, 45]]) addLamp(x, LY + 9, z, { lampP: 0.9, dead: 0 });
   labels.push({ key: 'machine', x: -40, y: LY, z: 38 });
   // the dusty dead end where the book was found: unlit, sloping upwards (chapter 1)
-  path([[-90, LY, 0], [-104, LY + 0.5, 0], [-120, LY + 2.5, -6], [-136, LY + 5, -8]], { ...COR, w: 1.9, h: 4, zone: Z.deadEnd, amp: 0.08 });
-  for (let k = 0; k < 4; k++) { const z = -2 - k * 1.5, x = -112 - k * 6; tube([x, LY + 1 + k * 0.6, z - 1.2], [x, LY + 1 + k * 0.6, z - 5], { w: 0.7, h: 2.2, rt: 0.5, rb: 0.15, zone: Z.deadEnd, ext: 0.2 }); room(x, LY + 1 + k * 0.6, z - 7.5, 2.2, 2.5, 2.8, { rr: 0.9, zone: Z.deadEnd }); curtains.push({ x, y: LY + 1 + k * 0.6, z: z - 1.6, rot: 0, w: 1.4, h: 2.2, torn: true }); }
-  props.push({ kind: 'book', x: -124, y: LY + 2.6 - 0.9, z: -14.5 });
+  const dead = path([[-90, LY, 0], [-104, LY + 0.5, 0], [-120, LY + 2.5, -6], [-136, LY + 5, -8]], { ...COR, w: 1.9, h: 4, zone: Z.deadEnd, amp: 0.08 });
+  // abandoned rooms on its north side, each at the corridor's own floor level (no steps you could not climb back)
+  const deadAt = (x) => dead.reduce((b, q) => (Math.abs(q[0] - x) < Math.abs(b[0] - x) ? q : b));
+  for (let k = 0; k < 4; k++) {
+    const [x, y, z] = deadAt(-110 - k * 6);
+    tube([x, y, z - 1.4], [x, y, z - 5.5], { w: 0.7, h: 2.2, rt: 0.5, rb: 0.15, zone: Z.deadEnd, ext: 0.2 });
+    room(x, y, z - 8, 2.2, 2.5, 2.8, { rr: 0.9, zone: Z.deadEnd });
+    curtains.push({ x, y, z: z - 1.85, rot: 0, w: 1.4, h: 2.2, torn: true });
+    if (k === 2) props.push({ kind: 'book', x: x + 0.8, y, z: z - 9.2 });           // the metal-leaf book, in the dust
+  }
   labels.push({ key: 'deadEnd', x: -120, y: LY, z: -6 });
 
   /* ---- Loor -> Nonone: steep narrow passages and ladder shafts (chapter 2) ---- */
@@ -180,6 +187,7 @@ export function buildCaves() {
     const [ang, n, rise] = legs1[i];
     const pts = wander(p, ang, n, 9, rise, 0.4);
     path(pts, { ...NAR, lamp: 18, lampP: 0.45, dead: 0.35 });
+    if (i === 1) { const m = pts[Math.floor(pts.length / 2)]; labels.push({ key: 'passage', x: m[0], y: m[1], z: m[2] }); }   // on the way itself
     p = pts[pts.length - 1];
     if (i % 2 === 1) {                                  // a ladder shaft up to the next level
       const top = p[1] + 14 + R() * 6;
@@ -192,7 +200,6 @@ export function buildCaves() {
     // natural side caves off the passage (long detours, some dead ends in caverns)
     sideCaves(pts[Math.floor(pts.length / 2)], 2);
   }
-  labels.push({ key: 'passage', x: 200, y: 20, z: 0 });
 
   /* ---- Nonone: the friendly city halfway up ---- */
   const NY = p[1];
@@ -238,12 +245,12 @@ export function buildCaves() {
   for (let i = 0; i < 6; i++) {
     const pts = lastLeg = wander(p, (R() - 0.5) * 0.6, 12, 9, 0.5, 0.5);
     path(pts, { ...COR, w: 1.9 - i * 0.1, h: 4 - i * 0.15, amp: 0.06 + i * 0.05, zone: i < 2 ? Z.yakra : Z.dark, lamp: lampP > 0.05 ? 12 : 0, lampP, dead: 0.3 + i * 0.15 });
+    if (i === 2) { const m = pts[Math.floor(pts.length / 2)]; labels.push({ key: 'dark', x: m[0], y: m[1], z: m[2] }); }
     lampP *= 0.45;
     p = pts[pts.length - 1];
     sideCaves(pts[Math.floor(pts.length / 2)], 3);
     if (i === 3) { cavern(p[0] + 18, p[1] + 4, p[2] + 6, 22, 8, 16, p[1] - 0.5, Z.cave); labels.push({ key: 'bigCave', x: p[0] + 18, y: p[1], z: p[2] + 6 }); p = [p[0] + 36, p[1], p[2] + 4]; }
   }
-  labels.push({ key: 'dark', x: yx0 + 260, y: YY + 4, z: 0 });
   // the cells of the dwellers of the dark (their prison room, chapter 4)
   const cp = lastLeg[lastLeg.length - 4];
   tube([cp[0], cp[1], cp[2]], [cp[0], cp[1], cp[2] + 11], { w: 0.8, h: 2.3, rt: 0.6, rb: 0.2, amp: 0.15, zone: Z.dark });
