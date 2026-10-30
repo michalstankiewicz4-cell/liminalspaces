@@ -299,7 +299,7 @@ export function createApp({ appEl, uiEl }) {
     const d = settings.data;
     // each world has its own graphics; the Great Path renders with tone mapping (its brightness is relative to that)
     const gp = d.gfxPath;
-    if (kind === 'path') { pipe.setParams({ pixelH: gp.pixelH, levels: gp.levels, dither: gp.dither, edge: gp.edge, edgeW: gp.edgeW, bright: gp.bright / 1.15, tone: 1, grain: gp.grain ? 0.045 : 0 }); path.setViewDist(gp.viewDist); }
+    if (kind === 'path') { pipe.setParams({ pixelH: gp.pixelH, levels: gp.levels, dither: gp.dither, edge: gp.edge, edgeW: gp.edgeW, scan: gp.scan, crt: gp.crt, bright: gp.bright / 1.15, tone: 1, grain: gp.grain ? 0.045 : 0 }); path.setViewDist(gp.viewDist); path.setRounding(gp.round / 100, gp.cove / 100); }
     else pipe.setParams({ ...d.gfx, tone: 0, grain: 0 });
     const fov = kind === 'path' ? gp.fov : d.gfx.fov;
     hud.showFps(d.gfx.showFps);

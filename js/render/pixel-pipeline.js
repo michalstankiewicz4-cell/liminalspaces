@@ -7,7 +7,7 @@ const VERT = `varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0
 const FRAG = `precision highp float;
 uniform sampler2D tColor,tDepth;
 uniform vec2 texel;
-uniform float levels,dither,edge,edgeW,bright,persp,near,far,tone,grain,time,heat,glitch,fear;
+uniform float levels,dither,edge,edgeW,bright,persp,near,far,tone,grain,time,heat,glitch,fear,scan,crt;
 varying vec2 vUv;
 float bayer(vec2 p){
   p=floor(mod(p,4.));
@@ -28,6 +28,10 @@ float diff(float a,float b){
 }
 void main(){
   vec2 p=vUv;
+  if(crt>0.){                                    // CRT: curved glass (barrel distortion), black outside the tube
+    vec2 cc=p-.5; p=.5+cc*(1.+.11*dot(cc,cc)*4.)*.965;
+    if(p.x<0.||p.x>1.||p.y<0.||p.y>1.){gl_FragColor=vec4(0.,0.,0.,1.);return;}
+  }
   if(heat>0.){                                   // sun exposure: the air shimmers
     p+=vec2(sin(p.y*38.+time*5.3),cos(p.x*31.+time*4.1))*.0025*heat;
   }
@@ -78,13 +82,24 @@ void main(){
   c*=1.-em*edge*.6;
   float v=length(vUv-.5);
   c*=1.-smoothstep(.3,.85,v)*.55;
+  if(crt>0.){                                    // CRT: aperture grille, darker rounded corners, faint flicker
+    float m=mod(floor(gl_FragCoord.x),3.);
+    c*=m<1.?vec3(1.,.82,.82):m<2.?vec3(.82,1.,.82):vec3(.82,.82,1.);
+    vec2 q=p-.5; c*=1.-smoothstep(.36,.52,max(abs(q.x),abs(q.y)))*.6;
+    c*=1.18*(.985+.015*sin(time*60.));
+  }
+  if(scan>0.){                                   // scan lines: every other row of the screen darker, and a slow rolling band
+    float r=.5+.5*sin(gl_FragCoord.y*3.14159);
+    c*=1.-.32*r;
+    c*=1.+.04*sin(vUv.y*7.-time*1.3);
+  }
   gl_FragColor=vec4(c,1.);
 }`;
 
 export class PixelPipeline {
   constructor(renderer) {
     this.r = renderer;
-    this.params = { pixelH: 200, levels: 7, dither: 0.8, edge: 0.8, edgeW: 1, bright: 1.4, tone: 0, grain: 0 };
+    this.params = { pixelH: 200, levels: 7, dither: 0.8, edge: 0.8, edgeW: 1, bright: 1.4, tone: 0, grain: 0, scan: false, crt: false };
     this.heat = 0;                     // sun exposure effect 0..1 (Great Path)
     this.glitch = 0; this.fear = 0;    // event effects 0..1 (Great Path)
     this.mat = new THREE.ShaderMaterial({
@@ -95,7 +110,7 @@ export class PixelPipeline {
       uniforms: {
         tColor: { value: null }, tDepth: { value: null },
         texel: { value: new THREE.Vector2(1, 1) },
-        levels: { value: 7 }, dither: { value: 0.8 }, edge: { value: 0.8 }, edgeW: { value: 1 }, bright: { value: 1.4 },
+        levels: { value: 7 }, dither: { value: 0.8 }, edge: { value: 0.8 }, edgeW: { value: 1 }, scan: { value: 0 }, crt: { value: 0 }, bright: { value: 1.4 },
         persp: { value: 0 }, near: { value: 0.1 }, far: { value: 100 }, tone: { value: 0 }, grain: { value: 0 }, time: { value: 0 }, heat: { value: 0 }, glitch: { value: 0 }, fear: { value: 0 },
       },
     });
@@ -132,7 +147,7 @@ export class PixelPipeline {
 
   render(scene, camera) {
     const u = this.mat.uniforms, p = this.params;
-    u.levels.value = p.levels; u.dither.value = p.dither; u.edge.value = p.edge; u.edgeW.value = p.edgeW ?? 1; u.bright.value = p.bright;
+    u.levels.value = p.levels; u.dither.value = p.dither; u.edge.value = p.edge; u.edgeW.value = p.edgeW ?? 1; u.scan.value = p.scan ? 1 : 0; u.crt.value = p.crt ? 1 : 0; u.bright.value = p.bright;
     u.tone.value = p.tone; u.grain.value = p.grain; u.heat.value = this.heat; u.glitch.value = this.glitch; u.fear.value = this.fear; u.time.value = (performance.now() / 1000) % 100;
     u.persp.value = camera.isPerspectiveCamera ? 1 : 0;
     u.near.value = camera.near; u.far.value = camera.far;

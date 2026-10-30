@@ -4,6 +4,14 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.17.0] - 2026-10-30
+Parts: start screen 1.5.2 · Endless Liminal Spaces 1.5.0 · The Great Path (Rudon's Plane) 1.6.0
+### Added
+- Options > Graphics (both worlds, separately): **Scan lines** (darker screen rows and a slow rolling band) and **CRT screen** (curved glass with black corners, an RGB aperture grille, darker edges, a faint flicker). Both off by default.
+- Options > Graphics, The Great Path 1.6.0: two sliders for the rounded edges — **Rounded corners (radius)** 0–24 cm (default 12) and **Wall–floor/ceiling coves (radius)** 0–20 cm (default 8); 0 turns them off. Changing them rebuilds the chunks around you.
+### Changed (The Great Path 1.6.0)
+- Coves now also wrap around convex corners (a revolved curve joins the coves of both walls), so a rounded pillar meets the floor and the ceiling without gaps.
+
 ## [0.16.0] - 2026-10-30
 Parts: start screen 1.5.1 · Endless Liminal Spaces 1.4.1 · The Great Path (Rudon's Plane) 1.5.0
 ### Added (The Great Path 1.5.0)

@@ -92,6 +92,22 @@ export class Emitter {
       if (flip) b.i.push(q, s2, r, r, s2, t); else b.i.push(q, r, s2, r, t, s2);
     }
   }
+  // A grid of vertices rows[j][k] = { p, n } joined into quads (a revolved cove around a rounded corner).
+  patch(mat, rows) {
+    if (this.dry || rows.length < 2 || rows[0].length < 2) return;
+    const b = this.bucket(mat), base = b.p.length / 3, sc = this.scale[mat] || 1, K = rows[0].length;
+    for (const row of rows) for (const q of row) {
+      b.p.push(q.p[0], q.p[1], q.p[2]); b.n.push(q.n[0], q.n[1], q.n[2]); b.uv.push((q.p[0] + q.p[2]) / sc, -q.p[1] / sc);
+      const col = this.bake(q.p[0], q.p[1], q.p[2], q.n[0], q.n[1], q.n[2]); b.c.push(col[0], col[1], col[2]);
+    }
+    for (let j = 0; j < rows.length - 1; j++) for (let k = 0; k < K - 1; k++) {
+      const q = base + j * K + k, r = q + 1, s2 = q + K, t = s2 + 1;
+      const A = rows[j][k].p, B = rows[j][k + 1].p, C = rows[j + 1][k].p, N = rows[j][k].n;
+      const e1 = [B[0] - A[0], B[1] - A[1], B[2] - A[2]], e2 = [C[0] - A[0], C[1] - A[1], C[2] - A[2]];
+      const cr = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+      if (cr[0] * N[0] + cr[1] * N[1] + cr[2] * N[2] < 0) b.i.push(q, s2, r, r, s2, t); else b.i.push(q, r, s2, r, t, s2);
+    }
+  }
   // A flat fan (centre + points), for the floor and ceiling under a rounded corner.
   fan(mat, ctr, pts, nrm) {
     if (this.dry) return;
@@ -326,7 +342,8 @@ export function meshChunk(grid, c, ctx) {
 
   /* vertical faces between neighbouring cells, merged into runs along each edge line */
   const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-  const RC = 0.12, RV = 0.08, NC = 4, NV = 3;          // corner radius, cove radius, segments
+  // corner radius (setting, 0 = sharp edges), cove radius, segments; at most 0.24 so a 0.5 m wall can round both ends
+  const RC = Math.min(0.24, Math.max(0, ctx.round ?? 0.12)), RV = Math.min(0.24, Math.max(0, ctx.cove ?? 0.08)), NC = 4, NV = 3;
   const cellAt = (d, line, t) => (DIRS[d][0] ? [c.ci * CN + line, c.cj * CN + t] : [c.ci * CN + t, c.cj * CN + line]);
   const matAt = (x, z, arr) => { const [q, k] = grid.at(Math.floor(x / CS), Math.floor(z / CS)); return q && q.open[k] ? name(q[arr][k]) : 'concrete'; };
   const floorMatAt = (x, z) => matAt(x, z, 'fm'), ceilMatAt = (x, z) => matAt(x, z, 'cm');
@@ -386,9 +403,9 @@ export function meshChunk(grid, c, ctx) {
     const [dx, dz] = DIRS[d];
     const mat = run.m === M_WELL ? 'plaster' : name(run.m);
     const ys = breaks(run.y0, run.y1);
-    const round = run.full && !run.sky && run.y1 - run.y0 > 1.2;
+    const round = (RC > 0.005 || RV > 0.005) && run.full && !run.sky && run.y1 - run.y0 > 1.2;
     // convex corners at the ends: the wall stops RC short and a quarter round takes over
-    const cA = round && convexAt(d, line, run.t0 - 1, run), cB = round && convexAt(d, line, run.t1, run);
+    const cA = round && RC > 0.005 && convexAt(d, line, run.t0 - 1, run), cB = round && RC > 0.005 && convexAt(d, line, run.t1, run);
     if (round) rounding(d, line, run, mat, cA, cB);
     if (dx) {
       const X = x0 + (line + (dx > 0 ? 1 : 0)) * CS, Za = z0 + run.t0 * CS + (cA ? RC : 0), Zb = z0 + run.t1 * CS - (cB ? RC : 0);
@@ -411,7 +428,7 @@ export function meshChunk(grid, c, ctx) {
     const W = (dx ? x0 : z0) + (line + ((dx || dz) > 0 ? 1 : 0)) * CS, A = (dx ? z0 : x0) + run.t0 * CS, B = (dx ? z0 : x0) + run.t1 * CS;
     const at = (u, y, off) => (dx ? [W + n[0] * off, y, u] : [u, y, W + n[2] * off]);
     const a = A + (cA ? RC : 0), b = B - (cB ? RC : 0);
-    if (b - a > 0.02) {
+    if (b - a > 0.02 && RV > 0.005) {
       const us = breaks(0, b - a, 2);
       for (const [y, up] of [[run.y0, 1], [run.y1, -1]]) {
         if (up > 0 && run.skirt) continue;
@@ -442,6 +459,20 @@ export function meshChunk(grid, c, ctx) {
       const fm = floorMatAt(ix, iz), cm = ceilMatAt(ix, iz);
       E.fan(fm, [corner[0], run.y0, corner[2]], ring.map((p) => [p[0], run.y0, p[2]]), [0, 1, 0]);
       E.fan(cm, [corner[0], run.y1, corner[2]], ring.map((p) => [p[0], run.y1, p[2]]), [0, -1, 0]);
+      // the coves wrap around the rounded corner (revolved), so they run on without a notch
+      if (RV > 0.005) for (const [y, up] of [[run.y0, 1], [run.y1, -1]]) {
+        if (up > 0 && run.skirt) continue;
+        const rows = [];
+        for (let k = 0; k <= NC; k++) {
+          const th = k / NC * Math.PI / 2, dir = [n[0] * Math.cos(th), 0, sgn * Math.sin(th)], row = [];
+          for (let m = 0; m <= NV; m++) {
+            const ph = m / NV * Math.PI / 2, cp = Math.cos(ph), sp = Math.sin(ph), rr = RC + RV - RV * cp;
+            row.push({ p: [ctr[0] + dir[0] * rr, y + up * RV - up * RV * sp, ctr[2] + dir[2] * rr], n: [dir[0] * cp, up * sp, dir[2] * cp] });
+          }
+          rows.push(row);
+        }
+        E.patch(mat, rows);
+      }
     }
   }
   // stains, scuffs, mould and cracks on full-height walls, every ~2.5 m with a per-material chance

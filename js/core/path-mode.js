@@ -25,7 +25,7 @@ export function createPathMode(shared) {
   let story = null, walker = null, director = null, guide = null, statues = null;
   let journey = null, surface = null, epilogue = null, SY = 0, onSurface = false, readT = 0, inscRead = false;
   const stepListeners = new Set();
-  let pendingView = null;
+  let pendingView = null, pendingRound = null;
   let sun = 0, sunWarned = 0, lightT = 0, lastLight = 1, stepMat = 'carpet', hudT = 0, lastDist = 0;
 
   // Builds the world (textures, layout, worker, statues…) once, in steps; stage(key, fraction) reports progress and
@@ -62,6 +62,7 @@ export function createPathMode(shared) {
         epilogue = ep.createEpilogue();
         SY = jy.SURFACE_Y;
         if (pendingView !== null) story.setViewDist(pendingView);
+        if (pendingRound) story.setRounding(...pendingRound);
       });
     loading.catch(() => { loading = null; });
     return loading;
@@ -255,6 +256,7 @@ export function createPathMode(shared) {
     get onSurface() { return onSurface; }, get journey() { return journey; }, get surface() { return surface; }, get epilogue() { return epilogue; },
     pause() { sound.suspend(); },
     setViewDist(v) { if (story) story.setViewDist(v); else pendingView = v; },
+    setRounding(r, c) { if (story) story.setRounding(r, c); else pendingRound = [r, c]; },
     resume() { sound.resume(); },
     info: () => ({ path: true, zone: story.zones[story.zone].key, time: story.zones[story.zone].t || '—', dist: walker.dist, places: story.visited.size, total: story.zones.length - 1 }),
     clearSeen() { if (story) for (const c of story.grid.chunks.values()) { c.seen.fill(0); c.seenV = (c.seenV || 0) + 1; } },

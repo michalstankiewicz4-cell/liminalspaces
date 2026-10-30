@@ -19,11 +19,15 @@ export function buildGraphics({ settings }) {
       slider({ label: 'gfx.fov', range: RANGES.fov, get: () => g().fov, set: set('fov'), fmt: (v) => v + '°' }),
       slider({ label: 'gfx.viewDist', range: RANGES.viewDist, get: () => g().viewDist, set: set('viewDist'), fmt: (v) => String(v) }),
       checkbox({ label: 'gfx.bob', get: () => g().headBob, set: set('headBob') }),
+      checkbox({ label: 'gfx.scan', get: () => g().scan, set: set('scan') }),
+      checkbox({ label: 'gfx.crt', get: () => g().crt, set: set('crt') }),
     ];
   };
   const endless = rowsFor('gfx', RANGES.pixelH, RANGES.levels);
   const path = [
     ...rowsFor('gfxPath', RANGES.pixelHPath, RANGES.levelsPath),
+    slider({ label: 'gfx.round', range: RANGES.round, get: () => settings.data.gfxPath.round, set: (v) => settings.update((d) => { d.gfxPath.round = v; }), fmt: (v) => v + ' cm' }),
+    slider({ label: 'gfx.cove', range: RANGES.cove, get: () => settings.data.gfxPath.cove, set: (v) => settings.update((d) => { d.gfxPath.cove = v; }), fmt: (v) => v + ' cm' }),
     checkbox({ label: 'gfx.grain', get: () => settings.data.gfxPath.grain, set: (v) => settings.update((d) => { d.gfxPath.grain = v; }) }),
     checkbox({ label: 'story.guide', get: () => settings.data.story.guide, set: (v) => settings.update((d) => { d.story.guide = v; }) }),
     checkbox({ label: 'story.events', get: () => settings.data.story.events, set: (v) => settings.update((d) => { d.story.events = v; }) }),

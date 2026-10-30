@@ -37,7 +37,8 @@ export function createStory(renderer) {
 
   const grid = createGrid();
   const { beams, gates, emitters, water } = buildLayout(grid);
-  const ctx = { zones: ZONES, materials: mats.byName, scale: mats.scale };
+  const ctx = { zones: ZONES, materials: mats.byName, scale: mats.scale, round: 0.12, cove: 0.08 };
+  let gen = 0;                     // bumped when the meshing settings change: older worker results are dropped
 
   /* ---- prop colliders (dry run) ---- */
   const dry = new Emitter(null, mats.scale); dry.dry = true;
@@ -64,7 +65,7 @@ export function createStory(renderer) {
       if (m.t === 'ready') { workerReady = true; return; }
       if (m.t !== 'mesh') return;
       inFlight.delete(key(m.ci, m.cj));
-      if (loaded.has(key(m.ci, m.cj))) return;
+      if (m.gen !== gen || loaded.has(key(m.ci, m.cj))) return;
       build(m.ci, m.cj, groupFromBuffers(m.list, mats.byName));
     };
     worker.onerror = (e) => { console.warn('mesh worker failed, meshing on the main thread', e.message); worker = null; inFlight.clear(); };
@@ -97,7 +98,9 @@ export function createStory(renderer) {
   }
   // Builds missing chunks nearest first: in the worker (2 in flight) or, when sync / no worker, `budget` per call
   // on the main thread. Drops far chunks.
+  let lastX = 0, lastZ = 0;
   function stream(x, z, budget = 1, sync = false) {
+    lastX = x; lastZ = z;
     const ci = fdiv(x, CW), cj = fdiv(z, CW), want = [];
     for (let dj = -VIEW; dj <= VIEW; dj++) for (let di = -VIEW; di <= VIEW; di++) {
       if (di * di + dj * dj > VIEW * VIEW + 1) continue;
@@ -108,7 +111,7 @@ export function createStory(renderer) {
     if (!sync && worker && workerReady) {
       for (let k = 0; k < want.length && inFlight.size < 2; k++) {
         const [, a, b] = want[k];
-        inFlight.add(key(a, b)); worker.postMessage({ t: 'mesh', ci: a, cj: b });
+        inFlight.add(key(a, b)); worker.postMessage({ t: 'mesh', ci: a, cj: b, round: ctx.round, cove: ctx.cove, gen });
       }
     } else for (let k = 0; k < Math.min(budget, want.length); k++) build(want[k][1], want[k][2]);
     for (const [k, e] of loaded) if (Math.abs(e.ci - ci) > VIEW + 1 || Math.abs(e.cj - cj) > VIEW + 1) unload(k);
@@ -258,6 +261,13 @@ export function createStory(renderer) {
     floorAt: (x, z) => grid.floorAt(x, z), ceilAt: (x, z) => grid.ceilAt(x, z), isOpen: (x, z) => grid.isOpen(x, z),
     flagsAt: (x, z) => grid.flagsAt(x, z), zoneKeyAt: (x, z) => (ZONES[grid.zoneAt(x, z)] || ZONES[0]).key,
     resetVisits() { visited.clear(); zone = 0; },
+    // rounded corners and coves (radius in m, 0 = sharp): every chunk is meshed again
+    setRounding(r, cove) {
+      if (Math.abs(r - ctx.round) < 1e-6 && Math.abs(cove - ctx.cove) < 1e-6) return;
+      ctx.round = r; ctx.cove = cove; gen++; inFlight.clear();
+      for (const k of [...loaded.keys()]) unload(k);
+      preload(lastX, lastZ);                // the chunks around you at once, the rest streams in
+    },
     // view distance setting 1..3: chunks streamed around you and how far the fog lets you see
     setViewDist(v) { VIEW = 1 + v; FOG_K = [0.75, 1, 1.35][v - 1] || 1; },
   };
