@@ -30,7 +30,7 @@ export function createCaves() {
   const lampDead = new THREE.MeshStandardMaterial({ color: 0x3a3c40, roughness: 0.4 });
   const plate = new THREE.BoxGeometry(1.1, 0.05, 0.55);
   const groups = { on: [], fl: [], dead: [] };
-  for (const l of W.lamps) groups[l.dead ? 'dead' : l.flicker ? 'fl' : 'on'].push(l);
+  for (const l of W.lamps) if (!l.hidden) groups[l.dead ? 'dead' : l.flicker ? 'fl' : 'on'].push(l);   // hidden: light plates set into the walls
   const dummy = new THREE.Object3D();
   for (const [k, mat] of [['on', lampOn], ['fl', lampFl], ['dead', lampDead]]) {
     const list = groups[k];
@@ -74,6 +74,7 @@ export function createCaves() {
   }
   for (const pr of W.props) scene.add(buildProp(pr));
   for (const m of W.markers) scene.add(buildMarker(m));
+  for (const m of W.murals) scene.add(buildMural(m));
 
   /* ---- the Surface (chapter 7): sky, a far ground plane, trees, the leaning towers of Shawm and their cables ---- */
   const sky = new THREE.Mesh(new THREE.SphereGeometry(290, 32, 16), new THREE.ShaderMaterial({
@@ -363,8 +364,9 @@ export function createCaves() {
         c.scale.set(1.3, 0.45, 1.0); c.rotation.y = a;
       }
     } else if (p.kind === 'statue') {
-      // a sculpture: a smooth twisting shape on a plinth (the Esthetts make art all day)
-      add(box(0.9, 0.8, 0.9), mat(0xd8d0c0, { roughness: 0.5 }), 0, 0.4, 0);
+      // a sculpture on a pedestal (of many colours in the great square); the Esthetts make art all day
+      const ped = [0xb04a4a, 0x4a6ab0, 0xc0a040, 0x4a8a5a, 0x8a4ab0, 0xd8d0c0];
+      add(box(0.9, 0.8, 0.9), mat(p.ped !== undefined ? ped[p.ped % ped.length] : 0xd8d0c0, { roughness: 0.5 }), 0, 0.4, 0);
       const k2 = add(new THREE.TorusKnotGeometry(0.42, 0.13, 80, 10, 2, 3), mat(0xe8e0d0, { roughness: 0.35 }), 0, 1.45, 0);
       k2.rotation.x = 0.4;
     } else if (p.kind === 'easel') {
@@ -378,6 +380,42 @@ export function createCaves() {
       for (let i = 0; i < 14; i++) { gx.fillStyle = `hsl(${(i * 47 + p.x * 13) % 360},70%,55%)`; gx.beginPath(); gx.arc((i * 23) % 64, (i * 37) % 64, 6 + (i % 4) * 4, 0, 7); gx.fill(); }
       const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
       add(box(0.9, 0.7, 0.03), new THREE.MeshStandardMaterial({ map: tex, color: new THREE.Color(1, 1, 1).multiplyScalar(k), roughness: 0.8 }), 0, 1.35, 0.08);
+    } else if (p.kind === 'tapestry') {
+      // a woven hanging: deep colours in bands
+      const cv = document.createElement('canvas'); cv.width = 32; cv.height = 64;
+      const gx = cv.getContext('2d');
+      const pal = ['#7a1e2a', '#c89a3a', '#1e3a6a', '#2a5a3a', '#d8c8a0'];
+      for (let y = 0; y < 64; y += 4) { gx.fillStyle = pal[(y / 4 + (p.x | 0)) % pal.length]; gx.fillRect(0, y, 32, 4); }
+      gx.fillStyle = '#e8d8a0'; for (let y = 6; y < 64; y += 12) gx.fillRect(10, y, 12, 3);
+      const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.magFilter = THREE.NearestFilter;
+      add(box(2.2, 3.4, 0.04), new THREE.MeshStandardMaterial({ map: tex, color: new THREE.Color(1, 1, 1).multiplyScalar(k), roughness: 0.95 }), 0, 1.9, 0, p.rot || 0);
+    } else if (p.kind === 'metalDoor') {
+      // the Esthetts have true doors, of metal, high and wide
+      const met = mat(0x9a9488, { metalness: 0.85, roughness: 0.35 });
+      add(box(1.8, 3.2, 0.12), met, 0, 1.6, 0, p.rot || 0);
+      add(box(2.1, 0.12, 0.2), met, 0, 3.26, 0, p.rot || 0);
+    } else if (p.kind === 'esthettBed') {
+      // a bed that would hold three men of Loor, of inlaid metal, with sheer green and brown covers
+      add(box(2.6, 0.5, 2.2), mat(0x8a7a5a, { metalness: 0.7, roughness: 0.4 }), 0, 0.25, 0);
+      add(box(2.5, 0.25, 2.1), mat(0x3a5a3a, { roughness: 0.9 }), 0, 0.62, 0);
+      add(box(2.6, 1.1, 0.12), mat(0x9a8a6a, { metalness: 0.7, roughness: 0.35 }), 0, 0.55, -1.1);
+    } else if (p.kind === 'paddedChair') {
+      add(box(1.1, 0.5, 1.0), mat(0x7a3a4a, { roughness: 0.9 }), 0, 0.3, 0);
+      add(box(1.1, 0.9, 0.2), mat(0x7a3a4a, { roughness: 0.9 }), 0, 0.85, -0.45);
+    } else if (p.kind === 'bookshelf') {
+      const wood = mat(0x5a4030);
+      add(box(1.8, 2.0, 0.4), wood, 0, 1.0, 0);
+      const cols = [0x7a2a2a, 0x2a4a7a, 0x3a6a3a, 0x8a7a3a, 0x5a3a6a];
+      for (let r = 0; r < 4; r++) for (let i = 0; i < 9; i++) add(box(0.14, 0.34, 0.26), mat(cols[(i + r) % 5]), -0.7 + i * 0.17, 0.25 + r * 0.46, 0.08);
+    } else if (p.kind === 'rug') {
+      const r = add(new THREE.PlaneGeometry(3.2, 2.2), mat(0x8a3a2a, { roughness: 1 }), 0, 0.015, 0); r.rotation.x = -Math.PI / 2;
+    } else if (p.kind === 'car') {
+      // the car of the sheiks: a metal cylinder some twenty feet long on four thickly tyred wheels, a round opening on top
+      const met = mat(0x6a7078, { metalness: 0.85, roughness: 0.3 });
+      const body = add(new THREE.CylinderGeometry(1.0, 1.0, 6.2, 24), met, 0, 1.55, 0); body.rotation.z = Math.PI / 2;
+      for (const sx of [-1, 1]) { const cap = add(new THREE.SphereGeometry(1.0, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), met, sx * 3.1, 1.55, 0); cap.rotation.z = -sx * Math.PI / 2; }
+      for (const [x, z] of [[-2.2, -1.0], [2.2, -1.0], [-2.2, 1.0], [2.2, 1.0]]) { const w = add(new THREE.CylinderGeometry(0.55, 0.55, 0.4, 18), mat(0x1e1e1e, { roughness: 0.9 }), x, 0.55, z); w.rotation.x = Math.PI / 2; }
+      add(new THREE.CylinderGeometry(0.45, 0.45, 0.06, 18), mat(0x2a2a2e, { metalness: 0.6 }), 0, 2.56, 0);
     } else if (p.kind === 'pedestal') {
       // the stone pedestal in the square from which speakers address the city
       add(new THREE.CylinderGeometry(1.1, 1.3, 0.9, 16), mat(0x8a7a66, { roughness: 0.8 }), 0, 0.45, 0);
@@ -402,6 +440,43 @@ export function createCaves() {
       for (let i = 0; i < 5; i++) { const r = add(new THREE.TorusGeometry(0.18 + i * 0.03, 0.012, 6, 20, 4), rope, i * 0.06, 0.012, i * 0.04); r.rotation.x = Math.PI / 2; }
     }
     return g;
+  }
+  // pictures painted on the walls of the Esthetts' corridor (chapter 5): a dance around a sheik, the car on wheels
+  // with eager people, sheiks among talking men — the world as the Esthetts see it
+  function buildMural(m) {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 128;
+    const x = c.getContext('2d');
+    x.fillStyle = '#e8dcc0'; x.fillRect(0, 0, 256, 128);
+    x.strokeStyle = '#8a6a3a'; x.lineWidth = 6; x.strokeRect(3, 3, 250, 122);
+    const fat = (px, py, col) => { x.fillStyle = col; x.beginPath(); x.ellipse(px, py + 14, 11, 16, 0, 0, 7); x.fill(); x.beginPath(); x.arc(px, py - 6, 7, 0, 7); x.fillStyle = '#e0b090'; x.fill(); };
+    const sheik = (px, py) => { x.strokeStyle = '#2a2420'; x.lineWidth = 2; for (let i = 0; i < 10; i++) { const a = (i < 5 ? Math.PI * 0.75 : Math.PI * 0.25) + (i % 5 - 2) * 0.22; x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(a) * -26 * (i < 5 ? 1 : -1), py + 26); x.stroke(); } x.fillStyle = '#d8b898'; x.beginPath(); x.arc(px, py - 4, 8, 0, 7); x.fill(); x.fillStyle = '#4a3a30'; x.beginPath(); x.ellipse(px, py + 8, 6, 9, 0, 0, 7); x.fill(); };
+    const cols = ['#c06070', '#70a0c0', '#90c070', '#d0b050', '#b080c0'];
+    if (m.pic === 'dance') { for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; fat(128 + Math.cos(a) * 80, 60 + Math.sin(a) * 22, cols[i % 5]); } sheik(128, 52); }
+    else if (m.pic === 'car') { x.fillStyle = '#6a7078'; x.fillRect(70, 50, 120, 30); x.beginPath(); x.arc(70, 65, 15, 0, 7); x.arc(190, 65, 15, 0, 7); x.fill(); x.fillStyle = '#222'; for (const wx of [90, 170]) { x.beginPath(); x.arc(wx, 86, 9, 0, 7); x.fill(); } for (let i = 0; i < 6; i++) fat(30 + i * 40 + (i > 2 ? 40 : 0), 92, cols[i % 5]); }
+    else { sheik(70, 50); sheik(110, 54); sheik(150, 50); for (let i = 0; i < 4; i++) fat(40 + i * 60, 88, cols[(i + 2) % 5]); }
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    const k = Math.min(1, 0.06 + lightAt(m.x, m.y + 1, m.z) * 1.4);
+    const W2 = 1.5, H = 1.5;
+    const q = new THREE.Mesh(new THREE.PlaneGeometry(W2 * 2, H), new THREE.MeshStandardMaterial({ map: tex, color: new THREE.Color(1, 1, 1).multiplyScalar(k), roughness: 0.8 }));
+    // on the wall: from the axis point sideways (along z) to the rock, then turned to face along the rock's normal
+    // (the corridors curve) and moved out until neither end of the picture sinks into the wall
+    const y = m.y + 1.3;
+    let t = 0;
+    while (t < 8 && f(m.x, y, m.z + m.side * t) <= 0) t += 0.04;
+    const px = m.x, pz = m.z + m.side * t, e = 0.15;
+    let nx = f(px + e, y, pz) - f(px - e, y, pz), nz = f(px, y, pz + e) - f(px, y, pz - e);   // into the rock
+    const nl = Math.hypot(nx, nz) || 1; nx /= nl; nz /= nl;
+    if (nx * 0 + nz * m.side < 0.3) { nx = 0; nz = m.side; }       // a broken normal: keep the straight one
+    const tx = -nz, tz = nx;                                         // along the wall
+    let out = 0.06;
+    for (const s of [-1, -0.5, 0.5, 1]) for (const dy of [-H / 2, H / 2]) {
+      let d = out;
+      while (d < 1.5 && f(px + tx * W2 * s - nx * d, y + dy, pz + tz * W2 * s - nz * d) > 0) d += 0.03;
+      out = Math.max(out, d);
+    }
+    q.position.set(px - nx * out, y, pz - nz * out);
+    q.rotation.y = Math.atan2(-nx, -nz);
+    return q;
   }
   // the steles of the story: a stone slab with the chapter's number, faintly glowing so you can find it in the dark
   function buildMarker(m) {

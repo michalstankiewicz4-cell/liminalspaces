@@ -23,9 +23,11 @@ export const ZONES = [
   { key: 'yakra', amb: 0.01, tint: [0.45, 0.3, 0.22], rough: 0.42, fog: [0.035, 0.028, 0.024], map: '#b07850', far: 54 },
   { key: 'dark', amb: 0.0015, tint: [0.36, 0.31, 0.27], rough: 0.75, fog: [0.006, 0.006, 0.006], map: '#605850', far: 40 },
   { key: 'cave', amb: 0.001, tint: [0.4, 0.37, 0.33], rough: 0.9, fog: [0.005, 0.005, 0.005], map: '#706860', far: 40 },
-  { key: 'esthett', amb: 0.02, tint: [0.72, 0.64, 0.54], rough: 0.4, fog: [0.06, 0.05, 0.04], map: '#e0b0c0', far: 56 },
+  { key: 'esthett', amb: 0.03, tint: [0.86, 0.84, 0.8], rough: 2.35, fog: [0.07, 0.065, 0.06], map: '#e8e0f0', far: 60 },     // rough >= 2: carved walls, inlaid floor
   { key: 'pit', amb: 0.004, tint: [0.42, 0.38, 0.33], rough: 0.7, fog: [0.02, 0.02, 0.02], map: '#c0b090', far: 44 },
   { key: 'surface', amb: 1.0, tint: [0.56, 0.5, 0.42], rough: 0.95, fog: [0.66, 0.74, 0.82], map: '#d8c8a0', far: 320, sky: true },
+  { key: 'esthettRoom', amb: 0.01, tint: [0.3, 0.38, 0.6], rough: 0.7, fog: [0.03, 0.035, 0.05], map: '#6080c0', far: 40 },
+  { key: 'square', amb: 0.1, tint: [0.9, 0.88, 0.84], rough: 2.25, fog: [0.08, 0.075, 0.07], map: '#f0e8d8', far: 90 },
   { key: 'upper', amb: 0.002, tint: [0.4, 0.35, 0.3], rough: 0.6, fog: [0.01, 0.01, 0.01], map: '#807060', far: 40 },
 ];
 export const Z = Object.fromEntries(ZONES.map((z, i) => [z.key, i]));
@@ -69,7 +71,7 @@ const DIST = { tube: dTube, room: dRoom, shaft: dShaft, cavern: dCavern };
 /* ---- the world ---- */
 export function buildCaves() {
   const R = mulberry32(1932);
-  const prims = [], lamps = [], ladders = [], curtains = [], labels = [], props = [];
+  const prims = [], lamps = [], ladders = [], curtains = [], labels = [], props = [], murals = [];
   // story markers: a stone stele with the chapter's number where something of the story happens (read it up close)
   const markers = [];
   const mark = (key, ch, x, y, z) => markers.push({ key, ch, x, y, z });
@@ -369,32 +371,58 @@ export function buildCaves() {
     p = [p[0] + 4, p[1], p[2]];
   }
 
-  /* ---- chapter 6: the Halls of the Esthetts — the fat, idle artists the shelks keep like cattle — and the pit ---- */
-  const WARM = { col: [1.0, 0.86, 0.66], lampP: 0.8, dead: 0.02 };
+  /* ---- chapter 5: the Hall of the Esthetts — corridors of milky white stone covered with carvings and pictures,
+     lit from plates hidden in the walls in many colours; apartments with doors of metal; the great square ---- */
   const EY = p[1];
-  path([p, [p[0] + 14, EY, p[2] + 2], [p[0] + 32, EY, p[2]]], { ...COR, w: 1.8, h: 4, amp: 0.04, zone: Z.esthett, lamp: 8, ...WARM });
-  const halls = [];
-  let hx = p[0] + 40, hz = p[2];
-  for (let k = 0; k < 3; k++) {
-    const hw = 10 + k * 2, hd = 8 + (k % 2) * 3;
-    room(hx, EY, hz, hw, hd, 6.5, { rr: 3, zone: Z.esthett, amp: 0.03 });
-    for (const [dx, dz] of [[-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5], [0.5, 0.5]]) addLamp(hx + dx * hw, EY + 6.5, hz + dz * hd, WARM);
-    halls.push([hx, hz, hw, hd]);
-    if (k < 2) { path([[hx + hw - 1, EY, hz], [hx + hw + 12, EY, hz + (k ? -3 : 3)]], { ...COR, w: 1.8, h: 4, amp: 0.04, zone: Z.esthett, lamp: 8, ...WARM }); hx += hw + 12 + 10 + (k + 1) * 2; }
+  const COLS = [[0.55, 0.7, 1.0], [0.6, 1.0, 0.7], [1.0, 0.55, 0.5], [1.0, 0.85, 0.45], [1.0, 0.95, 0.85]];
+  const wallLamp = (x, y, z, k) => lamps.push({ x, y, z, ceil: y + 0.3, p: 0.7, dead: false, flicker: false, r: COLS[k % 5][0], g: COLS[k % 5][1], b: COLS[k % 5][2], hidden: true });
+  // the first corridor: carved from end to end, and the pictures on its walls
+  const art = path([p, [p[0] + 20, EY, p[2] + 2], [p[0] + 45, EY, p[2]], [p[0] + 70, EY + 0.5, p[2] - 3]], { ...COR, w: 2.4, h: 4.6, amp: 0.02, zone: Z.esthett });
+  art.forEach((q, i) => { if (i % 3 === 0) { wallLamp(q[0], q[1] + 3.6, q[2] - 2.1, i); wallLamp(q[0], q[1] + 3.6, q[2] + 2.1, i + 2); } });
+  mark('esthettHall', 5, p[0] + 6, EY, p[2] + 1.4);
+  // (the facade finds the wall: from the axis point it goes sideways (side -1 = north) until the rock)
+  murals.push({ x: art[6][0], y: art[6][1] + 1.0, z: art[6][2], side: -1, pic: 'dance' }, { x: art[10][0], y: art[10][1] + 1.0, z: art[10][2], side: 1, pic: 'car' }, { x: art[15][0], y: art[15][1] + 1.0, z: art[15][2], side: -1, pic: 'shelks' });
+  mark('pictures', 5, p[0] + 33, EY, p[2] - 0.8);
+  props.push({ kind: 'tapestry', x: p[0] + 56, y: EY, z: p[2] - 2.3 }, { kind: 'statue', x: p[0] + 62, y: EY + 0.3, z: p[2] - 1.6 }, { kind: 'statue', x: p[0] + 64, y: EY + 0.3, z: p[2] - 0.2 }, { kind: 'statue', x: p[0] + 63, y: EY + 0.3, z: p[2] + 1.4 });
+  // then it widens to forty feet, and apartments open on both sides behind doors of metal
+  const w0 = art[art.length - 1], WY = w0[1];
+  const wide = [w0, [w0[0] + 30, WY, w0[2]], [w0[0] + 60, WY, w0[2] + 2], [w0[0] + 90, WY, w0[2]]];
+  path(wide, { ...COR, w: 6, h: 7.5, rt: 4.5, amp: 0.02, zone: Z.esthett });
+  for (let x = w0[0] + 6; x < w0[0] + 86; x += 7) {
+    props.push({ kind: 'metalDoor', x, y: WY, z: w0[2] - 5.95, rot: 0 }, { kind: 'metalDoor', x: x + 3.5, y: WY, z: w0[2] + 5.95, rot: Math.PI });
+    wallLamp(x, WY + 5.5, w0[2] - 5.7, x | 0); wallLamp(x + 3.5, WY + 5.5, w0[2] + 5.7, (x | 0) + 1);
   }
-  const [h0x, h0z] = halls[0], [h1x, h1z] = halls[1], [h2x, h2z, h2w] = halls[2];
-  props.push({ kind: 'cushions', x: h0x - 4, y: EY, z: h0z + 3 }, { kind: 'cushions', x: h0x + 5, y: EY, z: h0z - 4 }, { kind: 'statue', x: h0x, y: EY, z: h0z },
-    { kind: 'easel', x: h1x - 5, y: EY, z: h1z + 2 }, { kind: 'easel', x: h1x + 3, y: EY, z: h1z - 5 }, { kind: 'statue', x: h1x + 6, y: EY, z: h1z + 4 },
-    { kind: 'cushions', x: h2x - 6, y: EY, z: h2z - 3 }, { kind: 'feast', x: h2x + 2, y: EY, z: h2z + 4 });
-  mark('halls', 6, p[0] + 20, EY, p[2] + 1.2);
-  mark('esthetts', 6, h0x - 2, EY, h0z + 5);
-  mark('art', 6, h1x - 2, EY, h1z - 2);
-  labels.push({ key: 'halls', x: h1x, y: EY, z: h1z });
+  // the apartment of Lathrumidor: dull blue walls, a huge bed, a padded chair, a shelf of books, a rug
+  {
+    const ax = w0[0] + 34, az = w0[2] - 6;
+    tube([ax, WY, az + 0.6], [ax, WY, az - 2.2], { w: 0.9, h: 2.6, rt: 0.5, rb: 0.15, amp: 0.02, zone: Z.esthettRoom, ext: 0.2 });
+    room(ax, WY, az - 6, 4, 3.6, 3.2, { rr: 0.8, zone: Z.esthettRoom, amp: 0.02 });
+    lamps.push({ x: ax - 3.5, y: WY + 2.9, z: az - 6, ceil: WY + 3.2, p: 0.35, dead: false, flicker: false, r: 1, g: 0.95, b: 0.85, hidden: true });
+    props.push({ kind: 'esthettBed', x: ax + 1.6, y: WY, z: az - 6.4 }, { kind: 'paddedChair', x: ax - 2.2, y: WY, z: az - 4.6 }, { kind: 'bookshelf', x: ax - 2.6, y: WY, z: az - 8.9 }, { kind: 'rug', x: ax, y: WY, z: az - 5.6 });
+    mark('lathrumidor', 5, ax - 1, WY, az - 3.6);
+    labels.push({ key: 'lathrumidor', x: ax, y: WY, z: az - 6 });
+  }
+  // the great square: a hall over a hundred yards across, a floor of tessellated marble, statues on pedestals of many
+  // colours, tapestries in the doorways — and in the middle the car of the sheiks
+  const sq = { x: w0[0] + 90 + 40, y: WY, z: w0[2] };
+  cavern(sq.x, sq.y, sq.z, 42, 14, 42, sq.y, Z.square, 0.03);
+  for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2; wallLamp(sq.x + Math.cos(a) * 39, sq.y + 2.2, sq.z + Math.sin(a) * 39, k); }
+  for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2 + 0.2; wallLamp(sq.x + Math.cos(a) * 20, sq.y + 11.5, sq.z + Math.sin(a) * 20, k + 3); }   // high in the dome
+  for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2 + 0.3; props.push({ kind: 'statue', x: sq.x + Math.cos(a) * 26, y: sq.y, z: sq.z + Math.sin(a) * 26, ped: k }); }
+  props.push({ kind: 'car', x: sq.x, y: sq.y, z: sq.z });
+  for (const a of [0.9, 2.3, 3.9, 5.3]) props.push({ kind: 'tapestry', x: sq.x + Math.cos(a) * 40.5, y: sq.y, z: sq.z + Math.sin(a) * 40.5, rot: -a - Math.PI / 2 });
+  labels.push({ key: 'esthettSquare', x: sq.x, y: sq.y, z: sq.z });
+  mark('square', 5, sq.x - 34, sq.y, sq.z + 2);
+  mark('sheiks', 5, sq.x - 6, sq.y, sq.z + 6);
+  mark('car', 5, sq.x + 7, sq.y, sq.z - 3);
+  starts.esthetts = { x: w0[0] + 4, y: WY, z: w0[2], yaw: -Math.PI / 2 };
+  const halls = [[sq.x, sq.z, 41, 41]];
+  const [h2x, h2z, h2w] = halls[0];
+  const EY2 = sq.y;
   // the pit: from the last hall a narrow flight of stairs climbs, landing by landing, towards the Surface
   const RISE = 0.24, RUN = 0.36;
-  let sp = [h2x + h2w - 1, EY, h2z];
-  mark('pit', 6, sp[0] - 3, EY, sp[2] + 1.6);
-  labels.push({ key: 'pit', x: sp[0], y: EY, z: sp[2] });
+  let sp = [h2x + h2w - 1, EY2, h2z];
+  labels.push({ key: 'pit', x: sp[0], y: EY2, z: sp[2] });
   for (let k = 0; k < 4; k++) {
     const dir = k % 2 ? -1 : 1, len = 26, end = [sp[0] + dir * len, sp[1] + len / RUN * RISE, sp[2]];
     tube(sp, end, { w: 0.75, h: 2.7, rt: 0.6, rb: 0.15, amp: 0.06, zone: Z.pit, ext: 0.2, run: RUN });
@@ -510,5 +538,5 @@ export function buildCaves() {
   function zoneAt(x, y, z) { field(x, y, z); return lastPrim ? lastPrim.zone : 0; }
 
   const lastZone = () => (lastPrim ? lastPrim.zone : 0);       // zone of the primitive that won the last field() call
-  return { prims, lamps, ladders, curtains, labels, props, markers, starts, trees, towers, ground, surfaceY: topY, exit, field, zoneAt, lastZone, hasChunk, near, topY, zones: ZONES };
+  return { prims, lamps, ladders, curtains, labels, props, markers, murals, starts, trees, towers, ground, surfaceY: topY, exit, field, zoneAt, lastZone, hasChunk, near, topY, zones: ZONES };
 }

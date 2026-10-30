@@ -16,10 +16,10 @@ export function rockMaterial() {
   const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0, envMapIntensity: 0.5 });
   m.onBeforeCompile = (sh) => {
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute vec4 tint;\nvarying vec4 vTint;\nvarying vec3 vWP;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvTint = tint;\nvWP = (modelMatrix * vec4(position, 1.0)).xyz;');
+      .replace('#include <common>', '#include <common>\nattribute vec4 tint;\nvarying vec4 vTint;\nvarying vec3 vWP;\nvarying vec3 vWN;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvTint = tint;\nvWP = (modelMatrix * vec4(position, 1.0)).xyz;\nvWN = normalize(mat3(modelMatrix) * normal);');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying vec4 vTint;\nvarying vec3 vWP;\n' + NOISE)
+      .replace('#include <common>', '#include <common>\nvarying vec4 vTint;\nvarying vec3 vWP;\nvarying vec3 vWN;\n' + NOISE)
       .replace('#include <map_fragment>', `
         // rock albedo: large blotches, strata along y (bent by noise), fine grain, dark veins, pale specks
         float big = cvF(vWP * 0.18), mid = cvF(vWP * 0.9 + 11.0), fine = cvN(vWP * 6.0);
@@ -30,8 +30,35 @@ export function rockMaterial() {
         alb = mix(alb, alb * 0.6, vein * 0.5);
         alb += step(0.95, cvN(vWP * 11.0)) * 0.02;
         alb = mix(alb, alb * vec3(1.05, 0.98, 0.9), mid * 0.4);
+        // carved halls (roughness >= 2): bands and rosettes of reliefs on the walls, coloured inlay on the floor
+        if (vTint.a > 1.5) {
+          alb = vTint.rgb * (0.94 + fine * 0.06);
+          if (vWN.y > 0.6) {
+            vec2 c = floor(vWP.xz * 1.25); float h = cvH(vec3(c, 3.0));
+            vec3 stone = h < 0.25 ? vec3(0.8, 0.35, 0.3) : h < 0.5 ? vec3(0.3, 0.45, 0.7) : h < 0.75 ? vec3(0.85, 0.75, 0.45) : vec3(0.9, 0.88, 0.84);
+            vec2 f = fract(vWP.xz * 1.25); float grout = step(0.94, max(f.x, f.y));
+            alb = mix(stone * 0.9, vec3(0.35), grout);
+          } else if (vWN.y < -0.5) {
+            // ceilings: a coffered grid
+            vec2 f = fract(vWP.xz * 0.5); float l = step(0.92, max(f.x, f.y));
+            alb *= 1.0 - l * 0.22;
+          } else {
+            // walls: a frieze of rosettes between gilded lines at shoulder height, carved panels above and below
+            float u = dot(vWP.xz, normalize(vec2(vWN.z, -vWN.x) + 1e-4));
+            float fy = fract(vWP.y / 2.4);
+            float frieze = step(0.48, fy) * step(fy, 0.62);
+            float line = smoothstep(0.012, 0.0, abs(fy - 0.48)) + smoothstep(0.012, 0.0, abs(fy - 0.62));
+            vec2 rc = vec2(fract(u / 0.8) - 0.5, (fy - 0.55) / 0.14 * 0.5);
+            float rr = length(rc);
+            float ros = (smoothstep(0.05, 0.0, abs(rr - 0.3)) + smoothstep(0.08, 0.0, rr)) * frieze;
+            vec2 pc = vec2(fract(u / 1.6), fy); float panel = (smoothstep(0.02, 0.0, abs(pc.x - 0.04)) + smoothstep(0.012, 0.0, abs(pc.y - 0.08)) + smoothstep(0.012, 0.0, abs(pc.y - 0.42))) * (1.0 - frieze);
+            alb = mix(alb, vec3(0.78, 0.6, 0.32), line * 0.8);
+            alb = mix(alb, alb * vec3(0.75, 0.82, 0.95), frieze * 0.35);
+            alb *= 1.0 - ros * 0.3 - panel * 0.16;
+          }
+        }
         diffuseColor.rgb *= alb;`)
-      .replace('#include <roughnessmap_fragment>', `float roughnessFactor = clamp(vTint.a * (0.85 + mid * 0.3), 0.05, 1.0);`)
+      .replace('#include <roughnessmap_fragment>', `float roughnessFactor = clamp((vTint.a > 1.5 ? vTint.a - 2.0 : vTint.a) * (0.85 + mid * 0.3), 0.05, 1.0);`)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
         // small bumps from the same noise (surface gradient from screen-space derivatives)
         {
@@ -41,7 +68,7 @@ export function rockMaterial() {
           vec3 r1 = cross(dpy, normal), r2 = cross(normal, dpx);
           float det = dot(dpx, r1);
           vec3 grad = sign(det) * (dhx * r1 + dhy * r2);
-          vec3 nb = normalize(abs(det) * normal - grad * 0.3 * vTint.a);
+          vec3 nb = normalize(abs(det) * normal - grad * 0.3 * (vTint.a > 1.5 ? 0.15 : vTint.a));
           if (dot(nb, normalize(vViewPosition)) > 0.08 && abs(det) > 1e-12) normal = nb;   // never tip a bump away from the eye (black specks)
         }`);
   };

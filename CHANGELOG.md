@@ -4,6 +4,15 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.25.0] - 2026-10-30
+Parts: Tumithak of the Corridors 1.8.0
+### Changed — chapter 5 after the original text
+- **The Halls of the Esthetts**: beyond the hidden pit-mouth the walls turn milky white and are carved all over — an inlaid floor, a coffered ceiling, a frieze with rosettes and gilt lines — lit by coloured lights hidden in the walls. Pictures on the walls, as in the book: a dance around a shelk, the car on wheels, shelks among men (everyone fat); tapestries and statues.
+- The corridor widens to about forty feet, lined with metal doors; **Lathrumidor's apartment** behind one of them (dull blue walls, a huge bed, a padded chair, a shelf of books, a rug).
+- **The great square of the Esthetts**, over a hundred yards across: tessellated marble, statues on coloured pedestals, tapestries, and the shelks' cylinder car on four wheels.
+- The steles of chapter 5 rewritten after the original; the spelling is now "shelk" everywhere (the old scan's text reads "sheik").
+- Chapters 6–7 still use the earlier stair pit and Surface; they follow next.
+
 ## [0.24.0] - 2026-10-30
 Parts: Tumithak of the Corridors 1.7.0
 ### Changed — chapters 1–4 after the original text
