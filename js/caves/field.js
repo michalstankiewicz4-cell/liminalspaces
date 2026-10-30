@@ -167,7 +167,7 @@ export function buildCaves() {
         const dxw = x + side * (1.9 + 0.7), rx = x + side * (1.9 + 1.4 + rw);
         tube([x + side * 1.6, y, rz], [dxw + side * 1.0, y, rz], { w: 0.75, h: 2.3, rt: 0.5, rb: 0.15, amp: 0.03, zone, ext: 0.2 });
         room(rx, y, rz, rw, depth / 2 + 0.8, 2.9, { rr: 0.9, zone });
-        curtains.push({ x: x + side * 2.05, y, z: rz, rot: Math.PI / 2, w: 1.5, h: 2.3 });
+        if (!(o.open && Math.abs(x + side * 2.05 - o.open[0]) < o.open[2] && Math.abs(rz - o.open[1]) < o.open[2])) curtains.push({ x: x + side * 2.05, y, z: rz, rot: Math.PI / 2, w: 1.5, h: 2.3 });   // (no curtain hanging inside a square)
         if (R() < 0.35) lamps.push({ x: rx, y: y + 2.75, z: rz, ceil: y + 2.9, p: 0.45, dead: false, flicker: false, r: 0.9, g: 0.95, b: 1, small: true });
       }
     }
@@ -176,15 +176,20 @@ export function buildCaves() {
 
   /* ---- Loor: the deepest city (the start) ---- */
   const LY = 0;
-  const loorCross = city(-90, LY, 0, 190, Z.loor);
+  const loorCross = city(-90, LY, 0, 190, Z.loor, { open: [12, 0, 11] });
   labels.push({ key: 'loor', x: 0, y: LY, z: 0 });
   // the great square of Loor, where the two main corridors cross; the stone pedestal for speakers (chapter 7)
   path([[12, LY, -60], [12, LY, 60]], { ...COR, zone: Z.loor, lamp: 9 });
   room(12, LY, 0, 10, 10, 6, { rr: 3, zone: Z.loor });
   for (const [dx, dz] of [[-5, -5], [5, -5], [-5, 5], [5, 5]]) addLamp(12 + dx, LY + 6, dz, { dead: 0 });
-  props.push({ kind: 'pedestal', x: 12, y: LY, z: 0 });
+  props.push({ kind: 'pedestal', x: 12, y: LY, z: 0, trophy: true });
   labels.push({ key: 'loorSquare', x: 12, y: LY, z: 0 });
+  // after the speech: the white cloths of truce the Yakrans carried, left leaning against the walls of the square
+  props.push({ kind: 'truce', x: 4.5, y: LY, z: -6.5 }, { kind: 'truce', x: 19.5, y: LY, z: 6.5 }, { kind: 'truce', x: 20, y: LY, z: -6 });
   mark('glory', 7, 15.5, LY, 3.5);
+  mark('speech', 7, 8.5, LY, -3.5);
+  mark('chief', 7, 15.5, LY, -3.5);
+  mark('newDay', 7, 8.5, LY, 3.5);
   starts.loor = { x: -70, y: LY, z: 0, yaw: -Math.PI / 2 };
   // the hall of the great machine that never stops (its pulse is felt everywhere in Loor)
   path([[-40, LY, 0], [-40, LY, 22]], { ...COR, w: 1.9, h: 4.2, zone: Z.machine, lamp: 8 });

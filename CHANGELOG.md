@@ -4,6 +4,14 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.27.0] - 2026-10-30
+Parts: Tumithak of the Corridors 1.10.0
+### Changed — chapter 7 after the original text (the whole story now follows the book)
+- The end of the story, from the scan's continuation on page 950, in **the great square of Loor**: on the stone pedestal for speakers lie the metal band like the crown of a shelk king and the wrinkled head of the shelk; the white cloths of truce the Yakrans carried lean against the walls.
+- Steles of chapter 7 rewritten and added: Tumlook waiting in his doorway; the procession (Nennapuss and Nonone, the Yakrans under truce, Datto and Thopf, Tumithak on their shoulders in the gauzes of the Esthetts); **the speech** (the shelks are mortal; the fight with the Esthetts on the way back); **chief of chiefs** (Datto and Nennapuss bow, the council of Loor — Tagivos, Tumlook, Sidango — agrees; the oath on his father's sword); **a new day** (the savages, the Esthetts, one day the shelks — and he strides off towards his home. The End).
+### Fixed
+- A sackcloth curtain of a doorway hung loose in the middle of Loor's great square (the layout is unchanged).
+
 ## [0.26.0] - 2026-10-30
 Parts: Tumithak of the Corridors 1.9.0
 ### Changed — chapter 6 after the original text (the old stair pit and the noon Surface are gone)

@@ -497,6 +497,19 @@ export function createCaves() {
       // the stone pedestal in the square from which speakers address the city
       add(new THREE.CylinderGeometry(1.1, 1.3, 0.9, 16), mat(0x8a7a66, { roughness: 0.8 }), 0, 0.45, 0);
       add(new THREE.CylinderGeometry(0.95, 1.1, 0.12, 16), mat(0x9a8a76, { roughness: 0.8 }), 0, 0.96, 0);
+      if (p.trophy) {
+        // left on the stone: the metal band like the crown of a shelk king, and the wrinkled, hairless head of the shelk
+        const head = add(new THREE.SphereGeometry(0.16, 14, 10), mat(0x9a8a7a, { roughness: 0.75 }), -0.2, 1.17, 0.1); head.scale.set(1, 1.15, 0.95);
+        const band = add(new THREE.TorusGeometry(0.15, 0.02, 8, 24), mat(0xb8a060, { metalness: 0.8, roughness: 0.3 }), 0.3, 1.04, -0.15); band.rotation.x = Math.PI / 2;
+      }
+    } else if (p.kind === 'truce') {
+      // white cloths on sticks — still, after so many hundreds of years, a truce
+      const stick = mat(0x6a5a44), white = mat(0xe8e4dc, { roughness: 0.95, side: THREE.DoubleSide });
+      for (let i = 0; i < 5; i++) {
+        const g2 = new THREE.Group(); g2.position.set(i * 0.35 - 0.7, 0, Math.sin(i * 2.3) * 0.2); g2.rotation.set(Math.sin(i * 1.7) * 0.25, i * 0.6, 0.2 + Math.sin(i) * 0.1); g.add(g2);
+        const st = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.025, 2.2, 6), stick); st.position.y = 1.1; g2.add(st);
+        const c = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.45, 3, 2), white); c.position.set(0.31, 1.95, 0); c.rotation.y = 0.3; g2.add(c);
+      }
     } else if (p.kind === 'table') {
       const wood = mat(0x5a4030);
       add(box(1.4, 0.06, 0.8), wood, 0, 0.75, 0);
