@@ -21,16 +21,17 @@ export function createMapUi(root) {
   const cache = new Map();             // chunk -> { cv, key }
   let view = { x: 0, z: 0, s: 2 };     // full map centre (m) and pixels per cell
   let open = false, drag = null, follow = false, fit = false;
+  let reveal = false;                  // dev: L on the open map shows the whole world, explored or not (the explored map is kept)
 
   function chunkImage(c) {
-    const key = c.version + '|' + (c.seenV || 0);
+    const key = c.version + '|' + (c.seenV || 0) + '|' + reveal;
     let e = cache.get(c);
     if (e && e.key === key) return e.cv;
     if (!e) { const cv = document.createElement('canvas'); cv.width = cv.height = CN; e = { cv, key: '' }; cache.set(c, e); }
     e.key = key;
     const g = e.cv.getContext('2d'), img = g.createImageData(CN, CN), d = img.data;
     for (let k = 0; k < CN * CN; k++) {
-      if (!c.seen[k]) continue;
+      if (!reveal && !c.seen[k]) continue;
       let r, gg, b;
       if (!c.open[k]) [r, gg, b] = WALL;
       else {
@@ -56,12 +57,12 @@ export function createMapUi(root) {
     for (const c of story.grid.chunks.values()) {
       const x0 = c.ci * CW, z0 = c.cj * CW;
       if (x0 > cx + r || x0 + CW < cx - r || z0 > cz + r || z0 + CW < cz - r) continue;
-      if (!c.seenV) continue;
+      if (!reveal && !c.seenV) continue;
       g.drawImage(chunkImage(c), Math.floor(px(x0)), Math.floor(pz(z0)), Math.ceil(CN * s), Math.ceil(CN * s));
     }
     if (labels) {
       g.font = `${Math.max(11, Math.min(16, s * 5))}px ui-monospace,Consolas,monospace`; g.textAlign = 'center';
-      for (const [id] of story.visited) {
+      for (const id of reveal ? zones.map((_, i) => i) : [...story.visited.keys()]) {
         const z = zones[id];
         if (z.lx === undefined) continue;
         const x = px(z.lx), y = pz(z.lz);
@@ -136,7 +137,7 @@ export function createMapUi(root) {
     const r = big.getBoundingClientRect();
     const x = view.x + (e.clientX - r.left - big.width / 2) / view.s * CS, z = view.z + (e.clientY - r.top - big.height / 2) / view.s * CS;
     const [c, k] = story.grid.at(Math.floor(x / CS), Math.floor(z / CS));
-    if (c && c.open[k] && c.seen[k] && c.ceil[k] - c.floor[k] > 1.8) onTeleport(x, z);
+    if (c && c.open[k] && (reveal || c.seen[k]) && c.ceil[k] - c.floor[k] > 0.7) onTeleport(x, z);
   });
 
   big.addEventListener('wheel', (e) => { e.preventDefault(); view.s = Math.max(0.3, Math.min(12, view.s * Math.exp(-e.deltaY * 0.0015))); }, { passive: false });
@@ -155,6 +156,13 @@ export function createMapUi(root) {
       cache.clear();
     },
     show(on) { mini.hidden = !on || !story; if (!on) this.setOpen(false); },
+    // dev: show / hide the whole world on the map (the journey's columns are painted first so all of it is there)
+    get revealed() { return reveal; },
+    toggleReveal() {
+      reveal = !reveal;
+      if (reveal && story) for (let ci = -12; ci <= 96; ci++) story.grid.ensure(ci);
+      return reveal;
+    },
     get open() { return open; },
     setOpen(on) {
       open = on && !!story; full.hidden = !open;

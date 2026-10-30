@@ -22,7 +22,13 @@ export class Input {
     addEventListener('keydown', (e) => this.#key(e, true));
     addEventListener('keyup', (e) => this.#key(e, false));
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-    canvas.addEventListener('mousedown', (e) => { if (!this.locked) this.dragging = true; e.preventDefault(); });
+    // with the mouse captured: left button = use (pull a lever…), right button = flashlight
+    canvas.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      if (!this.locked) { this.dragging = true; return; }
+      if (this.suspended || !this.onPress) return;
+      if (e.button === 0) this.onPress('use'); else if (e.button === 2) this.onPress('flashlight');
+    });
     addEventListener('mouseup', () => { this.dragging = false; });
     addEventListener('mousemove', (e) => {
       if (!(this.locked || this.dragging)) return;

@@ -155,6 +155,7 @@ export function createPathMode(shared) {
       if (onSurface && inscRead && !surface.underDome(walker)) { epilogue.start(); mapUi.show(false); hud.setPrompt(null); hud.setSign(null); hud.setGoal(null); }
       else journey.use();
     }
+    else if (act === 'workLights' && mapUi.open) hud.toast(t(mapUi.toggleReveal() ? 'map.revealOn' : 'map.revealOff'), 2);
     else if (act === 'workLights') { story.setWorkLights(!story.workLights); hud.toast(t(story.workLights ? 'hud.workOn' : 'hud.workOff'), 2); }
     else if (act === 'guide') { settings.update((d) => { d.story.guide = !d.story.guide; }); hud.toast(t(settings.data.story.guide ? 'hud.guideOn' : 'hud.guideOff'), 2); }
     else if (act === 'map') { const o = !mapUi.open; mapUi.setOpen(o); input.clear(); if (o) input.unlock(); else input.lock(); }

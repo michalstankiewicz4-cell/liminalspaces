@@ -4,6 +4,12 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.12.0] - 2026-10-30
+Parts: start screen 1.2.0 · Endless Liminal Spaces 1.1.0 · The Great Path (Rudon's Plane) 1.1.0
+### Added
+- **Mouse buttons** (with the mouse captured): right button switches the flashlight (both worlds), left button uses things in the Great Path world (the case and the lever in the round room, lying down on the roof). The keys still work. (Start screen 1.2.0: controls and hints.)
+- **L on the open map** (Great Path, dev): reveal / hide the whole map, explored or not — the journey's whole length is laid out first. Place names of every place are shown, and double-clicking any walkable spot teleports there. Your explored map is kept; L again goes back to it. (L outside the map still switches the work lights.)
+
 ## [0.11.0] - 2026-10-30
 Parts: start screen 1.1.0 · Endless Liminal Spaces 1.0.0 · The Great Path (Rudon's Plane) 1.0.1
 ### Added
