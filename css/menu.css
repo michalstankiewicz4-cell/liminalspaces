@@ -42,3 +42,11 @@
 #menu[data-screen=path] .screen{width:min(460px,calc(100vw - 32px))}
 @media (max-width:640px){.tiles{grid-template-columns:1fr}}
 .update{border:1px solid #6a5a2a;padding:6px 8px;background:rgba(40,34,14,.8)}
+/* tile credits, per-world version, the menu background per world */
+.tilewrap{display:flex;flex-direction:column;gap:4px;min-width:0}
+.tile .ver{font-size:10px;color:#8f8770;letter-spacing:0}
+.credit{margin:0!important;font-size:10px;color:#948c74!important;line-height:1.5}
+.credit a,.foot a{color:#d8c56a;text-decoration:none;border-bottom:1px dotted #8a7a3a}
+.credit a:hover,.foot a:hover{color:#f4e8b8;border-bottom-color:#f4e8b8}
+.menubg{position:absolute;inset:0;z-index:-1;opacity:0;transition:opacity .45s;pointer-events:none;background:linear-gradient(90deg,rgba(8,7,4,.88) 0,rgba(8,7,4,.55) 40%,rgba(8,7,4,.25) 100%),url(../assets/tile-path.png) center/cover no-repeat;image-rendering:pixelated}
+#menu[data-bg=path] .menubg{opacity:1}

@@ -3,7 +3,7 @@ import { h, btn, tx } from './dom.js';
 import { t, bind } from '../i18n/index.js';
 import { buildOptions } from './options/index.js';
 import { buildMultiScreens } from './multi.js';
-import { VERSION } from '../version.js';
+import { VERSION, VERSIONS } from '../version.js';
 
 // app: { newWalk, continueWalk, seedWalk(text), resume, quit, info() -> {...}, progress, settings, ... }
 export function createMenu(root, app) {
@@ -25,18 +25,27 @@ export function createMenu(root, app) {
 
   /* ---- main: two tiles, one per world ---- */
   const stats = h('p', { class: 'info' });
-  const tile = (img, title, desc, onClick) => h('button', { type: 'button', class: 'tile', on: { click: (e) => { e.currentTarget.blur(); onClick(); } } },
-    h('img', { src: img, alt: '', draggable: 'false' }), h('span', { class: 'ttl' }, tx(title)), h('span', { class: 'dsc' }, tx(desc)));
+  // a tile per world: picture, name, description, its own version; pointing at it shows that world behind the menu
+  const tile = (bg, img, title, desc, ver, onClick, extra) => h('div', { class: 'tilewrap' },
+    h('button', { type: 'button', class: 'tile', on: { click: (e) => { e.currentTarget.blur(); onClick(); },
+      mouseenter: () => setBg(bg), focus: () => setBg(bg), mouseleave: () => setBg(null), blur: () => setBg(null) } },
+    h('img', { src: img, alt: '', draggable: 'false' }), h('span', { class: 'ttl' }, tx(title), h('span', { class: 'ver' }, ' v' + ver)), h('span', { class: 'dsc' }, tx(desc))),
+    extra || null);
+  // the story's author and both films (links open in a new tab)
+  const link = (href, key) => h('a', { href, target: '_blank', rel: 'noopener noreferrer' }, tx(key));
+  const pathCredit = h('p', { class: 'credit' }, tx('tile.pathBy'), h('br'),
+    link('https://www.youtube.com/watch?v=mA6P2KK49zk', 'tile.film1'), ' · ', link('https://www.youtube.com/watch?v=yeHm6IBG9tQ', 'tile.film2'));
+  const endlessCredit = h('p', { class: 'credit' }, tx('tile.endlessBy'));
   screen('main', [
     h('h1', { class: 'logo' }, 'LIMINAL', h('br'), 'SPACES'),
     tx('menu.tagline', 'p'),
     h('div', { class: 'tiles' },
-      tile('assets/tile-endless.png', 'tile.endless', 'tile.endlessDesc', () => menu.go('endless')),
-      tile('assets/tile-path.png', 'tile.path', 'tile.pathDesc', () => menu.go('path'))),
+      tile('endless', 'assets/tile-endless.png', 'tile.endless', 'tile.endlessDesc', VERSIONS.endless, () => menu.go('endless'), endlessCredit),
+      tile('path', 'assets/tile-path.png', 'tile.path', 'tile.pathDesc', VERSIONS.path, () => menu.go('path'), pathCredit)),
     h('div', { class: 'stack' }, btn('menu.options', () => menu.go('options'))),
     stats,
     update,
-    h('p', { class: 'foot' }, 'v' + VERSION, ' · ', tx('menu.foot'))],
+    h('p', { class: 'foot' }, tx('menu.versions', 'span', { menu: VERSIONS.menu, rel: VERSION }), ' · ', tx('menu.foot'))],
   () => bind(stats, 'menu.stats', undefined, { km: (app.progress.dist / 1000).toFixed(2), odd: app.progress.odd }));
 
   /* ---- world 1: endless ---- */
@@ -57,7 +66,7 @@ export function createMenu(root, app) {
       back()),
     pathStatus,
     h('p', { class: 'note' }, tx('path.keys')),
-    h('p', { class: 'foot' }, tx('path.credit'))],
+    h('p', { class: 'foot' }, tx('path.credit'), h('br'), link('https://www.youtube.com/watch?v=mA6P2KK49zk', 'tile.film1'), ' · ', link('https://www.youtube.com/watch?v=yeHm6IBG9tQ', 'tile.film2'))],
   () => {
     pathCont.hidden = !app.progress.path;
     bind(pathCont, 'path.continue');
@@ -103,7 +112,10 @@ export function createMenu(root, app) {
   const options = buildOptions({ settings: app.settings, input: app.input, progress: app.progress });
   screen('options', [tx('opt.title', 'h2'), options.el, h('div', { class: 'stack' }, back())], () => options.select('graphics'));
 
-  const overlay = h('div', { id: 'menu', hidden: true }, Object.values(screens));
+  const overlay = h('div', { id: 'menu', hidden: true }, h('div', { class: 'menubg' }), Object.values(screens));
+  // background of the menu: each world's screens show that world (the endless one renders live behind the menu)
+  const BG = { endless: 'endless', single: 'endless', multi: 'endless', path: 'path' };
+  function setBg(bg) { overlay.dataset.bg = bg || BG[current] || ''; }
   root.append(overlay);
 
   const menu = {
@@ -115,6 +127,7 @@ export function createMenu(root, app) {
       for (const [k, el] of Object.entries(screens)) el.hidden = k !== name;
       current = name; overlay.hidden = false;
       overlay.dataset.screen = name;
+      setBg(null);
       if (onShow[name]) onShow[name]();
     },
     go(name) { history.push(current); menu.switchTo(name); },

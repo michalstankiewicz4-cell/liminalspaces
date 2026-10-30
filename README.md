@@ -47,7 +47,7 @@ Peer-to-peer over WebRTC with no game server: the host creates an invite code, t
 - the STUN server (stun.l.google.com) is used only when you tick the option.
 
 ## Versioning
-The version lives in `js/version.js` (shown in the menu and the FPS counter), history in `CHANGELOG.md`; every push is a new version (the owner creates `vX.Y.Z` tags in GitHub Releases).
+The release version lives in `js/version.js` (shown in the menu and the FPS counter), history in `CHANGELOG.md`; every push is a new release (the owner creates `vX.Y.Z` tags in GitHub Releases). Each part has its own version too (`VERSIONS`: the start screen and every world), shown on the start screen.
 Before every push: bump the version, add a changelog entry and run `node tools/check-version.mjs`.
 Saves and settings carry a format version and are migrated on load; the menu says when a newer version is published.
 

@@ -1,8 +1,17 @@
 # Changelog
 
-Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new version (number in `js/version.js` + an entry here).
+Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (`VERSION` in `js/version.js` + an entry here). From 0.11.0 each part also has its own version (`VERSIONS`: the start screen, Endless Liminal Spaces, The Great Path / Rudon's Plane); an entry names the parts it changed with their new versions.
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
+
+## [0.11.0] - 2026-10-30
+Parts: start screen 1.1.0 · Endless Liminal Spaces 1.0.0 · The Great Path (Rudon's Plane) 1.0.1
+### Added
+- **Separate versions** for each part of the game: the start screen (shell, menus, options), Endless Liminal Spaces and The Great Path. Each tile shows its world's version; the footer shows the start screen's version and the release. Each part starts from 1.0.0 (the state of 0.10.0); this release's changes make the start screen 1.1.0 and The Great Path 1.0.1.
+- **Credits on the Great Path tile**: the story's author (Solar Sands) and links to both films — part 1 and the full story; also on the Great Path screen.
+- **The menu background follows the world**: pointing at the Great Path tile (or being in its screen) shows that world behind the menu; the endless world renders live behind its own screens.
+### Changed (The Great Path 1.0.1)
+- **Sunbeams** are soft: each face fades out towards its edges, the top and the floor, with slowly drifting procedural streaks and a slow breathing, different for every beam. **Dust** in the beams is smaller, twinkles and swirls (each mote sinks at its own speed, sways and now and then lifts).
 
 ## [0.10.0] - 2026-10-30
 ### Added

@@ -133,7 +133,7 @@ Storage errors are swallowed (private mode etc.).
 - Incoming messages: max 4000 characters, JSON object with a string `t`, numbers checked for finiteness and range, ids must match `^[a-z0-9]{1,12}$`, names filtered; invite/reply codes have a prefix (`LS1.`), a size limit and a type check.
 
 ## Versioning (standing rule)
-The save and the settings carry a format version; `migrate()` in `core/app.js` (save) and `sanitize()` in `core/settings.js` (settings) bring older data up to date — bump the format version and add a step there whenever the meaning of saved data changes. On start the app fetches `js/version.js` (no cache) and, if a newer version is published, the menu shows a reload notice.
+Besides the release `VERSION`, `js/version.js` holds `VERSIONS` — one per part: `menu` (start screen, menus, options, HUD shell), `endless`, `path` (Rudon's Plane); bump the parts a push changes and name them in the changelog entry; `tools/check-version.mjs` refuses a part going down. The save and the settings carry a format version; `migrate()` in `core/app.js` (save) and `sanitize()` in `core/settings.js` (settings) bring older data up to date — bump the format version and add a step there whenever the meaning of saved data changes. On start the app fetches `js/version.js` (no cache) and, if a newer version is published, the menu shows a reload notice.
 Every push to `main` is a new semver version: bump `js/version.js`, add an entry at the top of `CHANGELOG.md`, run `node tools/check-version.mjs`, then push. The owner creates `vX.Y.Z` tags in GitHub Releases. Changes to world generation change every seed — mention it in the changelog.
 
 ## Testing (headless)

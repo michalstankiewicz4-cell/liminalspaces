@@ -5,14 +5,42 @@ import { CS, F } from './grid.js';
 import { canvasTexture } from './textures.js';
 
 export function createSkylights(scene, grid, beams) {
-  const beamAlpha = canvasTexture(4, 128, (g, w, h) => {
-    const gr = g.createLinearGradient(0, 0, 0, h);
-    gr.addColorStop(0, '#000'); gr.addColorStop(0.08, '#fff'); gr.addColorStop(0.75, '#aaa'); gr.addColorStop(1, '#000');
-    g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  // Sunbeams: soft-edged shafts of light. Each face fades out towards its edges and towards the top and the floor,
+  // with slowly drifting procedural streaks (rays) seeded per beam, so no two beams look alike.
+  const time = { value: 0 };
+  const beamVert = `
+    varying vec2 vUv; varying vec3 vW;
+    void main() { vUv = uv; vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`;
+  const beamFrag = `
+    uniform vec3 color; uniform float time, seed;
+    varying vec2 vUv; varying vec3 vW;
+    float h1(float n) { return fract(sin(n * 127.1 + seed * 311.7) * 43758.5453); }
+    float n1(float x) { float i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f); return mix(h1(i), h1(i + 1.0), f); }
+    void main() {
+      float u = fract(vUv.x * 4.0);                          // across one face, 0..1
+      float edge = smoothstep(0.0, 0.28, u) * smoothstep(1.0, 0.72, u);
+      float y = vUv.y;                                        // 0 floor .. 1 skylight
+      float vert = smoothstep(0.0, 0.18, y) * smoothstep(1.0, 0.92, y) * (0.6 + 0.4 * y);
+      // streaks along the beam, drifting slowly; a breath of the whole beam
+      float s = 0.55 + 0.45 * n1(vUv.x * 22.0 + time * 0.07) * (0.6 + 0.4 * n1(vUv.x * 9.0 - time * 0.05 + 7.0));
+      float breath = 0.85 + 0.15 * sin(time * 0.37 + seed * 6.0);
+      float a = edge * vert * s * breath * 2.3;               // the soft edges take light away: make it up
+      gl_FragColor = vec4(color * a, 1.0);
+    }`;
+  const dustMat = new THREE.ShaderMaterial({
+    uniforms: { time, size: { value: 3.2 } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
+    vertexShader: `
+      attribute float phase; uniform float time, size; varying float vA;
+      void main() {
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        vA = 0.35 + 0.65 * pow(0.5 + 0.5 * sin(time * (0.8 + fract(phase * 7.3) * 1.6) + phase * 6.283), 3.0);  // twinkle
+        gl_PointSize = max(1.0, size * projectionMatrix[1][1] / max(0.3, -mv.z));        // ~1.6 cm motes, in render-target pixels
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: `varying float vA; void main() { vec2 d = gl_PointCoord - 0.5; float r = dot(d, d); if (r > 0.25) discard; gl_FragColor = vec4(vec3(1.0, 0.94, 0.8) * vA * 0.75 * (1.0 - r * 4.0), 1.0); }`,
   });
-  beamAlpha.colorSpace = THREE.NoColorSpace;
-  const dustMat = new THREE.PointsMaterial({ color: 0xfff0d0, size: 0.025, transparent: true, opacity: 0.7, depthWrite: false, blending: THREE.AdditiveBlending });
   const dusts = [];
+  let beamN = 0;
   function makeBeam(b) {
     let floor = Infinity;
     for (let z = b.z0 + CS / 2; z < b.z1; z += CS) for (let x = b.x0 + CS / 2; x < b.x1; x += CS) floor = Math.min(floor, grid.floorAt(x, z));
@@ -21,7 +49,11 @@ export function createSkylights(scene, grid, beams) {
     const h = b.top - floor, w = b.x1 - b.x0, d = b.z1 - b.z0;
     const geo = new THREE.CylinderGeometry(Math.SQRT1_2, Math.SQRT1_2 * 1.06, 1, 4, 1, true);
     geo.rotateY(Math.PI / 4);
-    const m = new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 0.93, 0.78).multiplyScalar(0.11 * b.sun), alphaMap: beamAlpha, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
+    const m = new THREE.ShaderMaterial({
+      uniforms: { color: { value: new THREE.Color(1, 0.93, 0.78).multiplyScalar(0.11 * b.sun) }, time, seed: { value: (beamN++ * 0.6180339) % 1 } },
+      vertexShader: beamVert, fragmentShader: beamFrag, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false,
+    });
+    m.color = m.uniforms.color.value;                     // tinted by fades and scratching episodes (see tint)
     const mesh = new THREE.Mesh(geo, m);
     b.mesh = mesh; b.base = 0.11 * b.sun; b.floor = floor; b.fade = 1; b.dim = 1;
     g.userData.beam = b;
@@ -31,9 +63,9 @@ export function createSkylights(scene, grid, beams) {
     g.add(mesh);
     // floating dust inside the beam
     const n = Math.round(Math.min(400, w * d * h * 2));
-    const pos = new Float32Array(n * 3);
-    for (let k = 0; k < n; k++) { pos[k * 3] = b.x0 + Math.random() * w; pos[k * 3 + 1] = floor + Math.random() * h; pos[k * 3 + 2] = b.z0 + Math.random() * d; }
-    const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const pos = new Float32Array(n * 3), ph = new Float32Array(n);
+    for (let k = 0; k < n; k++) { pos[k * 3] = b.x0 + Math.random() * w; pos[k * 3 + 1] = floor + Math.random() * h; pos[k * 3 + 2] = b.z0 + Math.random() * d; ph[k] = Math.random(); }
+    const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pos, 3)); pg.setAttribute('phase', new THREE.BufferAttribute(ph, 1));
     const pts = new THREE.Points(pg, dustMat);
     pts.userData.dust = { b, floor, h, w, d };
     g.add(pts);
@@ -93,7 +125,8 @@ export function createSkylights(scene, grid, beams) {
 
   // floating dust drifts down inside the beams near the player; beams fade out with distance (they ignore fog)
   let fadeT = 0;
-  function updateDust(dt, time, pos) {
+  function updateDust(dt, t, pos) {
+    time.value = t;
     fadeT -= dt;
     if (fadeT <= 0) {
       fadeT = 0.25;
@@ -108,11 +141,16 @@ export function createSkylights(scene, grid, beams) {
       if (!p.parent || !p.parent.parent) continue;
       const { b, floor, h } = p.userData.dust, a = p.geometry.attributes.position;
       if (Math.abs((b.x0 + b.x1) / 2 - pos.x) > 30 || Math.abs((b.z0 + b.z1) / 2 - pos.z) > 30) continue;
+      // slow swirling drift: each mote sinks at its own speed, sways in x and z, now and then lifts
       for (let k = 0; k < a.count; k++) {
-        let y = a.getY(k) - dt * 0.05, x = a.getX(k) + Math.sin(time * 0.3 + k) * dt * 0.03;
-        if (y < floor) y += h;
+        const sk = 0.6 + ((k * 37) % 11) / 11;
+        let y = a.getY(k) - dt * (0.035 * sk - 0.04 * Math.max(0, Math.sin(t * 0.21 + k * 0.7)));
+        let x = a.getX(k) + Math.sin(t * 0.5 * sk + k * 1.7) * dt * 0.07;
+        let z = a.getZ(k) + Math.cos(t * 0.43 * sk + k * 2.3) * dt * 0.06;
+        if (y < floor) y += h; if (y > floor + h) y -= h;
         if (x < b.x0) x = b.x1; if (x > b.x1) x = b.x0;
-        a.setXY(k, x, y);
+        if (z < b.z0) z = b.z1; if (z > b.z1) z = b.z0;
+        a.setXYZ(k, x, y, z);
       }
       a.needsUpdate = true;
     }

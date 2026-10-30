@@ -1,6 +1,7 @@
 // Version check before pushing: node tools/check-version.mjs
-// Verifies: (1) the version in js/version.js equals the newest CHANGELOG.md entry,
-// (2) the version is higher than the last pushed one (origin/main) and than the highest vX.Y.Z tag (if any).
+// Verifies: (1) the release VERSION in js/version.js equals the newest CHANGELOG.md entry,
+// (2) the release is higher than the last pushed one (origin/main) and than the highest vX.Y.Z tag (if any),
+// (3) every part's version (VERSIONS: start screen, worlds) is valid and not lower than the pushed one.
 import { readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 
@@ -22,6 +23,15 @@ if (head && head === remote && !dirty) { console.log(`OK: version ${ver}, HEAD =
 if (dirty) console.log('Note: there are uncommitted changes — the version must be higher than the pushed one.');
 
 const baseline = [];
+const parts = (src) => Object.fromEntries([...(/VERSIONS\s*=\s*\{([^}]*)\}/.exec(src)?.[1] || '').matchAll(/(\w+):\s*'(\d+\.\d+\.\d+)'/g)].map((m) => [m[1], m[2]]));
+const mine = parts(readFileSync(new URL('../js/version.js', import.meta.url), 'utf8'));
+if (!Object.keys(mine).length) fail('VERSIONS (versions of the parts) not found in js/version.js');
+const theirs = parts(sh('git show origin/main:js/version.js'));
+for (const [k, v] of Object.entries(theirs)) {
+  if (!mine[k]) fail(`part "${k}" was removed from VERSIONS`);
+  if (gt(parse(v), parse(mine[k]))) fail(`part "${k}" went down: ${v} -> ${mine[k]}`);
+}
+console.log('Parts: ' + Object.entries(mine).map(([k, v]) => `${k} ${v}` + (theirs[k] && theirs[k] !== v ? ` (was ${theirs[k]})` : '')).join(', '));
 const sent = RE.exec(sh('git show origin/main:js/version.js'))?.[1];
 if (sent) baseline.push(['origin/main', sent]);
 const tag = sh("git tag --list 'v*.*.*' --sort=-v:refname").split('\n').filter(Boolean)[0]?.slice(1);
