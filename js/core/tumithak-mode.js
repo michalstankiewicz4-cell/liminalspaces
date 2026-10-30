@@ -4,10 +4,13 @@ import { moveLabel, firstKey } from '../input/bindings.js';
 import { t } from '../i18n/index.js';
 import { createWalker } from '../story/walker.js';
 import { nextPaint } from '../ui/loader.js';
+import { createMap3d } from '../ui/map3d.js';
 
-// shared: { camera, pipe, input, hud, settings, progress, audio, hand }
+// shared: { camera, pipe, input, hud, settings, progress, audio, hand, uiEl }
 export function createTumithakMode(shared) {
-  const { camera, pipe, hud, settings, progress, audio, hand } = shared;
+  const { camera, pipe, input, hud, settings, progress, audio, hand } = shared;
+  const map = createMap3d(shared.uiEl);
+  let exploreT = 0;
   let caves = null, walker = null, hudT = 0, lightT = 0, lastDist = 0, safe = null, pendingView = null;
 
   let loading = null;
@@ -22,6 +25,7 @@ export function createTumithakMode(shared) {
       walker.onLand = () => audio.land();
       caves.onZone = (id, first) => { if (first) hud.toast(t('tm.newPlace', { place: t('tm.z.' + caves.zones[id].key) }), 4.5); };
       if (pendingView !== null) caves.setViewDist(pendingView);
+      map.attach(caves);
     });
     loading.catch(() => { loading = null; });
     return loading;
@@ -36,23 +40,33 @@ export function createTumithakMode(shared) {
     walker.place(sp.x, sp.z, sp.yaw || 0);
     if (Number.isFinite(sp.y)) { walker.y = sp.y; const s = caves.support(sp.x - 0.27, sp.z - 0.27, sp.x + 0.27, sp.z + 0.27, sp.y + 1.5); if (Number.isFinite(s)) walker.y = s; walker.eyeY = walker.y + 1.62; }
     caves.preload(walker.x, walker.y, walker.z);
+    caves.setWorkLights(false);
     caves.scene.add(camera);
     hand.group.visible = true; hand.setOn(true); hand.setBeam(160, 1.35);   // the dark: a strong beam down the corridors
     safe = { x: walker.x, y: walker.y, z: walker.z };
     lastDist = 0;
     const k = settings.data.keys;
-    hud.setHint(t('hud.tmHint', { move: moveLabel(k), light: firstKey(k, 'flashlight') }), 12);
+    hud.setHint(t('hud.tmHint', { move: moveLabel(k), light: firstKey(k, 'flashlight'), map: firstKey(k, 'map') }), 12);
   }
-  function leave() { hand.group.visible = false; hand.spot.visible = false; }
+  function leave() { hand.group.visible = false; hand.spot.visible = false; map.setOpen(false); map.save(); }
   function remember() {
+    map.save();
     progress.tumi = { x: +walker.x.toFixed(2), y: +walker.y.toFixed(2), z: +walker.z.toFixed(2), yaw: +walker.yaw.toFixed(3), seen: [...caves.visited.keys()] };
   }
   function onPress(act) {
     if (act === 'flashlight') { hand.setOn(!hand.spot.visible); audio.click(); return true; }
+    if (act === 'map') { setMap(!map.open); return true; }
+    if (act === 'workLights' && map.open) { hud.toast(t(map.toggleReveal() ? 'map.revealOn' : 'map.revealOff'), 2); return true; }
+    if (act === 'workLights') { caves.setWorkLights(!caves.workLights); hud.toast(t(caves.workLights ? 'hud.workOn' : 'hud.workOff'), 2); return true; }
     return false;
   }
 
+  // the 3D map (M): opens over the game with a free mouse; closing it takes the mouse back
+  function setMap(o) { map.setOpen(o, walker); input.clear(); if (o) input.unlock(); else input.lock(); }
+
   function frame(dt, t0, walking, ctl) {
+    exploreT -= dt;
+    if (exploreT <= 0) { exploreT = 0.4; map.explore(walker.x, walker.y, walker.z); }
     walker.update(dt, ctl, settings.data.mouse);
     if (walker.ground && !walker.climbing) safe = { x: walker.x, y: walker.y, z: walker.z };
     if (safe && walker.y < safe.y - 30) { walker.place(safe.x, safe.z, walker.yaw); walker.y = safe.y; pipe.glitch = 0.5; }
@@ -73,6 +87,7 @@ export function createTumithakMode(shared) {
     lightT -= dt;
     if (lightT <= 0) { lightT = 0.2; hand.setLight(caves.lightAt(walker.x, eye.y - 0.3, walker.z) + (hand.spot.visible ? 0.15 : 0)); }
     pipe.render(caves.scene, camera);
+    map.frame(walker);
     hudT += dt;
     if (hudT > 0.2 && walking) {
       hudT = 0;
@@ -82,6 +97,7 @@ export function createTumithakMode(shared) {
 
   return {
     load, start, leave, remember, onPress, frame,
+    get mapOpen() { return map.open; }, setMap, closeMap: () => map.setOpen(false), clearMap: () => map.clear(),
     get ready() { return !!caves; }, get caves() { return caves; }, get walker() { return walker; },
     get loadedCount() { return caves ? caves.loadedCount : 0; },
     setViewDist(v) { if (caves) caves.setViewDist(v); else pendingView = v; },

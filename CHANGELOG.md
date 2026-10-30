@@ -4,6 +4,12 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.19.1] - 2026-10-30
+Parts: Tumithak of the Corridors 1.1.0
+### Added
+- **3D map (M)** of the caves: the explored tunnels, rooms, caverns and ladder shafts as lines coloured by place, the names of the places you have been to, and you (an arrow). Drag to turn it, right drag or Shift + drag to move it, wheel to zoom, R to centre it on you again; **L reveals the whole map** (and hides the unexplored again), as on the Great Path. What you have explored is remembered (`ls:tumimap:v1`). The map is also on the hotbar.
+- L (work lights) outside the map lights up the caves (to look around in the dark).
+
 ## [0.19.0] - 2026-10-30
 Parts: start screen 1.7.0 · Endless Liminal Spaces 2.0.1 · The Great Path (Rudon's Plane) 1.6.2 · Tumithak of the Corridors 1.0.0
 ### Added (Tumithak of the Corridors 1.0.0)

@@ -76,7 +76,7 @@ export function createApp({ appEl, uiEl }) {
         ? { x: q.x, y: q.y, z: q.z, yaw: q.yaw, seen: Array.isArray(q.seen) ? q.seen.filter((n) => Number.isInteger(n) && n > 0 && n < 64).slice(0, 64) : [] } : null;
     },
     wipe() {
-      this.dist = 0; this.odd = 0; this.last = null; this.path = null; this.tumi = null; this.save(); write(KEYS.pathMap, null);
+      this.dist = 0; this.odd = 0; this.last = null; this.path = null; this.tumi = null; this.save(); write(KEYS.pathMap, null); tumi.clearMap();
       path.clearSeen();
       menu.refresh();
     },
@@ -98,7 +98,8 @@ export function createApp({ appEl, uiEl }) {
   const endless = createEndlessMode({ renderer, camera, pipe, hud, settings, progress, audio, hand: path.hand, session: () => session });
   const hand = path.hand;
   // the caves of Tumithak (built the first time they are opened)
-  const tumi = createTumithakMode({ camera, pipe, input, hud, settings, progress, audio, hand });
+  const tumi = createTumithakMode({ camera, pipe, input, hud, settings, progress, audio, hand, uiEl });
+  const mapOpen = () => mapUi.open || tumi.mapOpen;      // either map (2D Great Path / 3D caves) is open
 
   endless.onFind = (kind) => {
     progress.odd++;
@@ -188,7 +189,7 @@ export function createApp({ appEl, uiEl }) {
       closeSession();
       useWorld('tumi');
       tumi.start(where);
-      hotbar.setItems(['flashlight']); hotbar.select(0);
+      hotbar.setItems(['flashlight', 'map']); hotbar.select(0);
       mode = 'play'; paused = false;
       input.clear(); menu.hide();
       audio.unlock(); audio.setMuted(false);
@@ -222,7 +223,7 @@ export function createApp({ appEl, uiEl }) {
   }
   function pause() {
     if (mode !== 'play' || paused) return;
-    mapUi.setOpen(false);
+    mapUi.setOpen(false); tumi.closeMap();
     if (kind === 'path') path.pause();
     paused = true; input.clear(); input.unlock();
     rememberWalk();
@@ -288,11 +289,12 @@ export function createApp({ appEl, uiEl }) {
     if (mode === 'menu') { menu.back(); return; }
     if (performance.now() - lockPauseAt < 250) return;        // this Esc already paused (pointer lock was released)
     if (mapUi.open) { mapUi.setOpen(false); input.lock(); return; }
+    if (tumi.mapOpen) { tumi.setMap(false); return; }
     if (!paused) pause();
     else if (!menu.back()) resume();                          // inside Options/Invite: back; on the pause menu: resume
   });
   input.onLockChange = (locked) => {
-    if (!locked && mode === 'play' && !paused && !mapUi.open) { lockPauseAt = performance.now(); pause(); }
+    if (!locked && mode === 'play' && !paused && !mapOpen()) { lockPauseAt = performance.now(); pause(); }
   };
   canvas.addEventListener('mousedown', () => { audio.unlock(); if (mode === 'play' && !paused && !input.locked) input.lock(); });
   input.onPress = (act) => {
@@ -309,8 +311,9 @@ export function createApp({ appEl, uiEl }) {
     const item = hotbar.select(i);
     if (item === 'flashlight') input.onPress('flashlight');
     else if (item === 'map' && kind === 'path') path.onPress('map');
+    else if (item === 'map' && kind === 'tumi') tumi.onPress('map');
   }
-  input.onWheel = (d) => { if (mode === 'play' && !paused && !mapUi.open) hotbar.scroll(d); };
+  input.onWheel = (d) => { if (mode === 'play' && !paused && !mapOpen()) hotbar.scroll(d); };
   addEventListener('beforeunload', () => { if (mode === 'play') rememberWalk(); if (session) session.close(); });
 
   /* ---- settings -> systems ---- */
@@ -351,7 +354,7 @@ export function createApp({ appEl, uiEl }) {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     const t0 = now / 1000;
-    const walking = mode === 'play' && !paused && !mapUi.open;
+    const walking = mode === 'play' && !paused && !mapOpen();
     if (kind === 'path') {
       const ctl = walking ? { look: input.takeLook(), turn: input.turnAxis(), move: input.moveVector(), sprint: input.isDown('sprint'), jump: input.isDown('jump') } : (input.takeLook(), still);
       path.frame(dt, t0, walking, ctl, rememberWalk);

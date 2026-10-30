@@ -49,6 +49,7 @@ Published at: repo <https://github.com/michalstankiewicz4-cell/liminalspaces>, s
 | `js/story/worker.js` | Great Path: mesh worker (layout copy, returns vertex buffers) |
 | `js/story/walker.js`, `hand.js` | Great Path: multi-level walker (step-up 0.45 m, falling, jumping); flashlight view model + shadowed spot light |
 | `js/ui/map.js` | Minimap and full map with journal (Great Path) |
+| `js/ui/map3d.js` | 3D map of the caves of Tumithak (M): explored lines by zone, visited place names, the player arrow; orbit / pan / zoom with the mouse, R centres, L reveals all; its own small WebGL renderer; explored 4 m cells in `ls:tumimap:v1` |
 | `js/world/avatars.js` | Other players' figures (interpolated; multiplayer is switched off for now) |
 | `js/render/pixel-pipeline.js` | `PixelPipeline` from Capital Quarantine: low-res target + final shader (palette, dither, depth outline, vignette) |
 | `js/input/bindings.js`, `input.js` | Rebindable actions and key labels; keyboard + mouse look (pointer lock or drag) |
@@ -137,6 +138,7 @@ The engine's exception for natural geometry: instead of the cell grid, a signed 
 ## Persistence (localStorage)
 - `ls:save:v1` — `{ v (save format, `SAVE_VERSION` = 2), game (version that wrote it), dist, odd, last: { seed, x, z, yaw }, path: { x, z, yaw, seen } }` (total metres walked, oddities found, last single-player walk; saved every 5 s while walking, on pause/quit and on page unload)
 - `ls:settings:v1` — settings
+- `ls:tumimap:v1` — explored 4 m cells of the caves of Tumithak (`"x,y,z"` keys) for the 3D map
 - `ls:pathmap:v1` — explored map of the Great Path: `{ "ci,cj": base64 bitset of the chunk's 64×64 cells }` (saved with the walk when something new was seen; restored when the world is built)
 Storage errors are swallowed (private mode etc.).
 

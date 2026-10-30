@@ -16,6 +16,9 @@ export function createCaves() {
   const f = W.field;
   const scene = new THREE.Scene();
   scene.add(new THREE.AmbientLight(0xffffff, Math.PI));     // albedo x baked light
+  const work = new THREE.HemisphereLight(0xfff2d8, 0x403020, 0);   // L: work lights (to see in the dark)
+  scene.add(work);
+  let workLights = false;
   scene.fog = new THREE.Fog(new THREE.Color(0.02, 0.02, 0.02), 8, 46);    // the dark does the hiding; fog only softens the far end
   scene.background = scene.fog.color;
   const rock = rockMaterial();
@@ -234,6 +237,8 @@ export function createCaves() {
     get zone() { return zone; }, get visited() { return visited; }, set onZone(fn) { onZone = fn; }, resetVisits() { visited.clear(); zone = 0; },
     get loadedCount() { let n = 0; for (const e of loaded.values()) if (e.mesh) n++; return n; },
     get pending() { return inFlight.size; },
+    setWorkLights(on) { workLights = on; work.intensity = on ? 2.5 : 0; },
+    get workLights() { return workLights; },
     setViewDist(v) { VIEW = 1 + v; FOG_K = [0.75, 1, 1.35][v - 1] || 1; },
     pulse(t) { for (const c of scene.children) if (c.userData && c.userData.core) c.userData.core.scale.setScalar(1 + Math.sin(t * 2.2) * 0.08); },
   };
