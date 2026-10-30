@@ -4,6 +4,11 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.18.1] - 2026-10-30
+Parts: start screen 1.6.1
+### Changed
+- The project is called **Creepypasta Explorator** (was Liminal Spaces): the start screen logo, the loading screen, the page title, the description and social cards, README and docs. The world "Endless Liminal Spaces" keeps its name; the repository, the site address and saved data stay as they are.
+
 ## [0.18.0] - 2026-10-30
 Parts: start screen 1.6.0 · Endless Liminal Spaces 2.0.0 · The Great Path (Rudon's Plane) 1.6.1
 ### Changed (Endless Liminal Spaces 2.0.0)

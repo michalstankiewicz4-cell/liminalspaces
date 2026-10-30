@@ -1,6 +1,6 @@
 # Guidance for the assistant (Claude Code) working in this repo
 
-Project: browser game "Liminal Spaces" (first-person, endless procedural liminal spaces, three.js, pixel-art filter). Full context: `docs/ARCHITECTURE.md`; plan: `TODO.md`, `docs/MULTIPLAYER.md`. Engine origin: the owner's repo `michalstankiewicz4-cell/VS` (Capital Quarantine).
+Project: browser game "Creepypasta Explorator" (repo `liminalspaces`; first-person walks through creepypasta worlds: the endless procedural liminal spaces and the Great Path from "Rudon's Plane"; three.js, pixel-art filter). Full context: `docs/ARCHITECTURE.md`; plan: `TODO.md`, `docs/MULTIPLAYER.md`. Engine origin: the owner's repo `michalstankiewicz4-cell/VS` (Capital Quarantine).
 
 ## Standing rules (from the owner)
 - **Every push = a new version**: bump the release `VERSION` in `js/version.js`, add an entry at the top of `CHANGELOG.md`, run `node tools/check-version.mjs`, then push to `main`; state the version number in your reply.

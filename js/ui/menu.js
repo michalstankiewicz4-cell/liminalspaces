@@ -37,7 +37,7 @@ export function createMenu(root, app) {
     link('https://www.youtube.com/watch?v=mA6P2KK49zk', 'tile.film1'), ' · ', link('https://www.youtube.com/watch?v=yeHm6IBG9tQ', 'tile.film2'));
   const endlessCredit = h('p', { class: 'credit' }, tx('tile.endlessBy'));
   screen('main', [
-    h('h1', { class: 'logo' }, 'LIMINAL', h('br'), 'SPACES'),
+    h('h1', { class: 'logo' }, 'CREEPYPASTA', h('br'), 'EXPLORATOR'),
     tx('menu.tagline', 'p'),
     h('div', { class: 'tiles' },
       tile('endless', 'assets/tile-endless.png', 'tile.endless', 'tile.endlessDesc', VERSIONS.endless, () => menu.go('endless'), endlessCredit),

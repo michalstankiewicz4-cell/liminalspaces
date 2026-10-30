@@ -33,7 +33,7 @@ function migrate(d) {
 }
 // Is version a (x.y.z) newer than b?
 const newer = (a, b) => { const p = (s) => s.split('.').map(Number); const x = p(a), y = p(b); for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] > y[i]; return false; };
-const TITLE = 'Liminal Spaces — Endless Liminal Space Exploration Game';
+const TITLE = 'Creepypasta Explorator — Walk Through Creepypastas and Endless Liminal Spaces';
 
 export function createApp({ appEl, uiEl }) {
   const settings = createSettings();
