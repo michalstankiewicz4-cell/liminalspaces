@@ -50,3 +50,5 @@
 .credit a:hover,.foot a:hover{color:#f4e8b8;border-bottom-color:#f4e8b8}
 .menubg{position:absolute;inset:0;z-index:-1;opacity:0;transition:opacity .45s;pointer-events:none;background:linear-gradient(90deg,rgba(8,7,4,.88) 0,rgba(8,7,4,.55) 40%,rgba(8,7,4,.25) 100%),url(../assets/tile-path.png) center/cover no-repeat;image-rendering:pixelated}
 #menu[data-bg=path] .menubg{opacity:1}
+.worldtabs{align-items:center;margin-bottom:6px}
+.worldtabs>span{color:#948c74;margin-right:4px}

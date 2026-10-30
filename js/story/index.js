@@ -17,7 +17,8 @@ import { createExplored } from './explored.js';
 import { createWater } from './water.js';
 import { disposeGroup } from '../world/mesh.js';
 
-const VIEW = 3;              // chunks streamed around the player (radius)
+let VIEW = 3;                // chunks streamed around the player (radius): 2 / 3 / 4 by the view distance setting
+let FOG_K = 1;               // fog distance factor by the view distance setting
 const fdiv = (a, b) => Math.floor(a / b);
 
 export function createStory(renderer) {
@@ -175,7 +176,7 @@ export function createStory(renderer) {
     fogTarget.setRGB(zd.fog[0], zd.fog[1], zd.fog[2]);
     if (workLights) fogTarget.multiplyScalar(1.8);
     scene.fog.color.lerp(fogTarget, 1 - Math.exp(-1.2 * dt));
-    const far = zd.far || (zone === Z_CHAPEL ? 70 : 46);
+    const far = (zd.far || (zone === Z_CHAPEL ? 70 : 46)) * FOG_K;
     scene.fog.far += (far - scene.fog.far) * Math.min(1, dt);
     fx.update(dt);
     waters.update(dt, time, pos);
@@ -257,6 +258,8 @@ export function createStory(renderer) {
     floorAt: (x, z) => grid.floorAt(x, z), ceilAt: (x, z) => grid.ceilAt(x, z), isOpen: (x, z) => grid.isOpen(x, z),
     flagsAt: (x, z) => grid.flagsAt(x, z), zoneKeyAt: (x, z) => (ZONES[grid.zoneAt(x, z)] || ZONES[0]).key,
     resetVisits() { visited.clear(); zone = 0; },
+    // view distance setting 1..3: chunks streamed around you and how far the fog lets you see
+    setViewDist(v) { VIEW = 1 + v; FOG_K = [0.75, 1, 1.35][v - 1] || 1; },
   };
 }
 const Z_CHAPEL = ZONES.findIndex((z) => z.key === 'chapel');

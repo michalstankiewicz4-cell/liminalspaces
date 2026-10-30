@@ -24,8 +24,9 @@ export function buildOptions(ctx) {
     bar.append(b); body.append(page);
     return { id, b, page };
   });
-  function select(id) {
-    for (const e of entries) { e.page.hidden = e.id !== id; e.b.classList.toggle('on', e.id === id); }
+  // opts go to the page (Graphics: { world } — the world whose settings to show)
+  function select(id, opts) {
+    for (const e of entries) { e.page.hidden = e.id !== id; e.b.classList.toggle('on', e.id === id); if (e.id === id && e.page.onSelect) e.page.onSelect(opts); }
   }
   select('graphics');
   return { el: h('div', { class: 'options' }, bar, body), select };

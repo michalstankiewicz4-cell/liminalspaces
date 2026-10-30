@@ -4,6 +4,13 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.14.0] - 2026-10-30
+Parts: start screen 1.4.0 · Endless Liminal Spaces 1.3.0 · The Great Path (Rudon's Plane) 1.3.0
+### Changed
+- **Each world has its own graphics settings**, and all of them work in both: pixel height, colour levels, dithering, outline, brightness, field of view, view distance and head bob. Options > Graphics has a switch at the top (Endless Liminal Spaces / The Great Path); opened during a walk it shows the world you are in. Before, the Great Path ignored most of these (it had fixed values behind "detailed rendering"). The Great Path also has film grain, the story guide and the scary events there; the FPS counter is shared. Reset resets the shown world only.
+- The Great Path's view distance now works: 1–3 sets how many chunks are kept around you (2–4) and how far the fog lets you see.
+- Settings format v3: an older save keeps its field of view, brightness and head bob for both worlds; if "detailed rendering" was off, the Great Path takes over the pixel-art values. The "detailed rendering" option is gone (the Great Path's own values replace it).
+
 ## [0.13.0] - 2026-10-30
 Parts: start screen 1.3.0 · Endless Liminal Spaces 1.2.0 · The Great Path (Rudon's Plane) 1.2.0
 ### Added

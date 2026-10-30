@@ -110,7 +110,7 @@ export function createMenu(root, app) {
 
   /* ---- options ---- */
   const options = buildOptions({ settings: app.settings, input: app.input, progress: app.progress });
-  screen('options', [tx('opt.title', 'h2'), options.el, h('div', { class: 'stack' }, back())], () => options.select('graphics'));
+  screen('options', [tx('opt.title', 'h2'), options.el, h('div', { class: 'stack' }, back())], () => options.select('graphics', { world: app.worldKind || 'endless' }));
 
   const overlay = h('div', { id: 'menu', hidden: true }, h('div', { class: 'menubg' }), Object.values(screens));
   // background of the menu: each world's screens show that world (the endless one renders live behind the menu)

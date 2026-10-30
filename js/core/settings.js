@@ -5,7 +5,9 @@ import { sanitizeKeys } from '../input/bindings.js';
 
 export const DEFAULTS = {
   lang: 'en',
-  gfx: { pixelH: 200, levels: 7, dither: 0.8, edge: 0.6, bright: 1.15, fov: 60, viewDist: 2, headBob: true, showFps: false, fine: true, grain: true },
+  // graphics of the endless world (the pixel-art look) and, separately, of the Great Path world (fine-grained)
+  gfx: { pixelH: 200, levels: 7, dither: 0.8, edge: 0.6, bright: 1.15, fov: 60, viewDist: 2, headBob: true, showFps: false },
+  gfxPath: { pixelH: 720, levels: 40, dither: 0.25, edge: 0.3, bright: 1.15, fov: 60, viewDist: 2, headBob: true, grain: true },
   mouse: { sens: 1, invertY: false },
   audio: { volume: 0.6, steps: 0.5, hum: true, scratch: true },
   hud: { show: true },
@@ -15,6 +17,7 @@ export const DEFAULTS = {
 // numeric ranges used by both the sanitiser and the option sliders
 export const RANGES = {
   pixelH: [100, 400, 10], levels: [3, 16, 1], dither: [0, 1, 0.05], edge: [0, 1, 0.05], bright: [0.5, 3, 0.05], fov: [50, 110, 1],
+  pixelHPath: [180, 720, 10], levelsPath: [3, 64, 1],
   viewDist: [1, 3, 1], sens: [0.2, 3, 0.1], volume: [0, 1, 0.05], steps: [0, 1, 0.05],
 };
 const num = (v, key, d) => { const [lo, hi] = RANGES[key]; v = +v; return Number.isFinite(v) ? clamp(v, lo, hi) : d; };
@@ -24,12 +27,19 @@ export const cleanName = (s) => (typeof s === 'string' ? s.replace(/[^\p{L}\p{N}
 
 // Settings format version. v2 (0.6.0): the default field of view went from 75° to 60°; an old save that still
 // has the old default is moved to the new one (a value the player chose stays).
-export const SETTINGS_VERSION = 2;
+// v3 (0.14.0): each world has its own graphics (gfx: endless, gfxPath: the Great Path). An older save keeps its
+// field of view, brightness and head bob for both; "detailed rendering" off becomes the pixel-art values for the path.
+export const SETTINGS_VERSION = 3;
 
 export function sanitize(raw) {
   const r = raw && typeof raw === 'object' ? raw : {};
   if (!(r.v >= 2) && r.gfx && +r.gfx.fov === 75) r.gfx = { ...r.gfx, fov: DEFAULTS.gfx.fov };
-  const g = r.gfx || {}, m = r.mouse || {}, a = r.audio || {}, u = r.hud || {}, n = r.net || {}, D = DEFAULTS;
+  if (!(r.v >= 3) && r.gfx && !r.gfxPath) {
+    const o = r.gfx, retro = o.fine === false;
+    r.gfxPath = { ...DEFAULTS.gfxPath, fov: o.fov, bright: o.bright, headBob: o.headBob, grain: o.grain !== false,
+      ...(retro ? { pixelH: o.pixelH, levels: o.levels, dither: o.dither, edge: o.edge } : {}) };
+  }
+  const g = r.gfx || {}, gp = r.gfxPath || {}, P = DEFAULTS.gfxPath, m = r.mouse || {}, a = r.audio || {}, u = r.hud || {}, n = r.net || {}, D = DEFAULTS;
   return {
     v: SETTINGS_VERSION,
     lang: r.lang === 'pl' ? 'pl' : 'en',
@@ -37,7 +47,13 @@ export function sanitize(raw) {
       pixelH: Math.round(num(g.pixelH, 'pixelH', D.gfx.pixelH) / 10) * 10, levels: Math.round(num(g.levels, 'levels', D.gfx.levels)),
       dither: num(g.dither, 'dither', D.gfx.dither), edge: num(g.edge, 'edge', D.gfx.edge), bright: num(g.bright, 'bright', D.gfx.bright),
       fov: Math.round(num(g.fov, 'fov', D.gfx.fov)), viewDist: Math.round(num(g.viewDist, 'viewDist', D.gfx.viewDist)),
-      headBob: g.headBob !== false, showFps: g.showFps === true, fine: g.fine !== false, grain: g.grain !== false,
+      headBob: g.headBob !== false, showFps: g.showFps === true,
+    },
+    gfxPath: {
+      pixelH: Math.round(num(gp.pixelH, 'pixelHPath', P.pixelH) / 10) * 10, levels: Math.round(num(gp.levels, 'levelsPath', P.levels)),
+      dither: num(gp.dither, 'dither', P.dither), edge: num(gp.edge, 'edge', P.edge), bright: num(gp.bright, 'bright', P.bright),
+      fov: Math.round(num(gp.fov, 'fov', P.fov)), viewDist: Math.round(num(gp.viewDist, 'viewDist', P.viewDist)),
+      headBob: gp.headBob !== false, grain: gp.grain !== false,
     },
     mouse: { sens: num(m.sens, 'sens', 1), invertY: m.invertY === true },
     audio: { volume: num(a.volume, 'volume', D.audio.volume), steps: num(a.steps, 'steps', D.audio.steps), hum: a.hum !== false, scratch: a.scratch !== false },

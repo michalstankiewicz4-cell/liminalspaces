@@ -230,6 +230,7 @@ export function createApp({ appEl, uiEl }) {
     continueWalk: () => { const l = progress.last; if (l) withLoader(() => startWalk(l.seed, l)); },
     seedWalk: (text) => withLoader(() => startWalk(String(text).trim() ? seedFrom(text) : randomSeed())),
     resume, quit: goMenu, startPath, onPathStatus: null,
+    get worldKind() { return mode === 'play' ? kind : null; },
     info: () => kind === 'path' ? path.info()
       : { seed, zone: world.zone, dist: player.dist, odd: world.foundCount, host: !!session && session.role === 'host' },
     // host: start a walk and open the invite screen
@@ -296,13 +297,15 @@ export function createApp({ appEl, uiEl }) {
   /* ---- settings -> systems ---- */
   function applySettings() {
     const d = settings.data;
-    // the Great Path world renders fine-grained with tone mapping (unless the player turns it off)
-    if (kind === 'path' && d.gfx.fine) pipe.setParams({ pixelH: Math.min(720, Math.max(360, innerHeight)), levels: 40, dither: 0.25, edge: 0.3, bright: d.gfx.bright / 1.15, tone: 1, grain: d.gfx.grain ? 0.045 : 0 });
-    else pipe.setParams({ ...d.gfx, tone: kind === 'path' ? 1 : 0, grain: kind === 'path' && d.gfx.grain ? 0.04 : 0 });
+    // each world has its own graphics; the Great Path renders with tone mapping (its brightness is relative to that)
+    const gp = d.gfxPath;
+    if (kind === 'path') { pipe.setParams({ pixelH: gp.pixelH, levels: gp.levels, dither: gp.dither, edge: gp.edge, bright: gp.bright / 1.15, tone: 1, grain: gp.grain ? 0.045 : 0 }); path.setViewDist(gp.viewDist); }
+    else pipe.setParams({ ...d.gfx, tone: 0, grain: 0 });
+    const fov = kind === 'path' ? gp.fov : d.gfx.fov;
     hud.showFps(d.gfx.showFps);
     hudOn = d.hud.show;
     world.setViewDist(mode === 'menu' ? Math.min(2, d.gfx.viewDist) : d.gfx.viewDist);
-    if (camera.fov !== d.gfx.fov) { camera.fov = d.gfx.fov; camera.updateProjectionMatrix(); }
+    if (camera.fov !== fov) { camera.fov = fov; camera.updateProjectionMatrix(); }
     setLang(d.lang);
   }
   settings.onChange(applySettings);
