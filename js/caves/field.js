@@ -167,6 +167,13 @@ export function buildCaves() {
   const LY = 0;
   const loorCross = city(-90, LY, 0, 190, Z.loor);
   labels.push({ key: 'loor', x: 0, y: LY, z: 0 });
+  // the great square of Loor, where the two main corridors cross; the stone pedestal for speakers (chapter 7)
+  path([[12, LY, -60], [12, LY, 60]], { ...COR, zone: Z.loor, lamp: 9 });
+  room(12, LY, 0, 10, 10, 6, { rr: 3, zone: Z.loor });
+  for (const [dx, dz] of [[-5, -5], [5, -5], [-5, 5], [5, 5]]) addLamp(12 + dx, LY + 6, dz, { dead: 0 });
+  props.push({ kind: 'pedestal', x: 12, y: LY, z: 0 });
+  labels.push({ key: 'loorSquare', x: 12, y: LY, z: 0 });
+  mark('glory', 7, 15.5, LY, 3.5);
   starts.loor = { x: -70, y: LY, z: 0, yaw: -Math.PI / 2 };
   // the hall of the great machine that never stops (its pulse is felt everywhere in Loor)
   path([[-40, LY, 0], [-40, LY, 22]], { ...COR, w: 1.9, h: 4.2, zone: Z.machine, lamp: 8 });
@@ -195,6 +202,7 @@ export function buildCaves() {
     lamps.push({ x, y: y + 2.85, z: z - 9, ceil: y + 3, p: 0.5, dead: false, flicker: false, r: 0.9, g: 0.95, b: 1, small: true });
     props.push({ kind: 'gifts', x: x - 1.2, y, z: z - 9.5 }, { kind: 'synth', x: x + 2.2, y, z: z - 10.8 });
     mark('home', 2, x + 1.1, y, z - 7.4);
+    mark('waiting', 7, x - 1.3, y, z - 3.2);
     labels.push({ key: 'home', x, y, z: z - 9 });
   }
   labels.push({ key: 'deadEnd', x: -120, y: LY, z: -6 });
@@ -208,11 +216,23 @@ export function buildCaves() {
     const pts = wander(p, ang, n, 9, rise, 0.4);
     path(pts, { ...NAR, lamp: 18, lampP: 0.45, dead: 0.35 });
     if (i === 1) { const m = pts[Math.floor(pts.length / 2)]; labels.push({ key: 'passage', x: m[0], y: m[1], z: m[2] }); }   // on the way itself
+    if (i === 0 || i === 2) {          // a food-room by the road: the machines that make food and fuel out of the rock
+      const m = pts[Math.floor(pts.length / 2)];
+      tube(m, [m[0], m[1], m[2] + 4], { w: 0.75, h: 2.4, rt: 0.5, rb: 0.15, amp: 0.04, zone: Z.passage, ext: 0.2 });
+      room(m[0], m[1], m[2] + 8, 3.5, 3, 3.2, { rr: 1, zone: Z.passage });
+      addLamp(m[0], m[1] + 3.2, m[2] + 8, { dead: 0, lampP: 0.6 });
+      props.push({ kind: 'synth', x: m[0] - 1.6, y: m[1], z: m[2] + 9.5 }, { kind: 'synth', x: m[0] + 1.6, y: m[1], z: m[2] + 9.5 });
+      if (i === 0) mark('foodRooms', 2, m[0] + 1.6, m[1], m[2] + 6.2);
+      if (i === 0) labels.push({ key: 'foodRoom', x: m[0], y: m[1], z: m[2] + 8 });
+    }
     p = pts[pts.length - 1];
     if (i % 2 === 1) {                                  // a ladder shaft up to the next level
       const top = p[1] + 14 + R() * 6;
       shaft(p[0] + 2.2, p[2], p[1], top + 2.5, 1.5, Z.shaft);
+      // the ladders are in the back rooms of apartments, below and above (the way is kept secret)
+      room(p[0] + 2.2, p[1], p[2], 2.8, 2.8, 2.9, { rr: 0.9, zone: Z.shaft }); room(p[0] + 2.2, top, p[2], 2.8, 2.8, 2.9, { rr: 0.9, zone: Z.shaft });
       tube([p[0], p[1], p[2]], [p[0] + 2.2, p[1], p[2]], { ...NAR, ext: 0.4 });
+      if (i === 1) mark('ladders', 2, p[0] + 0.6, p[1], p[2] + 1.7);
       p = [p[0] + 2.2, top, p[2]];
       tube([p[0], p[1], p[2]], [p[0] + 4, p[1], p[2]], { ...NAR, ext: 0.4 });
       p = [p[0] + 4, p[1], p[2]];
@@ -227,11 +247,16 @@ export function buildCaves() {
   const nx0 = p[0] + 30, nz0 = p[2];
   city(nx0, NY, nz0, 150, Z.nonone);
   labels.push({ key: 'nonone', x: nx0 + 70, y: NY, z: nz0 });
-  room(nx0 + 75, NY, nz0 - 26, 9, 7, 5, { rr: 2, zone: Z.nonone });           // Nennapuss' hall
+  room(nx0 + 75, NY, nz0 - 26, 9, 7, 5, { rr: 2, zone: Z.nonone });           // the home of Nennapuss (breakfast with his family)
+  // the Great Square of Nonone, where its two main corridors meet: the banquet for Tumithak
+  path([[nx0 + 45, NY, nz0 - 50], [nx0 + 45, NY, nz0 + 50]], { ...COR, zone: Z.nonone, lamp: 9 });
+  room(nx0 + 45, NY, nz0, 9, 9, 5.5, { rr: 3, zone: Z.nonone });
+  labels.push({ key: 'noneSquare', x: nx0 + 45, y: NY, z: nz0 });
   path([[nx0 + 75, NY, nz0], [nx0 + 75, NY, nz0 - 18]], { ...COR, w: 1.9, h: 4.2, zone: Z.nonone, lamp: 9 });
   labels.push({ key: 'hall', x: nx0 + 75, y: NY, z: nz0 - 26 });
-  props.push({ kind: 'feast', x: nx0 + 75, y: NY, z: nz0 - 27 });
-  mark('nonone', 2, nx0 + 71, NY, nz0 - 21);
+  props.push({ kind: 'feast', x: nx0 + 45, y: NY, z: nz0 + 4 });
+  mark('nonone', 2, nx0 + 40, NY, nz0 + 6);
+  mark('nennapuss', 2, nx0 + 71, NY, nz0 - 21);
   starts.nonone = { x: nx0 + 60, y: NY, z: nz0, yaw: -Math.PI / 2 };
 
   /* ---- Nonone -> Yakra: more passages, the guarded shaft ---- */
@@ -245,8 +270,10 @@ export function buildCaves() {
     if (i % 2 === 1 || i === legs2.length - 1) {
       const top = p[1] + (i === legs2.length - 1 ? 22 : 14 + R() * 6);
       shaft(p[0] + 2.2, p[2], p[1], top + 2.5, 1.5, Z.shaft);
+      room(p[0] + 2.2, p[1], p[2], 2.8, 2.8, 2.9, { rr: 0.9, zone: Z.shaft }); room(p[0] + 2.2, top, p[2], 3.2, 3.2, 3, { rr: 0.9, zone: i === legs2.length - 1 ? Z.yakra : Z.shaft });
       tube([p[0], p[1], p[2]], [p[0] + 2.2, p[1], p[2]], { ...NAR, ext: 0.4 });
       p = [p[0] + 2.2, top, p[2]];
+      if (i === legs2.length - 1) props.push({ kind: 'table', x: p[0] - 1.2, y: p[1], z: p[2] - 2.0 });    // the guard's table he bumped into
       if (i !== legs2.length - 1) { tube([p[0], p[1], p[2]], [p[0] + 4, p[1], p[2]], { ...NAR, ext: 0.4 }); p = [p[0] + 4, p[1], p[2]]; }
     }
     sideCaves(pts[Math.floor(pts.length / 2)], 2);
@@ -261,56 +288,86 @@ export function buildCaves() {
   path([[yx0 - 6, YY, p[2]], [yx0 + 4, YY, p[2]]], { ...COR, w: 1.9, h: 4.2, zone: Z.yakra, lamp: 9 });
   city(yx0, YY, p[2], 170, Z.yakra, { dead: 0.12 });
   labels.push({ key: 'yakra', x: yx0 + 80, y: YY, z: p[2] });
-  mark('stampede', 3, yx0 + 52, YY, p[2] + 1.3);
-  // the forgotten corridor where the Yakran woman hid him, and the shaft she led him up (chapter 3)
+  // the square where the two main corridors of Yakra cross: the panic, the crowd, the woman with the child (chapter 3)
+  const ysx = yx0 + 90, ysz = p[2];
+  path([[ysx, YY, ysz - 45], [ysx, YY, ysz + 45]], { ...COR, zone: Z.yakra, lamp: 9, dead: 0.12 });
+  room(ysx, YY, ysz, 10, 10, 6, { rr: 3, zone: Z.yakra });
+  labels.push({ key: 'yakraSquare', x: ysx, y: YY, z: ysz });
+  mark('stampede', 3, ysx - 13, YY, ysz + 1.3);
+  // "the third doorway across the hall": an apartment whose back room hides a shaft up to an old corridor that
+  // crosses over the square to the upper end of the city, dark but for one dim light; a ladder down at its end
   {
-    const hx = yx0 + 140, hz = p[2];
-    const hp = path([[hx, YY, hz], [hx + 3, YY + 0.4, hz - 14], [hx - 2, YY + 0.8, hz - 28], [hx + 4, YY + 1.2, hz - 40]], { ...COR, w: 1.3, h: 3.2, amp: 0.1, zone: Z.yakra });
-    const e = hp[hp.length - 1];
-    room(e[0], e[1], e[2] - 4, 3, 3, 2.8, { rr: 1, zone: Z.yakra, amp: 0.1 });
-    mark('hideout', 3, e[0] + 1.2, e[1], e[2] - 3);
-    labels.push({ key: 'hideout', x: e[0], y: e[1], z: e[2] - 4 });
+    const ax = ysx + 4, az = ysz - 14;
+    tube([ax, YY, ysz - 10], [ax, YY, az + 1.5], { w: 0.75, h: 2.4, rt: 0.5, rb: 0.15, amp: 0.04, zone: Z.yakra, ext: 0.3 });
+    room(ax, YY, az - 1, 3.2, 2.6, 2.9, { rr: 0.9, zone: Z.yakra });
+    curtains.push({ x: ax, y: YY, z: ysz - 10.3, rot: 0, w: 1.5, h: 2.4 });
+    const top = YY + 9.2;
+    shaft(ax - 1.6, az - 1, YY, top + 2.5, 1.4, Z.yakra);
+    const op = path([[ax - 1.6, top, az - 1], [ax + 6, top, az - 1], [ax + 22, top, az + 4], [ax + 44, top + 0.4, az + 2], [ax + 58, top + 0.4, az - 2]], { w: 1.0, h: 2.6, rt: 0.9, rb: 0.2, amp: 0.12, zone: Z.yakra, ext: 0.8 });
+    const mid = op[Math.floor(op.length * 0.55)];
+    addLamp(mid[0], mid[1] + 2.6, mid[2], { lampP: 0.25, dead: 0 });                      // the single dim light
+    mark('hideout', 3, mid[0] + 1.0, mid[1], mid[2] + 0.6);
+    labels.push({ key: 'hideout', x: mid[0], y: mid[1], z: mid[2] });
+    const e = op[op.length - 1];
+    room(e[0] + 2.2, YY, e[2], 2.8, 2.8, 2.9, { rr: 0.9, zone: Z.yakra });
+    shaft(e[0] + 2.2, e[2], YY, e[1] + 2.5, 1.4, Z.yakra);
+    tube([e[0] + 2.2, YY, e[2]], [e[0] + 2.2, YY, ysz], { ...COR, w: 1.2, h: 3, zone: Z.yakra, ext: 0.6 });   // back to the main corridor
   }
   starts.yakra = { x: yx0 + 20, y: YY, z: p[2], yaw: -Math.PI / 2 };
 
-  /* ---- beyond Yakra: the lamps dim and fail; the Dark Corridors and the caves (chapter 4) ---- */
+  /* ---- chapter 4: beyond Yakra — the lamps go on for miles, then turn bluish and fail: the Dark Corridors ---- */
   p = [yx0 + 170, YY, p[2]];
-  let lampP = 0.45, lastLeg = null;
+  let lampP = 0.75;
+  const legLamp = [[0.75, null], [0.6, null], [0.35, [0.55, 0.7, 1.0]], [0.12, [0.45, 0.6, 1.0]], [0, null], [0, null]];
+  let savages = null;
   for (let i = 0; i < 6; i++) {
-    const pts = lastLeg = wander(p, (R() - 0.5) * 0.6, 12, 9, 0.5, 0.5);
-    path(pts, { ...COR, w: 1.9 - i * 0.1, h: 4 - i * 0.15, amp: 0.06 + i * 0.05, zone: i < 2 ? Z.yakra : Z.dark, lamp: lampP > 0.05 ? 12 : 0, lampP, dead: 0.3 + i * 0.15 });
+    const pts = wander(p, (R() - 0.5) * 0.6, 12, 9, 0.5, 0.5);
+    [lampP] = legLamp[i];
+    path(pts, { ...COR, w: 1.9 - i * 0.1, h: 4 - i * 0.15, amp: 0.06 + i * 0.05, zone: i < 2 ? Z.yakra : Z.dark, lamp: lampP > 0.05 ? 12 : 0, lampP, dead: 0.15 + i * 0.15, col: legLamp[i][1] || undefined });
     if (i === 2) { const m = pts[Math.floor(pts.length / 2)]; labels.push({ key: 'dark', x: m[0], y: m[1], z: m[2] }); }
-    if (i === 1) { const m = pts[3]; mark('lampsFail', 4, m[0], m[1], m[2] + 1.0); }
-    if (i === 3) { const m = pts[5]; mark('follower', 4, m[0], m[1], m[2] + 0.9); }
-    lampP *= 0.45;
+    if (i === 0) { const m = pts[6]; mark('watched', 4, m[0], m[1], m[2] + 1.0); }
+    if (i === 2) { const m = pts[3]; mark('lampsFail', 4, m[0], m[1], m[2] + 1.0); }
+    if (i === 3) { const m = pts[6]; mark('dwellers', 4, m[0], m[1], m[2] + 0.9); }
+    if (i === 4) { const m = pts[5]; mark('dogs', 4, m[0], m[1], m[2] + 0.9); props.push({ kind: 'sword', x: m[0] - 0.5, y: m[1], z: m[2] - 0.6 }); }
     p = pts[pts.length - 1];
     sideCaves(pts[Math.floor(pts.length / 2)], 3);
-    if (i === 3) { cavern(p[0] + 18, p[1] + 4, p[2] + 6, 22, 8, 16, p[1] - 0.5, Z.cave); labels.push({ key: 'bigCave', x: p[0] + 18, y: p[1], z: p[2] + 6 }); mark('dwellers', 4, p[0] + 12, p[1], p[2] + 3); props.push({ kind: 'dogBones', x: p[0] + 22, y: p[1] - 0.4, z: p[2] + 10 }); p = [p[0] + 36, p[1], p[2] + 4]; }
+    if (i === 3) {
+      // the central halls of the savages of the dark corridors (where they carried him), and the prison: a room ten
+      // feet square with a single door, the dogs lying outside it
+      const cx = p[0] + 18, cy = p[1], cz = p[2] + 6;
+      cavern(cx, cy + 4, cz, 22, 8, 16, cy - 0.5, Z.cave);
+      savages = { x: cx, y: cy, z: cz };
+      labels.push({ key: 'savages', x: cx, y: cy, z: cz });
+      props.push({ kind: 'dogBones', x: cx + 4, y: cy - 0.4, z: cz + 4 }, { kind: 'dogBones', x: cx - 6, y: cy - 0.4, z: cz - 3 });
+      mark('savages', 4, cx - 2, cy - 0.4, cz + 1);
+      const px = cx + 20, pz = cz + 4;
+      tube([cx + 14, cy - 0.4, pz], [px - 1.4, cy - 0.4, pz], { w: 0.75, h: 2.3, rt: 0.6, rb: 0.2, amp: 0.15, zone: Z.dark, ext: 0.3 });
+      room(px + 0.2, cy - 0.4, pz, 1.6, 1.6, 2.6, { rr: 0.6, zone: Z.dark, amp: 0.15 });
+      labels.push({ key: 'cells', x: px, y: cy - 0.4, z: pz });
+      mark('cells', 4, px - 3.5, cy - 0.4, pz + 1.0);
+      props.push({ kind: 'bonds', x: px + 0.4, y: cy - 0.4, z: pz + 0.4 }, { kind: 'blast', x: px - 4, y: cy - 0.4, z: pz });
+      p = [p[0] + 36, p[1], p[2] + 4];
+    }
   }
-  // the cells of the dwellers of the dark (their prison room, chapter 4)
-  const cp = lastLeg[lastLeg.length - 4];
-  tube([cp[0], cp[1], cp[2]], [cp[0], cp[1], cp[2] + 11], { w: 0.8, h: 2.3, rt: 0.6, rb: 0.2, amp: 0.15, zone: Z.dark });
-  room(cp[0], cp[1], cp[2] + 14, 4, 3, 2.6, { rr: 1, zone: Z.dark, amp: 0.25 });
-  labels.push({ key: 'cells', x: cp[0], y: cp[1], z: cp[2] + 14 });
-  mark('dogs', 4, cp[0] + 0.9, cp[1], cp[2] + 4);
-  mark('cells', 4, cp[0] - 2, cp[1], cp[2] + 15.5);
-  props.push({ kind: 'bonds', x: cp[0] + 1, y: cp[1], z: cp[2] + 14.5 });
+  mark('sword', 4, p[0] - 2, p[1], p[2] + 0.9);
 
-  /* ---- chapter 5: out of the cell, away from the dwellers and their dogs, on up through the black corridors ---- */
-  mark('escape', 5, cp[0] + 0.7, cp[1], cp[2] + 7);
-  const pts = wander(p, -0.2, 16, 9, 1.0, 0.5);
-  path(pts, { ...COR, w: 1.6, h: 3.6, amp: 0.2, zone: Z.upper });
-  // the den of the dogs: a low cave off the way, littered with bones
-  {
-    const d = pts[4];
-    path([d, [d[0] + 2, d[1] + 0.3, d[2] + 9], [d[0] - 1, d[1] + 0.6, d[2] + 17]], { w: 1.2, h: 2.4, rt: 1.0, rb: 0.4, amp: 0.45, zone: Z.dark, ext: 1.2 });
-    cavern(d[0] - 2, d[1] + 2.2, d[2] + 24, 7, 3, 6, d[1] + 0.3, Z.dark, 0.6);
-    props.push({ kind: 'dogBones', x: d[0] - 2, y: d[1] + 0.3, z: d[2] + 24 }, { kind: 'dogBones', x: d[0] + 1, y: d[1] + 0.3, z: d[2] + 21 });
-    mark('den', 5, d[0] - 4.5, d[1] + 0.3, d[2] + 22);
-    labels.push({ key: 'den', x: d[0] - 2, y: d[1] + 0.3, z: d[2] + 24 });
-  }
-  { const m = pts[10]; mark('climb', 5, m[0], m[1], m[2] + 0.9); }
+  /* ---- still chapter 4: the rough, winding natural caverns of man's first flight into the earth, and a
+     well-hidden pit-mouth with a ladder, light shining at its top ---- */
+  const pts = wander(p, -0.2, 16, 9, 0.6, 0.8);
+  path(pts, { w: 1.15, h: 2.8, rt: 1.0, rb: 0.4, amp: 0.55, zone: Z.cave, ext: 1.0 });
+  { const m = pts[6]; mark('caverns', 4, m[0], m[1], m[2] + 0.8); }
   p = pts[pts.length - 1];
+  {
+    const top = p[1] + 13;
+    room(p[0] + 2.2, p[1], p[2], 2.2, 2.2, 2.6, { rr: 0.9, zone: Z.cave, amp: 0.3 });
+    shaft(p[0] + 2.2, p[2], p[1], top + 2.5, 1.4, Z.cave);
+    addLamp(p[0] + 2.2, top + 2.5, p[2], { lampP: 0.5, dead: 0 });                     // the light at the top
+    mark('pitMouth', 4, p[0] - 0.8, p[1], p[2] + 1.0);
+    labels.push({ key: 'pitMouth', x: p[0] + 2.2, y: p[1], z: p[2] });
+    p = [p[0] + 2.2, top, p[2]];
+    tube(p, [p[0] + 4, p[1], p[2]], { ...COR, w: 1.6, h: 3.6, zone: Z.esthett, ext: 0.4 });
+    p = [p[0] + 4, p[1], p[2]];
+  }
 
   /* ---- chapter 6: the Halls of the Esthetts — the fat, idle artists the shelks keep like cattle — and the pit ---- */
   const WARM = { col: [1.0, 0.86, 0.66], lampP: 0.8, dead: 0.02 };

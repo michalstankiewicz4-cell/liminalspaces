@@ -4,6 +4,16 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.24.0] - 2026-10-30
+Parts: Tumithak of the Corridors 1.7.0
+### Changed — chapters 1–4 after the original text
+The story is now followed from the original (Amazing Stories, January 1932, the scan's text on the Internet Archive).
+- Chapter 2: food-rooms by the road to Nonone (the machines that make food from rock); the ladders stand in the back rooms of apartments, below and above; Nonone's **Great Square** where its two main corridors meet (the banquet is there now), and the home of Nennapuss (breakfast, the warning about the guarded pit).
+- Chapter 3: a dark guard room with a table at the top of the guarded shaft; Yakra's **square** where its two main corridors cross (the panic, the woman with the child); her apartment — "the third doorway across the hall" — with a shaft up to **the old corridor** that crosses over the square, lit by one dim light, and a ladder down at its far end.
+- Chapter 4: the lamps go on for miles beyond Yakra, then glow bluish and fail; the savages with bandaged eyes and the torch; the dogs (his sword lies where he lost it); **the halls of the savages** with the prison — a room ten feet square — and the scorched place where his father's charge burst among the dogs; then **the rough, winding caverns** of man's first flight into the earth and **the hidden pit-mouth** with a ladder and a light at its top.
+- Chapter 7 (part): the great square of Loor where the two main corridors cross, with the stone pedestal for speakers; Tumlook waiting in his doorway.
+- All the steles of chapters 2–4 rewritten after the original.
+
 ## [0.23.0] - 2026-10-30
 Parts: Tumithak of the Corridors 1.6.0
 ### Added — chapter 7

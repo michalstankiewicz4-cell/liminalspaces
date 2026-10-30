@@ -378,6 +378,24 @@ export function createCaves() {
       for (let i = 0; i < 14; i++) { gx.fillStyle = `hsl(${(i * 47 + p.x * 13) % 360},70%,55%)`; gx.beginPath(); gx.arc((i * 23) % 64, (i * 37) % 64, 6 + (i % 4) * 4, 0, 7); gx.fill(); }
       const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
       add(box(0.9, 0.7, 0.03), new THREE.MeshStandardMaterial({ map: tex, color: new THREE.Color(1, 1, 1).multiplyScalar(k), roughness: 0.8 }), 0, 1.35, 0.08);
+    } else if (p.kind === 'pedestal') {
+      // the stone pedestal in the square from which speakers address the city
+      add(new THREE.CylinderGeometry(1.1, 1.3, 0.9, 16), mat(0x8a7a66, { roughness: 0.8 }), 0, 0.45, 0);
+      add(new THREE.CylinderGeometry(0.95, 1.1, 0.12, 16), mat(0x9a8a76, { roughness: 0.8 }), 0, 0.96, 0);
+    } else if (p.kind === 'table') {
+      const wood = mat(0x5a4030);
+      add(box(1.4, 0.06, 0.8), wood, 0, 0.75, 0);
+      for (const [x, z] of [[-0.62, -0.32], [0.62, -0.32], [-0.62, 0.32], [0.62, 0.32]]) add(box(0.06, 0.75, 0.06), wood, x, 0.37, z);
+    } else if (p.kind === 'sword') {
+      // the sword he lost in the fight with the dogs, and came back for
+      const s2 = add(box(0.9, 0.012, 0.05), mat(0xa8aab0, { metalness: 0.9, roughness: 0.3 }), 0, 0.012, 0, 0.6);
+      add(box(0.04, 0.03, 0.2), mat(0x6a5a40), -0.42 * Math.cos(0.6), 0.02, 0.42 * Math.sin(0.6), 0.6);
+      s2.userData.sword = true;
+    } else if (p.kind === 'blast') {
+      // where the charge burst among the dogs: scorched rock and debris
+      const soot = mat(0x141210, { roughness: 1, transparent: true, opacity: 0.7, depthWrite: false });
+      const sc = add(new THREE.CircleGeometry(2.2, 24), soot, 0, 0.03, 0); sc.rotation.x = -Math.PI / 2;
+      for (let i = 0; i < 14; i++) add(new THREE.DodecahedronGeometry(0.06 + (i % 4) * 0.04, 0), mat(0x4a443c), Math.cos(i * 2.4) * (0.6 + i * 0.12), 0.05, Math.sin(i * 2.4) * (0.6 + i * 0.12));
     } else if (p.kind === 'bonds') {
       // the cords he untied
       const rope = mat(0x7a6a4a);
