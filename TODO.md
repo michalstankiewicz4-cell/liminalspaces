@@ -37,6 +37,7 @@ Legend: **P1** next, **P2** later, **P3** ideas. State as of v0.5.0. Context: [`
 - [ ] P2 Distant sounds (doors, elevator ding, dripping water)
 
 ## Multiplayer (plan in [`docs/MULTIPLAYER.md`](docs/MULTIPLAYER.md))
+- [ ] P0 Bring multiplayer back on the cell engine (switched off in 0.18.0): avatars in the endless world's scene, poses from the engine walker, re-enable the Multiplayer button
 - [ ] P1 Test the WebRTC flow across two real networks (with and without STUN); document what works
 - [ ] P2 Shorter codes (compress SDP) or QR codes
 - [ ] P2 Optional signalling relay (opt-in, CSP change, README note) for one-click joining

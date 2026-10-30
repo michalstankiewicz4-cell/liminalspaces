@@ -1,20 +1,23 @@
-// Oddity models: small box-built objects that make some rooms memorable (and count as discoveries).
-// Every model faces local +z; pos.rot turns it in quarter turns. Wall-mounted kinds are built around their anchor
-// height (1.5 m on a wall); when no wall is available they stand on the floor at FLOOR_Y instead.
+// Oddities of the endless world: rare objects that make some rooms memorable (finding one counts). Built as a prop
+// of the shared engine (story/props.js: kind 'oddity', p.odd = the oddity kind) from boxes painted with a colour
+// (Emitter.tint) over a plain plastic surface; glowing parts (screens, lamps) are emissive. Every model faces local +z;
+// p.rot turns it in quarter turns. Wall-mounted kinds are built around their anchor height (1.5 m on a wall); when no
+// wall is available they stand on the floor at FLOOR_Y instead. Kinds with a footprint in gen.js ODDITIES are solid.
+import { ODDITIES } from '../world/gen.js';
+
 const FLOOR_Y = { painting: 0.36, buoy: 0.4, exit: 2.6, phone: 1.2 };
 const BROWN = [0.42, 0.27, 0.16], GREY = [0.45, 0.46, 0.48], DARK = [0.12, 0.12, 0.13], WHITE = [0.86, 0.86, 0.84];
 
-export function buildOddity(mb, kind, pos, shade) {
-  const c = Math.round(Math.cos(pos.rot)), s = Math.round(Math.sin(pos.rot));
-  const wall = pos.y > 0;
-  const y0 = kind in FLOOR_Y ? (wall ? pos.y : FLOOR_Y[kind]) : 0;
-  // local box -> world AABB (quarter-turn rotation keeps boxes axis aligned)
+export function buildOddity(E, p) {
+  const kind = p.odd, wall = p.wall;
+  const y0 = (p.y || 0) + (kind in FLOOR_Y ? (wall ? 1.5 : FLOOR_Y[kind]) : 0);
+  const solid = !!(ODDITIES[kind] && ODDITIES[kind].solid);
+  E.at(p.x, y0, p.z, p.rot || 0);
   const box = (ax, ay, az, bx, by, bz, albedo, glow) => {
-    const pts = [[ax, az], [bx, bz]].map(([lx, lz]) => [pos.x + lx * c + lz * s, pos.z - lx * s + lz * c]);
-    const x0 = Math.min(pts[0][0], pts[1][0]), x1 = Math.max(pts[0][0], pts[1][0]);
-    const z0 = Math.min(pts[0][1], pts[1][1]), z1 = Math.max(pts[0][1], pts[1][1]);
-    const col = glow ? () => albedo : (x, y, z) => { const l = shade(x, y, z); return [l[0] * albedo[0], l[1] * albedo[1], l[2] * albedo[2]]; };
-    mb.box(glow ? 'glow' : 'prop', x0, y0 + ay, z0, x1, y0 + by, z1, { uv: 'local', col });
+    if (glow) { E.tint = null; E.box('glow', ax, ay, az, bx, by, bz, { uv: 'local', glow: albedo.map((v) => v * 2.2) }); return; }
+    E.tint = albedo;
+    E.box('plastic', ax, ay, az, bx, by, bz, { uv: 'local', solid });
+    E.tint = null;
   };
 
   switch (kind) {

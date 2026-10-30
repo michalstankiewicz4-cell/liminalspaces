@@ -81,6 +81,40 @@ const GEN = {
   },
   carpetGrey(seed) { return GEN.carpet(seed, [0.36, 0.37, 0.4]); },
   carpetTaupe(seed) { return GEN.carpet(seed, [0.42, 0.37, 0.31]); },
+  // the endless world's hotel corridors: dark red wallpaper with gold stripes, red carpet with a gold diamond pattern
+  hotelWall(seed) {
+    const mott = fbm(seed, 3, 3), fib = fbm2(seed + 4, 64, 8, 2);
+    return (u, v, o) => {
+      const m = mott(u, v), f = fib(u, v), s = lineDist(u, 8);
+      const gold = s < 0.035, orn = lineDist(u + 0.0625, 8) < 0.02 && lineDist(v, 8) < 0.06;
+      const k = 0.88 + m * 0.16 + (f - 0.5) * 0.05;
+      if (gold || orn) { o.r = 0.62 * k; o.g = 0.46 * k; o.b = 0.22 * k; o.h = 0.62; o.rough = 0.55; o.metal = 0.3; }
+      else { o.r = 0.36 * k; o.g = 0.1 * k; o.b = 0.09 * k; o.h = 0.5 + f * 0.2; o.rough = 0.85; o.metal = 0; }
+    };
+  },
+  hotelCarpet(seed) {
+    const base = GEN.carpet(seed, [0.42, 0.08, 0.1]);
+    return (u, v, o) => {
+      base(u, v, o);
+      const a = lineDist(u + v, 4), b = lineDist(u - v + 4, 4);
+      if (Math.min(a, b) < 0.03) { o.r = o.r * 0.4 + 0.42; o.g = o.g * 0.4 + 0.3; o.b = o.b * 0.4 + 0.12; }
+    };
+  },
+  // pools: small white-blue tiles; the garage floor: concrete with a yellow bay line
+  poolTile(seed) {
+    const n = fbm(seed, 8, 3), cell = lattice(seed + 3, 8, 8);
+    return (u, v, o) => {
+      const g = Math.min(lineDist(u, 8), lineDist(v, 8)), grout = g < 0.05;
+      const t = cell(Math.floor(u * 8), Math.floor(v * 8));
+      const k = grout ? 0.6 : 0.9 + (t - 0.5) * 0.08 + (n(u, v) - 0.5) * 0.04;
+      o.r = (grout ? 0.55 : 0.8) * k; o.g = (grout ? 0.66 : 0.9) * k; o.b = (grout ? 0.7 : 0.93) * k;
+      o.h = grout ? 0.15 : 0.8; o.rough = grout ? 0.9 : 0.2 + n(u, v) * 0.1; o.metal = 0;
+    };
+  },
+  garageFloor(seed) {
+    const base = GEN.concrete(seed, [0.42, 0.43, 0.42]);
+    return (u, v, o) => { base(u, v, o); if (u < 0.02) { o.r = 0.75; o.g = 0.64; o.b = 0.2; o.rough = 0.6; } };
+  },
   // black square tiles, polished (they reflect the sunlight — story 1:45:22)
   blackTile(seed) {
     const n = fbm(seed, 8, 3);
@@ -307,6 +341,11 @@ export const MAT_DEFS = {
   carpetTaupe: ['carpetTaupe', 1.5, 256, 1.2],
   blackTile: ['blackTile', 1.0, 256, 0.6],
   boards: ['boards', 3.2, 256, 1.0],
+  // the endless world
+  hotelWall: ['hotelWall', 2, 256, 0.6],
+  hotelCarpet: ['hotelCarpet', 2, 256, 1.2],
+  poolTile: ['poolTile', 1, 256, 0.8],
+  garageFloor: ['garageFloor', 4, 256, 1.2],
 };
 // Metres per texture repeat for every material name (usable without creating materials, e.g. in the worker).
 export const MAT_SCALE = Object.fromEntries([...Object.entries(MAT_DEFS).map(([k, d]) => [k, d[1]]),

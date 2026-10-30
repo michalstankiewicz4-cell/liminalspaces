@@ -27,7 +27,7 @@ export function createExplored(grid) {
       let s; try { s = atob(v); } catch (e) { continue; }
       if (s.length !== CN * CN / 8) continue;
       const ci = +m[1], cj = +m[2];
-      grid.ensure(ci);
+      grid.ensure(ci, cj);
       const c = grid.chunk(ci, cj, false);
       if (!c) continue;
       for (let i = 0; i < CN * CN; i++) if (s.charCodeAt(i >> 3) & (1 << (i & 7))) c.seen[i] = 1;

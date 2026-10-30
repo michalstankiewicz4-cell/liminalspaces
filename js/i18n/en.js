@@ -7,6 +7,7 @@ export default {
   'menu.tagline': 'Walk forever through places that are almost familiar',
   'menu.single': 'Single Player',
   'menu.multi': 'Multiplayer',
+  'menu.multiOff': 'Multiplayer is switched off for a while: the endless world moved to the new engine. It will be back.',
   'menu.options': 'Options',
   'menu.stats': 'Walked: {km} km · oddities found: {odd}',
   'menu.foot': 'Everything is generated in your browser. Nothing is downloaded or sent.',

@@ -1,30 +1,38 @@
-// Great Path world facade: materials, layout, chunk streaming (worker), prop colliders and collision queries, zones
-// and the journal, fog, flickering lamps, power and work lights, and queries for events. Parts live in their own
+// Cell-engine world facade (the Great Path, and the endless world of a seed): materials (shared by every world
+// made), layout, chunk streaming (worker), prop colliders and collision queries, zones and the journal, fog,
+// flickering lamps, power and work lights, and queries for events. Parts live in their own
 // modules: signs.js (notes, plaques), skylights.js (sunbeams, sun, scratching visuals), gate.js (the layered gate),
 // fx.js (dust, sparks, flashes), explored.js (what the map shows), canvas-mats.js (drawn materials).
 import * as THREE from '../../vendor/three.module.js';
 import { createGrid, CS, CW } from './grid.js';
 import { makeMaterials, makeEnvironment } from './textures.js';
 import { addCanvasMaterials } from './canvas-mats.js';
-import { meshChunk, makeBaker, Emitter, groupFromBuffers } from './mesher.js';
+import { meshChunk, makeBaker, Emitter, groupFromBuffers, disposeGroup } from './mesher.js';
 import { buildProp } from './props.js';
-import { buildLayout, ZONES, STARTS } from './layout.js';
+import { buildWorld } from './worlds.js';
 import { createSigns } from './signs.js';
 import { createSkylights } from './skylights.js';
 import { createGate } from './gate.js';
 import { createFx } from './fx.js';
 import { createExplored } from './explored.js';
 import { createWater } from './water.js';
-import { disposeGroup } from '../world/mesh.js';
 
 let VIEW = 3;                // chunks streamed around the player (radius): 2 / 3 / 4 by the view distance setting
 let FOG_K = 1;               // fog distance factor by the view distance setting
 const fdiv = (a, b) => Math.floor(a / b);
 
-export function createStory(renderer) {
+// Materials and the environment map take a while to make: made once, shared by every world created after.
+let shared = null;
+function sharedMaterials(renderer) {
+  if (!shared) { const mats = makeMaterials(); addCanvasMaterials(mats); shared = { mats, env: makeEnvironment(renderer) }; }
+  return shared;
+}
+
+// world: 'path' (the Great Path) | 'endless' (seed: which endless world)
+export function createStory(renderer, { world = 'path', seed = 0 } = {}) {
   const scene = new THREE.Scene();
-  const mats = makeMaterials();
-  scene.environment = makeEnvironment(renderer);
+  const { mats, env } = sharedMaterials(renderer);
+  scene.environment = env;
   scene.environmentIntensity = 0.35;
   const ambient = new THREE.AmbientLight(0xffffff, Math.PI);
   const hemi = new THREE.HemisphereLight(0xfff2d8, 0x403020, 0);
@@ -32,11 +40,10 @@ export function createStory(renderer) {
   scene.fog = new THREE.Fog(new THREE.Color(0.2, 0.17, 0.1), 3, 48);
   scene.background = scene.fog.color;
 
-
-  addCanvasMaterials(mats);
-
   const grid = createGrid();
-  const { beams, gates, emitters, water } = buildLayout(grid);
+  const W = buildWorld(world, grid, seed);
+  const { beams, gates, emitters, water, zones: ZONES, starts: STARTS } = W;
+  const Z_CHAPEL = ZONES.findIndex((z) => z.key === 'chapel');
   const ctx = { zones: ZONES, materials: mats.byName, scale: mats.scale, round: 0.12, cove: 0.08 };
   let gen = 0;                     // bumped when the meshing settings change: older worker results are dropped
 
@@ -63,13 +70,16 @@ export function createStory(renderer) {
     worker.onmessage = (ev) => {
       const m = ev.data;
       if (m.t === 'ready') { workerReady = true; return; }
+      if (disposed) return;
       if (m.t !== 'mesh') return;
       inFlight.delete(key(m.ci, m.cj));
       if (m.gen !== gen || loaded.has(key(m.ci, m.cj))) return;
       build(m.ci, m.cj, groupFromBuffers(m.list, mats.byName));
     };
     worker.onerror = (e) => { console.warn('mesh worker failed, meshing on the main thread', e.message); worker = null; inFlight.clear(); };
+    worker.postMessage({ t: 'init', world, seed });
   } catch (e) { worker = null; }
+  let disposed = false;
 
   const signs = createSigns(grid);
   const sky = createSkylights(scene, grid, beams);
@@ -79,7 +89,7 @@ export function createStory(renderer) {
   const waters = createWater(scene, water);
 
   function build(ci, cj, meshed) {
-    for (let a = -1; a <= 1; a++) grid.ensure(ci + a);
+    grid.ensureAround(ci, cj);
     const c = grid.chunk(ci, cj, false);
     const e = { ci, cj, group: new THREE.Group(), version: c ? c.version : -1 };
     if (c) {
@@ -130,7 +140,7 @@ export function createStory(renderer) {
   const tmp = [], gateTmp = [];
   function solidsAround(x0, z0, x1, z1) {
     const ci0 = fdiv(x0, CW) - 1, ci1 = fdiv(x1, CW) + 1, cj0 = fdiv(z0, CW) - 1, cj1 = fdiv(z1, CW) + 1;
-    for (let ci = ci0; ci <= ci1; ci++) { grid.ensure(ci); for (let cj = cj0; cj <= cj1; cj++) prepare(grid.chunk(ci, cj, false)); }
+    for (let ci = ci0; ci <= ci1; ci++) for (let cj = cj0; cj <= cj1; cj++) { grid.ensure(ci, cj); prepare(grid.chunk(ci, cj, false)); }
     grid.solidsIn(x0, z0, x1, z1, tmp);
     gateTmp.length = 0;
     for (const b of gate.solids(gateTmp)) if (b[3] > x0 && b[0] < x1 && b[5] > z0 && b[2] < z1) tmp.push(b);
@@ -240,7 +250,9 @@ export function createStory(renderer) {
   const extraSolidsAdd = (list) => { extraSolids.push(...list); };
   const extraSolidsRemove = (list) => { for (const b of list) { const i = extraSolids.indexOf(b); if (i >= 0) extraSolids.splice(i, 1); } };
   return {
-    scene, grid, zones: ZONES, starts: STARTS, lightAt,
+    scene, grid, zones: ZONES, starts: STARTS, lightAt, world, seed, gen: W.gen || null,
+    // frees the chunk meshes and stops the worker (materials stay: they are shared)
+    dispose() { disposed = true; if (worker) worker.terminate(); worker = null; for (const k of [...loaded.keys()]) unload(k); bakers.clear(); },
     get zone() { return zone; }, get visited() { return visited; },
     set onZone(fn) { onZone = fn; },
     get loadedCount() { return loaded.size; },
@@ -265,11 +277,11 @@ export function createStory(renderer) {
     setRounding(r, cove) {
       if (Math.abs(r - ctx.round) < 1e-6 && Math.abs(cove - ctx.cove) < 1e-6) return;
       ctx.round = r; ctx.cove = cove; gen++; inFlight.clear();
+      const had = loaded.size;
       for (const k of [...loaded.keys()]) unload(k);
-      preload(lastX, lastZ);                // the chunks around you at once, the rest streams in
+      if (had) preload(lastX, lastZ);       // the chunks around you at once, the rest streams in
     },
     // view distance setting 1..3: chunks streamed around you and how far the fog lets you see
     setViewDist(v) { VIEW = 1 + v; FOG_K = [0.75, 1, 1.35][v - 1] || 1; },
   };
 }
-const Z_CHAPEL = ZONES.findIndex((z) => z.key === 'chapel');

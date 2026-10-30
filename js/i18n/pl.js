@@ -7,6 +7,7 @@ export default {
   'menu.tagline': 'Idź bez końca przez miejsca, które wydają się prawie znajome',
   'menu.single': 'Gra jednoosobowa',
   'menu.multi': 'Gra wieloosobowa',
+  'menu.multiOff': 'Gra wieloosobowa jest chwilowo wyłączona: nieskończony świat przeszedł na nowy silnik. Wróci.',
   'menu.options': 'Opcje',
   'menu.stats': 'Przebyto: {km} km · znalezione osobliwości: {odd}',
   'menu.foot': 'Wszystko powstaje w Twojej przeglądarce. Nic nie jest pobierane ani wysyłane.',

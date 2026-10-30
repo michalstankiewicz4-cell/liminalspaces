@@ -1,6 +1,8 @@
 // Props for the Great Path world, built from boxes and prisms in local coordinates (front = +z, quarter-turn rotations).
 // Every prop is described by plain data { kind, x, y, z, rot, ...params } placed by layout.js; the same function also
 // runs in "dry" mode to collect colliders (box(..., { solid: true })).
+import { buildOddity } from '../endless/oddities.js';
+
 const S = { solid: true };
 
 export function buildProp(E, p) {
@@ -15,6 +17,9 @@ function legs4(E, w, d, h, mat = 'steel', t = 0.04) {
 }
 
 const PROPS = {
+  oddity: buildOddity,              // the endless world's oddities (endless/oddities.js)
+  // the endless world's pools: a water surface over a sunk 4 m cell (y = the surface height)
+  poolWater(E, p) { E.box('water', -p.w / 2, 0, -p.d / 2, p.w / 2, 0.001, p.d / 2, { skip: 'px,nx,pz,nz,ny' }); },
   /* ---- furniture ---- */
   table(E, p) {
     const w = p.w || 1.8, d = p.d || 0.8, h = p.h || 0.75;

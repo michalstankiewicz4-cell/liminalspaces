@@ -35,6 +35,7 @@ class Chunk {
 export function createGrid() {
   const chunks = new Map();
   let lazy = null;                 // (ci, grid) => void: paints infinite parts column by column
+  let lazyChunk = null;            // (ci, cj, grid) => void: paints a whole world chunk by chunk (the endless world)
   const lazyDone = new Set();
   const key = (ci, cj) => ci * 100003 + cj;
 
@@ -43,21 +44,33 @@ export function createGrid() {
     if (!c && create) { c = new Chunk(ci, cj); chunks.set(key(ci, cj), c); }
     return c || null;
   }
-  // Runs the lazy painter for a chunk column once.
+  // Runs the lazy painter for a chunk column (or, in chunk mode, for chunk (ci, cj)) once.
   let painting = false;
-  function ensure(ci) {
-    if (!lazy || lazyDone.has(ci) || painting) return;
+  function ensure(ci, cj = 0) {
+    if (painting) return;
+    if (lazyChunk) {
+      const k = key(ci, cj);
+      if (lazyDone.has(k)) return;
+      lazyDone.add(k);
+      painting = true;
+      try { lazyChunk(ci, cj, api); } finally { painting = false; }
+      return;
+    }
+    if (!lazy || lazyDone.has(ci)) return;
     lazyDone.add(ci);
     painting = true;                 // queries made while painting never trigger more lazy painting
     try { lazy(ci, api); } finally { painting = false; }
   }
+  // The chunks around (ci, cj) painted (meshing and lighting look one chunk past the edge).
+  function ensureAround(ci, cj) { for (let b = -1; b <= 1; b++) for (let a = -1; a <= 1; a++) ensure(ci + a, cj + b); }
   const fdiv = (a, b) => Math.floor(a / b);
 
   // Global integer cell -> [chunk, index] (chunk may be null = closed).
   function at(gx, gz) {
     const ci = fdiv(gx, CN), cj = fdiv(gz, CN);
-    if (!painting) ensure(ci);
-    const c = chunk(ci, cj, false);
+    if (!painting && !lazyChunk) ensure(ci);
+    let c = chunk(ci, cj, false);
+    if (!c && !painting && lazyChunk) { ensure(ci, cj); c = chunk(ci, cj, false); }     // endless: every painted chunk exists
     return c ? [c, (gx - ci * CN) + (gz - cj * CN) * CN] : [null, 0];
   }
 
@@ -116,9 +129,10 @@ export function createGrid() {
   }
 
   const api = {
-    chunks, chunk, at, ensure, paint, addProp, addLight, addSign, addSolid,
+    chunks, chunk, at, ensure, ensureAround, paint, addProp, addLight, addSign, addSolid,
     isOpen, floorAt, ceilAt, zoneAt, flagsAt, solidsIn, gi,
     set lazy(fn) { lazy = fn; },
+    set lazyChunk(fn) { lazyChunk = fn; },
   };
   return api;
 }

@@ -1,10 +1,9 @@
 // Application shell: renderer, both worlds, players, audio, UI, multiplayer session and the frame loop.
-// Worlds ('kind'): 'endless' (procedural liminal spaces) and 'path' (the Great Path / Luceron, built on demand).
+// Worlds ('kind'): 'endless' (procedural liminal spaces, core/endless-mode.js) and 'path' (the Great Path / Luceron,
+// core/path-mode.js, built on demand). Both run on the same cell engine (story/index.js).
 // Modes: 'menu' (start screen with a slowly turning view of a generated place) and 'play' (a walk), with pause.
 import * as THREE from '../../vendor/three.module.js';
 import { PixelPipeline } from '../render/pixel-pipeline.js';
-import { createWorld } from '../world/index.js';
-import { createPlayer } from '../world/player.js';
 import { Input } from '../input/input.js';
 import { moveLabel, firstKey } from '../input/bindings.js';
 import { createSettings } from './settings.js';
@@ -18,6 +17,7 @@ import { createSession } from '../net/session.js';
 import { VERSION } from '../version.js';
 import { createMapUi } from '../ui/map.js';
 import { createPathMode } from './path-mode.js';
+import { createEndlessMode } from './endless-mode.js';
 import { createLoader, nextPaint } from '../ui/loader.js';
 import { createHotbar } from '../ui/hotbar.js';
 
@@ -46,28 +46,13 @@ export function createApp({ appEl, uiEl }) {
   appEl.appendChild(renderer.domElement);
   const canvas = renderer.domElement;
 
-  const scene = new THREE.Scene();
-  const world = createWorld(scene);
   const camera = new THREE.PerspectiveCamera(60, 1, 0.05, 140);
   camera.rotation.order = 'YXZ';
-  scene.add(camera);
-  // flashlight: a spot light carried by the camera (casts shadows)
-  const flash = new THREE.SpotLight(0xfff1d6, 9, 26, 0.48, 0.55, 1.4);
-  flash.position.set(0.18, -0.15, 0);
-  flash.target.position.set(0.1, -0.2, -1);
-  flash.castShadow = true;
-  flash.shadow.mapSize.set(1024, 1024);
-  flash.shadow.bias = -0.0004; flash.shadow.normalBias = 0.03; flash.shadow.camera.near = 0.15;
-  camera.add(flash, flash.target);
-  flash.visible = false;
   let kind = 'endless';                         // which world is shown: 'endless' | 'path'
 
   const input = new Input(canvas, settings);
   const pipe = new PixelPipeline(renderer);
   const audio = createAudio(settings);
-  const player = createPlayer();
-  player.onStep = (wet) => audio.step(wet);
-  player.onLand = () => audio.land();
 
   /* ---- persistent progress: totals and the last single-player walk ---- */
   const progress = {
@@ -95,7 +80,7 @@ export function createApp({ appEl, uiEl }) {
 
   /* ---- state ---- */
   let mode = 'menu', paused = false, seed = MENU_SEED, session = null, hudOn = settings.data.hud.show;
-  let lockPauseAt = 0, lastDist = 0, saveT = 0, poseT = 0;
+  let lockPauseAt = 0, saveT = 0, poseT = 0;
   const hud = createHud(uiEl);
   const mapUi = createMapUi(uiEl);
   // loading screen: the boot screen of index.html, hidden once the menu has drawn a few frames
@@ -104,8 +89,11 @@ export function createApp({ appEl, uiEl }) {
   loader.show('load.boot', null); loader.hideAfter(4);
   // the Great Path world (built the first time it is opened)
   const path = createPathMode({ renderer, camera, pipe, input, hud, mapUi, settings, progress });
+  // the endless world (one per seed; the start screen shows one too). The flashlight in hand is shared.
+  const endless = createEndlessMode({ renderer, camera, pipe, hud, settings, progress, audio, hand: path.hand, session: () => session });
+  const hand = path.hand;
 
-  world.onFind = (kind) => {
+  endless.onFind = (kind) => {
     progress.odd++;
     audio.chime();
     hud.toast(t('hud.found', { what: t('odd.' + kind) }));
@@ -113,7 +101,7 @@ export function createApp({ appEl, uiEl }) {
 
   function closeSession() {
     if (session) { session.close(); session = null; }
-    world.avatars.clear();
+    if (endless.avatars) endless.avatars.clear();
   }
 
   // Starts a walk in the world of `seed`. spawn: { x, z, yaw } or null for the world's spawn point.
@@ -122,12 +110,10 @@ export function createApp({ appEl, uiEl }) {
     if (session && session !== sess) closeSession();
     session = sess;
     seed = s;
-    world.setSeed(seed);
-    const sp = spawn || { ...world.gen.spawn, yaw: 0 };
-    player.place(sp.x, sp.z, sp.yaw || 0);
-    world.setViewDist(settings.data.gfx.viewDist);
-    world.preload(player.x, player.z);
-    mode = 'play'; paused = false; lastDist = 0;
+    endless.setSeed(seed);
+    endless.setViewDist(settings.data.gfx.viewDist);
+    endless.enter(spawn, false);
+    mode = 'play'; paused = false;
     hotbar.setItems(['flashlight']); hotbar.select(0);
     input.clear(); menu.hide();
     audio.unlock(); audio.setMuted(false);
@@ -138,14 +124,14 @@ export function createApp({ appEl, uiEl }) {
   }
   function rememberWalk() {
     if (mode === 'play' && kind === 'path') path.remember();
-    else if (mode === 'play' && !session) progress.last = { seed, x: +player.x.toFixed(2), z: +player.z.toFixed(2), yaw: +player.yaw.toFixed(3) };
+    else if (mode === 'play' && !session) { const w = endless.walker; progress.last = { seed, x: +w.x.toFixed(2), z: +w.z.toFixed(2), yaw: +w.yaw.toFixed(3) }; }
     progress.save();
   }
 
   /* ---- switching worlds ---- */
   function useWorld(k) {
     if (kind === k) return;
-    if (kind === 'path') { path.leave(); scene.add(camera); if (camera.far !== 140) { camera.far = 140; camera.updateProjectionMatrix(); } }
+    if (kind === 'path') path.leave(); else endless.leave();
     kind = k;
     applySettings();
   }
@@ -174,7 +160,7 @@ export function createApp({ appEl, uiEl }) {
     useWorld('path');
     path.start(where);
     hotbar.setItems(['flashlight', 'map']); hotbar.select(0);
-    mode = 'play'; paused = false; lastDist = 0;
+    mode = 'play'; paused = false;
     input.clear(); menu.hide();
     audio.setMuted(true);                                          // this world has its own sound (story/audio.js)
     input.lock();
@@ -193,13 +179,10 @@ export function createApp({ appEl, uiEl }) {
     closeSession();
     useWorld('endless');
     mode = 'menu'; paused = false;
-    flash.visible = false;
     seed = MENU_SEED;
-    world.setSeed(MENU_SEED);
-    world.setViewDist(Math.min(2, settings.data.gfx.viewDist));
-    const sp = world.gen.spawn;
-    player.place(sp.x, sp.z, 0.6);
-    world.preload(sp.x, sp.z);
+    endless.setSeed(MENU_SEED);
+    endless.setViewDist(Math.min(2, settings.data.gfx.viewDist));
+    endless.enter({ ...endless.story.starts.spawn, yaw: 0.6 }, true);
     input.unlock(); input.clear();
     menu.show('main');
   }
@@ -219,9 +202,9 @@ export function createApp({ appEl, uiEl }) {
 
   /* ---- multiplayer ---- */
   const sessionEvents = {
-    onPose: (id, p) => world.avatars.set(id, p),
+    onPose: (id, p) => endless.avatars.set(id, p),
     onJoin: (id, name) => { hud.toast(t('hud.join', { name })); if (app.onPlayers) app.onPlayers(); },
-    onLeave: (id, name) => { world.avatars.remove(id); hud.toast(t('hud.leave', { name })); if (app.onPlayers) app.onPlayers(); },
+    onLeave: (id, name) => { endless.avatars.remove(id); hud.toast(t('hud.leave', { name })); if (app.onPlayers) app.onPlayers(); },
   };
   const app = {
     settings, input, progress,
@@ -232,7 +215,7 @@ export function createApp({ appEl, uiEl }) {
     resume, quit: goMenu, startPath, onPathStatus: null,
     get worldKind() { return mode === 'play' ? kind : null; },
     info: () => kind === 'path' ? path.info()
-      : { seed, zone: world.zone, dist: player.dist, odd: world.foundCount, host: !!session && session.role === 'host' },
+      : { seed, zone: endless.zone, dist: endless.walker.dist, odd: endless.foundCount, host: !!session && session.role === 'host' },
     // host: start a walk and open the invite screen
     startHost() {
       const s = randomSeed();
@@ -240,7 +223,7 @@ export function createApp({ appEl, uiEl }) {
       startWalk(s, null, sess);
       pause(); menu.go('host');
     },
-    addGuest(link) { if (session && session.role === 'host') session.addGuest(link, () => ({ x: player.x, z: player.z, yaw: player.yaw })); else link.close(); },
+    addGuest(link) { if (session && session.role === 'host') session.addGuest(link, () => ({ x: endless.walker.x, z: endless.walker.z, yaw: endless.walker.yaw })); else link.close(); },
     playerNames() { return session ? [session.name + ' (you)', ...[...session.peers.values()].map((p) => p.name)] : []; },
     // guest: the link is open; wait for the host's welcome (seed + spawn) and start walking
     joinAsGuest(link, sayFn) {
@@ -250,7 +233,7 @@ export function createApp({ appEl, uiEl }) {
           onWelcome: (s, spawn) => startWalk(s, { x: spawn.x + 0.6, z: spawn.z + 0.6, yaw: spawn.yaw }, sess),
           onRefused: (why) => { sayFn('join.' + why); link.close(); },
           onClosed: () => {
-            if (session === sess) { session = null; world.avatars.clear(); hud.toast(t('join.closed'), 5); }
+            if (session === sess) { session = null; endless.avatars.clear(); hud.toast(t('join.closed'), 5); }
             else sayFn('join.fail');
           },
         },
@@ -283,7 +266,8 @@ export function createApp({ appEl, uiEl }) {
     if (act === 'toggleHud') settings.update((d) => { d.hud.show = !d.hud.show; });
     else if (act.startsWith('hotbar')) useSlot(+act.slice(6) - 1);
     else if (kind === 'path') path.onPress(act);
-    else if (act === 'flashlight') { flash.visible = !flash.visible; audio.click(); }
+    else if (act === 'flashlight') { hand.setOn(!hand.spot.visible); audio.click(); }
+    else if (act === 'workLights') { const st = endless.story; st.setWorkLights(!st.workLights); hud.toast(t(st.workLights ? 'hud.workOn' : 'hud.workOff'), 2); }
   };
   // a hotbar key selects its slot and uses the item in it
   function useSlot(i) {
@@ -297,14 +281,15 @@ export function createApp({ appEl, uiEl }) {
   /* ---- settings -> systems ---- */
   function applySettings() {
     const d = settings.data;
-    // each world has its own graphics; the Great Path renders with tone mapping (its brightness is relative to that)
-    const gp = d.gfxPath;
-    if (kind === 'path') { pipe.setParams({ pixelH: gp.pixelH, levels: gp.levels, dither: gp.dither, edge: gp.edge, edgeW: gp.edgeW, scan: gp.scan, crt: gp.crt, bright: gp.bright / 1.15, tone: 1, grain: gp.grain ? 0.045 : 0 }); path.setViewDist(gp.viewDist); path.setRounding(gp.round / 100, gp.cove / 100); }
-    else pipe.setParams({ ...d.gfx, tone: 0, grain: 0 });
-    const fov = kind === 'path' ? gp.fov : d.gfx.fov;
+    // each world has its own graphics profile (gfx: endless, gfxPath: the Great Path) with the same options; both
+    // render HDR with tone mapping (brightness is relative to that)
+    const gp = d.gfxPath, ge = d.gfx, g = kind === 'path' ? gp : ge;
+    pipe.setParams({ pixelH: g.pixelH, levels: g.levels, dither: g.dither, edge: g.edge, edgeW: g.edgeW, scan: g.scan, crt: g.crt, bright: g.bright / 1.15, tone: 1, grain: g.grain ? 0.045 : 0 });
+    path.setViewDist(gp.viewDist); path.setRounding(gp.round / 100, gp.cove / 100);
+    endless.setViewDist(mode === 'menu' ? Math.min(2, ge.viewDist) : ge.viewDist); endless.setRounding(ge.round / 100, ge.cove / 100);
+    const fov = g.fov;
     hud.showFps(d.gfx.showFps);
     hudOn = d.hud.show;
-    world.setViewDist(mode === 'menu' ? Math.min(2, d.gfx.viewDist) : d.gfx.viewDist);
     if (camera.fov !== fov) { camera.fov = fov; camera.updateProjectionMatrix(); }
     setLang(d.lang);
   }
@@ -317,7 +302,7 @@ export function createApp({ appEl, uiEl }) {
     const w = innerWidth, h = innerHeight;
     renderer.setSize(w, h, false);
     camera.aspect = w / h; camera.updateProjectionMatrix();
-    if (kind === 'path') applySettings();
+    applySettings();
     pipe.resize(w, h);
   }
   addEventListener('resize', resize);
@@ -341,42 +326,15 @@ export function createApp({ appEl, uiEl }) {
       return;
     }
 
-    if (walking) {
-      const look = input.takeLook();
-      player.update(dt, { look, turn: input.turnAxis(), move: input.moveVector(), sprint: input.isDown('sprint'), jump: input.isDown('jump') }, settings.data.mouse, world.gen);
-      progress.dist += player.dist - lastDist; lastDist = player.dist;
-    } else if (mode === 'play') {
-      input.takeLook();
-      player.update(dt, still, settings.data.mouse, world.gen);     // gravity / settling only
-    } else {
-      player.yaw += dt * 0.05;                                      // menu: slow look around
-    }
-    world.stream(player.x, player.z, 1);
-    world.update(dt, t0, player);
-    audio.setZone(world.zone);
-    if (world.nearestLight(player.x, player.z) === 2) audio.setFlicker(world.flicker());
-
-    const eye = player.eye(settings.data.gfx.headBob && mode === 'play');
-    camera.position.set(eye.x, eye.y, eye.z);
-    camera.rotation.set(mode === 'menu' ? -0.04 : player.pitch, player.yaw, 0);
-
+    const ctl = walking ? { look: input.takeLook(), turn: input.turnAxis(), move: input.moveVector(), sprint: input.isDown('sprint'), jump: input.isDown('jump') } : (input.takeLook(), still);
+    endless.frame(dt, t0, mode, walking, ctl);
     // multiplayer: our pose ~12 times per second
     if (session && mode === 'play') {
       poseT -= dt;
-      if (poseT <= 0) { poseT = 1 / 12; session.sendPose({ x: player.x, y: eye.y, z: player.z, yaw: player.yaw }); }
+      if (poseT <= 0) { poseT = 1 / 12; const w = endless.walker; session.sendPose({ x: w.x, y: camera.position.y, z: w.z, yaw: w.yaw }); }
     }
     autosave(now, walking);
-
-    pipe.render(scene, camera);
-
-    commonHud(dt, now, walking, world.loadedCount);
-    hudT += dt;
-    if (hudT > 0.2 && walking) {
-      hudT = 0;
-      let s = t('hud.line', { zone: t('zone.' + world.zone), m: Math.round(player.dist), odd: world.foundCount });
-      if (session) s += t('hud.players', { n: session.count });
-      hud.setLine(s);
-    }
+    commonHud(dt, now, walking, endless.loadedCount);
     requestAnimationFrame(frame);
   }
   // saves the walk every 5 s of real time (dt is capped, so slow machines would save less often)
@@ -389,7 +347,7 @@ export function createApp({ appEl, uiEl }) {
   function commonHud(dt, now, walking, chunks) {
     hud.showPlay(walking, hudOn);
     hotbar.show(walking && hudOn); hotbar.tick(dt);
-    hotbar.setOn('flashlight', kind === 'path' ? path.hand.spot.visible : flash.visible);
+    hotbar.setOn('flashlight', hand.spot.visible);
     hud.showClick(walking && !input.locked && !input.dragging && 'requestPointerLock' in canvas);
     hud.setClick(t('hud.click'));
     hud.tick(dt);
@@ -408,8 +366,8 @@ export function createApp({ appEl, uiEl }) {
     if (m && newer(m[1], VERSION)) menu.showUpdate(m[1]);
   }).catch(() => {});
   Object.defineProperties(app, Object.getOwnPropertyDescriptors({
-    world, player, camera, pipe, audio, goMenu, startWalk, startPath, pause, mapUi, path, hand: path.hand, scratches: path.sound, teleport: path.teleport,
-    get story() { return path.story; }, get director() { return path.director; }, get guide() { return path.guide; }, get walker() { return path.walker; }, get kind() { return kind; },
+    endless, camera, pipe, audio, goMenu, startWalk, startPath, pause, mapUi, path, hand: path.hand, scratches: path.sound, teleport: path.teleport,
+    get story() { return path.story; }, get director() { return path.director; }, get guide() { return path.guide; }, get walker() { return kind === 'path' ? path.walker : endless.walker; }, get kind() { return kind; },
     get mode() { return mode; }, get paused() { return paused; }, get session() { return session; }, get seed() { return seed; },
   }));
   return app;

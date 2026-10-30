@@ -49,9 +49,13 @@ export function createMenu(root, app) {
   () => bind(stats, 'menu.stats', undefined, { km: (app.progress.dist / 1000).toFixed(2), odd: app.progress.odd }));
 
   /* ---- world 1: endless ---- */
+  // multiplayer is switched off for now (the world moved to the new engine; it comes back once it is fixed)
+  const multiBtn = btn('menu.multi', () => {});
+  multiBtn.disabled = true;
   screen('endless', [
     tx('tile.endless', 'h2'), tx('tile.endlessDesc', 'p'),
-    h('div', { class: 'stack' }, btn('menu.single', () => menu.go('single')), btn('menu.multi', () => menu.go('multi')), back())]);
+    h('div', { class: 'stack' }, btn('menu.single', () => menu.go('single')), multiBtn, back()),
+    tx('menu.multiOff', 'p')]);
 
   /* ---- world 2: the Great Path ---- */
   const pathCont = h('button', { type: 'button', on: { click: () => { pathCont.blur(); app.startPath('continue'); } } });

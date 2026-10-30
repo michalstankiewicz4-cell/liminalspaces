@@ -19,6 +19,7 @@ export class Emitter {
     this.buckets = new Map();
     this.solids = null;          // when set (array), box() also records colliders
     this.T = null;               // current transform { x, y, z, c, s }
+    this.tint = null;            // optional [r, g, b] multiplied into the baked colour (painted props)
   }
   bucket(name) {
     let b = this.buckets.get(name);
@@ -41,8 +42,8 @@ export class Emitter {
       else if (ax === 0) b.uv.push(z / sc * -Math.sign(nrm[0]), -y / sc);
       else if (ax === 2) b.uv.push(x / sc * Math.sign(nrm[2]), -y / sc);
       else b.uv.push(x / sc, z / sc);
-      const col = glow || this.bake(x, y, z, nrm[0], nrm[1], nrm[2]);
-      b.c.push(col[0], col[1], col[2]);
+      const col = glow || this.bake(x, y, z, nrm[0], nrm[1], nrm[2]), tn = !glow && this.tint;
+      if (tn) b.c.push(col[0] * tn[0], col[1] * tn[1], col[2] * tn[2]); else b.c.push(col[0], col[1], col[2]);
     }
     const cx = U[1] * V[2] - U[2] * V[1], cy = U[2] * V[0] - U[0] * V[2], cz = U[0] * V[1] - U[1] * V[0];
     const flip = cx * nrm[0] + cy * nrm[1] + cz * nrm[2] < 0;
@@ -523,6 +524,11 @@ export function meshChunk(grid, c, ctx) {
   for (const p of c.props) { E.T = null; buildProp(E, p, ctx); }
 
   return E;
+}
+
+// Frees the geometry of a chunk group (materials are shared and stay).
+export function disposeGroup(group) {
+  group.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
 }
 
 // Builds a THREE.Group from exported buffers (see Emitter.export).

@@ -1,6 +1,6 @@
 # Architecture and project context
 
-Browser game **Liminal Spaces**: a first-person walk through two worlds — an endless, procedurally generated building (liminal spaces), rendered at low resolution with a pixel-art filter, and **The Great Path**, a hand-laid multi-level 3D world built from the story “Rudon's Plane – Part 1” (see [`GREAT_PATH.md`](GREAT_PATH.md)), rendered finer with PBR materials and tone mapping. No dependencies except three.js (vendored locally), no network requests in single player.
+Browser game **Liminal Spaces**: a first-person walk through two worlds — an endless, procedurally generated building (liminal spaces), rendered by default at low resolution with a pixel-art filter, and **The Great Path**, a hand-laid multi-level 3D world built from the story “Rudon's Plane” (see [`GREAT_PATH.md`](GREAT_PATH.md)), rendered finer. Since 0.18.0 both run on the same cell engine (`js/story/`: grid, mesher with baked light, PBR materials, worker, walker); each game has its own graphics profile. No dependencies except three.js (vendored locally), no network requests in single player.
 
 Published at: repo <https://github.com/michalstankiewicz4-cell/liminalspaces>, site <https://michalstankiewicz4-cell.github.io/liminalspaces/> (GitHub Pages, workflow `.github/workflows/static.yml`). Engine origin: <https://github.com/michalstankiewicz4-cell/VS> (Capital Quarantine).
 
@@ -19,20 +19,19 @@ Published at: repo <https://github.com/michalstankiewicz4-cell/liminalspaces>, s
 | `js/core/app.js` | App shell: renderer, camera + flashlight, world, player, audio, menus, session; modes `menu`/`play`, pause, frame loop, HUD text, save format (`SAVE_VERSION`, `migrate`) and the new-version check |
 | `js/ui/hotbar.js` | Hotbar: 8 slots with pixel-art item icons drawn on canvases (flashlight, map), selection by keys `hotbar1…8` and the wheel, item state (lit flashlight) |
 | `js/ui/loader.js` | Loading screen (the `#boot` element of `index.html`, reused when a walk starts): step text, progress bar, `hideAfter(n)` frames; `nextPaint()` |
+| `js/core/endless-mode.js` | The endless world as a game mode on the cell engine: one world per seed (`createStory(renderer, { world: 'endless', seed })`, the old one disposed), walker, flashlight, oddity discovery, zone sound, HUD line, the turning view behind the start screen; spawn snapped to a free spot |
+| `js/endless/layout.js` | The endless world painted into the cell grid chunk by chunk (`grid.lazyChunk`) from `world/gen.js`: zones per theme (`ZONES`), 0.5 m wall strips on the east/south edge of 4 m cells, filled lattice corners, door lintels, 1 m pillars, pools sunk 0.4 m with a water surface, ceiling lights per cell, decorative doors, the oddity (`oddityPos`) |
+| `js/endless/oddities.js` | Oddity models as the engine prop `oddity` (boxes tinted with `Emitter.tint`, glowing parts emissive) |
+| `js/story/worlds.js` | `buildWorld(name, grid, seed)`: the Great Path layout or an endless world (used by the facade and the worker) |
 | `js/core/path-mode.js` | The Great Path world as a game mode: builds it on first use, start points, walker, sun exposure, guide, statues, sound, events, notes, map, teleport, its HUD lines (`createPathMode`) |
 | `js/core/settings.js`, `storage.js`, `util.js` | Sanitised settings store, localStorage wrappers, helpers (PRNG `mulberry32`, stateless hashes `hash4`/`rand4`, `seedFrom`) |
-| `js/world/gen.js` | **Pure, deterministic world generator** (no three.js): zones, walls, lights, water, pillars, doors, oddities, collision boxes |
-| `js/world/chunks.js` | Chunk → meshes; baked lighting (`lightGrid`, `makeShade`) |
-| `js/world/mesh.js` | `MeshBuilder`: subdivided faces/boxes into per-material buffers with vertex colours |
-| `js/world/textures.js` | Procedural canvas textures and per-zone surface table |
-| `js/world/oddities.js` | Box-built oddity models |
-| `js/world/index.js` | World facade: materials, chunk streaming, fog per zone, flicker, water animation, oddity discovery |
-| `js/story/grid.js` | Great Path: sparse cell grid (0.5 m cells, 64×64 per chunk); per cell open/closed, floor and ceiling height, zone, materials, flags; paint API, queries, lazy column painter for the infinite paths |
+| `js/world/gen.js` | **Pure, deterministic generator of the endless world** (no three.js): themes, walls, lights, water, pillars, doors, oddities (painted into the cell grid by `endless/layout.js`) |
+| `js/story/grid.js` | Cell engine: sparse cell grid (0.5 m cells, 64×64 per chunk); per cell open/closed, floor and ceiling height, zone, materials, flags; paint API, queries, lazy painters: per column (`lazy`, the Great Path's infinite paths) or per chunk (`lazyChunk`, the endless world) |
 | `js/story/layout.js` | Great Path: zones table (story timestamps, light, fog, materials, map colour), start points, the whole layout, notes, skylights, lamp placement |
 | `js/story/mesher.js` | Great Path: chunk mesher (greedy floors/ceilings, merged wall runs, risers, headers, skylight wells, skirting, fixtures) and the light baker (lights + skylights + sun squares + occlusion + AO); `Emitter` geometry builder (also runs "dry" to collect prop colliders) |
 | `js/story/textures.js` | Great Path: procedural PBR maps (albedo, normal, roughness/metalness), canvas textures, the builders' symbol, environment map |
 | `js/story/props.js` | Great Path: props from boxes and prisms (furniture, lab, machine, gate, cable, stations, funnels, doors, mine supports, rubble…) |
-| `js/story/index.js` | Great Path facade: streaming (worker), colliders, flicker, zones/journal, fog, work lights and power, `blocked`/`support` queries; composes the modules below |
+| `js/story/index.js` | Cell-engine facade (`createStory(renderer, { world, seed })`): materials and environment map made once and shared by every world, streaming (worker, told the world by an `init` message), colliders, flicker, zones/journal, fog, work lights and power, `blocked`/`support` queries, `dispose()`; composes the modules below |
 | `js/story/canvas-mats.js`, `signs.js`, `skylights.js`, `gate.js`, `fx.js`, `explored.js` | Great Path parts: canvas materials (screens, symbol, map sheet, chalkboard, water, decals); notes and brass plaques; sunbeams, dust, sun squares and the scratch shape; the layered gate; particles and the event flash light; explored-map bitsets (save/restore, bounds) |
 | `js/story/journey.js` | Great Path part 2: the journey's layout, painted per 32 m column (positions `JX`, zones `JOURNEY_ZONES`, hallway floor/ceiling/width along x, the loop, the glass path and the opening to the outside, the grate, the columns, the district, the shaft, the squeeze, the round rooms) |
 | `js/story/journey-run.js` | Great Path part 2 at run time: the gate shutting behind you, scurrying over skylights, the apparition and the chase in the blackout, the dead battery and getting stuck in the squeeze, the round room's plate, platform, case, lever, lid and staircases (shared with the surface) |
@@ -44,8 +43,7 @@ Published at: repo <https://github.com/michalstankiewicz4-cell/liminalspaces>, s
 | `js/story/worker.js` | Great Path: mesh worker (layout copy, returns vertex buffers) |
 | `js/story/walker.js`, `hand.js` | Great Path: multi-level walker (step-up 0.45 m, falling, jumping); flashlight view model + shadowed spot light |
 | `js/ui/map.js` | Minimap and full map with journal (Great Path) |
-| `js/world/player.js` | First-person walker: look, walk/run/jump, circle-vs-box collisions, head bob, footsteps |
-| `js/world/avatars.js` | Other players' figures (interpolated) |
+| `js/world/avatars.js` | Other players' figures (interpolated; multiplayer is switched off for now) |
 | `js/render/pixel-pipeline.js` | `PixelPipeline` from Capital Quarantine: low-res target + final shader (palette, dither, depth outline, vignette) |
 | `js/input/bindings.js`, `input.js` | Rebindable actions and key labels; keyboard + mouse look (pointer lock or drag) |
 | `js/audio/audio.js` | Synthesised sound (Web Audio) |
@@ -73,13 +71,17 @@ Published at: repo <https://github.com/michalstankiewicz4-cell/liminalspaces>, s
 - **Collision**: `solidsNear(x, z)` returns AABBs of walls in the 3×3 cells around a point, plus pillars and solid oddities. Lintels are above head height and do not collide.
 - **Reachability check** (in a throwaway script during development): BFS over cells for several seeds reaches all cells in a 64×64-cell window.
 
-## Chunk meshes and lighting (`js/world/chunks.js`, `mesh.js`)
+## The endless world on the cell engine (since 0.18.0)
+Generator chunks (8×8 cells of 4 m) and engine chunks (64×64 cells of 0.5 m) are both 32 m with the same origin, so `endless/layout.js` paints one generator chunk into exactly one engine chunk the first time any cell of it is queried (`grid.lazyChunk`; in that mode every painted chunk exists). A wall on the east/south edge of a 4 m cell closes the last 0.5 m strip of that cell; every lattice corner touched by a wall closes the 0.5 m cell north-west of it (so L and T joints and free wall ends have no notches); lintels are open strips with a 2.3 m ceiling; pillars are 1 m squares; ceiling height 3 m. Pools are sunk 0.4 m (one step) with a `poolWater` surface prop. Lights: one per 4 m cell centre (`panel` offices/pools, `bulb` hotel corridors, `tube` garage; flickering and dead ones from the generator). Materials: the engine's PBR set plus `hotelWall`, `hotelCarpet`, `poolTile`, `garageFloor`. Zones (`ZONES` in `endless/layout.js`) set ambient light, tint, fog colour and distance. Seeds give the same plan as before 0.18.0; walls are thicker (0.5 m instead of 0.2 m) and sit on one side of the cell edge.
+The old renderer of this world (`world/chunks.js`, `mesh.js`, `textures.js`, `oddities.js`, `index.js`, `player.js`) was removed; the text below on chunk meshes and the player describes it for history.
+
+## Chunk meshes and lighting (before 0.18.0)
 - One `Group` per chunk with one mesh per material bucket (`<theme>:wall|floor|ceil`, `door`, `prop`, `glow`, `lightOn`, `lightFlicker`, `lightDead`, `water`). Faces are subdivided (~1.4 m segments, floors/ceilings 3×3 per cell) so vertex lighting has enough resolution.
 - **Baked lighting**: `lightGrid()` samples light state, ambient and tint for the chunk plus a 2-cell margin (so lighting is seamless across chunk borders); `makeShade()` returns per-vertex colour = ambient (bilinear) + Σ light power / (1 + d²/2.4²) over a 5×5 cell window, times the zone tint. Materials are `MeshLambertMaterial` with `vertexColors`, lit only by an `AmbientLight` of intensity π (so final colour = texture × vertex colour). The flashlight (`SpotLight` on the camera) adds real light on top.
 - **Flicker**: all flickering panels share `materials.lightFlicker`, whose colour is modulated in `world.update()`; the tube buzz in audio follows it when you stand under one.
 - Streaming (`world.stream`): chunks within `viewDist` (1–3) are built nearest first, at most one per frame (~10 ms each); chunks beyond `viewDist + 1` are disposed. Fog distance follows the view distance; fog colour follows the zone.
 
-## Player (`js/world/player.js`)
+## Player (before 0.18.0; now the engine's walker, `story/walker.js`)
 Eye height 1.6 m, radius 0.3, walk 3 m/s, run 5.4 m/s, jump 5.2 m/s, gravity 18 m/s². Movement is sub-stepped (≤ 0.2 m) and resolved with two passes of circle-vs-AABB push-out. Yaw/pitch from mouse movement (`sens` setting, optional Y inversion) and the turn keys. Footsteps fire every half head-bob cycle and pick the sound by zone (or a splash in water).
 
 ## Mouse look
@@ -90,7 +92,7 @@ All UI is built with `h(tag, props, ...kids)` (`js/ui/dom.js`) — no `innerHTML
 Screens (`js/ui/menu.js`, `js/ui/multi.js`): `main`, `single`, `multi`, `host`, `join`, `room`, `pause`, `options`, with a small history stack (`go`/`back`). Each screen may have an `onShow` refresher. Options tabs (`js/ui/options/`): Graphics, Controls, Mouse, Audio, Language, Privacy & data.
 
 ## Settings (`js/core/settings.js`)
-Stored in `localStorage` key `ls:settings:v1`: `v` (format version, 3), `lang`, `gfx` (the endless world: pixelH, levels, dither, edge, edgeW (outline thickness 0–2 in steps of 0.1), bright, fov (default 60°), viewDist, headBob, showFps, scan (scan lines), crt (CRT screen; both default off, done in the pixel pipeline's final pass)), `gfxPath` (the Great Path: the same plus grain, round (corner radius 0–24 cm, default 12) and cove (0–20 cm, default 8); pixelH 180–720, levels 3–64), `mouse` (sens, invertY), `audio` (volume, steps — footstep volume, default 50 %, hum, scratch), `hud.show`, `net` (name, stun), `keys` (action → two `KeyboardEvent.code` slots). Everything passes through `sanitize()` (clamps, whitelists, a key code can be used by one slot only; `Escape` is reserved; names are filtered by `cleanName`). Change settings only via `settings.update(draft => …)`.
+Stored in `localStorage` key `ls:settings:v1`: `v` (format version, 4), `lang`, `gfx` and `gfxPath` — one graphics profile per game (the endless world, the Great Path) with the same fields and ranges, each with its own defaults: pixelH (100–720), levels (3–64), dither, edge, edgeW (outline thickness 0–2 in steps of 0.1), bright, fov (default 60°), viewDist, headBob, grain (endless off, path on), round (corner radius 0–24 cm, default 12), cove (0–20 cm, default 8), scan (scan lines), crt (CRT screen; both default off, done in the pixel pipeline's final pass); `gfx.showFps` is shared, `mouse` (sens, invertY), `audio` (volume, steps — footstep volume, default 50 %, hum, scratch), `hud.show`, `net` (name, stun), `keys` (action → two `KeyboardEvent.code` slots). Everything passes through `sanitize()` (clamps, whitelists, a key code can be used by one slot only; `Escape` is reserved; names are filtered by `cleanName`). Change settings only via `settings.update(draft => …)`.
 Key actions (`js/input/bindings.js`): moveFwd/Back/Left/Right, turnLeft/Right, sprint, jump, flashlight, toggleHud.
 
 ## Rendering (`js/render/pixel-pipeline.js`)
@@ -100,7 +102,7 @@ Unchanged from Capital Quarantine: scene → `WebGLRenderTarget` of height `pixe
 Everything is synthesised: a looping noise buffer through filters (room tone, water, garage rumble), a 60 Hz sine + filtered 120 Hz saw (hum/buzz), short filtered noise bursts (footsteps, landing, flashlight click), two sine tones (find chime). The context starts on the first click (autoplay rules). Zone changes cross-fade the mix.
 
 ## Multiplayer (`js/net/`)
-See [`MULTIPLAYER.md`](MULTIPLAYER.md). In short: the session shares only the seed and poses; transports are WebRTC DataChannels (manual copy/paste signalling, star topology through the host) or BroadcastChannel for same-browser rooms; every message is validated.
+**Switched off for now** (0.18.0: the endless world moved to the cell engine; the Multiplayer button is disabled until it is fixed). See [`MULTIPLAYER.md`](MULTIPLAYER.md). In short: the session shares only the seed and poses; transports are WebRTC DataChannels (manual copy/paste signalling, star topology through the host) or BroadcastChannel for same-browser rooms; every message is validated.
 
 ## The Great Path world (`js/story/`)
 - **Cells**: `CS = 0.5` m, chunks of 64×64 cells (32 m). A cell is closed (solid) or open with its own floor and ceiling height. Everything 3D comes from differences between neighbours: walls (open↔closed), risers (floor steps), headers (ceiling steps), so drops, podiums, windows, lintels, tunnels and hanging blocks need no special code. Chunks never painted are closed.

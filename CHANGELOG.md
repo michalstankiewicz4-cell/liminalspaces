@@ -4,6 +4,16 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.18.0] - 2026-10-30
+Parts: start screen 1.6.0 · Endless Liminal Spaces 2.0.0 · The Great Path (Rudon's Plane) 1.6.1
+### Changed (Endless Liminal Spaces 2.0.0)
+- **The endless world runs on the Great Path's engine**: the same cell grid, mesher with baked light (lamps with occlusion, ambient occlusion), PBR materials, mesh worker, walker (steps, crouching where it is low) and flashlight in hand. Each 32 m chunk is painted on demand from the same seeded generator, so **a seed gives the same plan as before**, but the geometry changed: walls are 0.5 m thick and sit on one side of the old cell edge, pillars are 1 m, pools are sunk 0.4 m with a water surface, hotel corridors have hanging bulbs and garages tubes; new materials (hotel wallpaper and carpet, pool tiles, garage floor with bay lines). Rounded corners and coves work here too. A saved walk is moved to the nearest free spot if it lies in today's walls.
+- The old renderer of this world (its own meshing, textures, oddity models and player) was removed.
+### Changed
+- Options > Graphics: **one profile per game with the same options** (pixel height 100–720, colour levels 3–64, dithering, outlines, brightness, field of view, view distance, rounded corners and coves, head bob, film grain, scan lines, CRT); the endless world keeps its pixel-art defaults (film grain off). Settings format 4.
+- **Multiplayer is switched off for now** (the button is disabled with a note); it comes back once it works on the new engine.
+- The Great Path 1.6.1: no visible change; its engine now serves both worlds (world chosen when it is made, materials shared, the worker told which world to build).
+
 ## [0.17.0] - 2026-10-30
 Parts: start screen 1.5.2 · Endless Liminal Spaces 1.5.0 · The Great Path (Rudon's Plane) 1.6.0
 ### Added
