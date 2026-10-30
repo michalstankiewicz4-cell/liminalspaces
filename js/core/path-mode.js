@@ -110,8 +110,29 @@ export function createPathMode(shared) {
     (on ? surface.scene : story.scene).add(camera);
     if (on && !quiet) hud.toast(t('gp.j.roof'), 6);
   }
+  // The nearest spot where a person can stand: an open cell with a floor under it (not open sky, not a pit) and room
+  // to stand, and no prop collider in the way. Teleport targets (place labels) can lie on walls or above drops.
+  function standable(x, z) {
+    const g = story.grid, CS = 0.5, gx0 = Math.floor(x / CS), gz0 = Math.floor(z / CS);
+    const ok = (gx, gz) => {
+      const [c, k] = g.at(gx, gz);
+      if (!c || !c.open[k] || (c.flags[k] & 32) || c.ceil[k] - c.floor[k] < 0.7) return false;   // 32 = F.OUT; low places: you crawl
+      for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const [n, nk] = g.at(gx + dx, gz + dz); if (!n || !n.open[nk] || Math.abs(n.floor[nk] - c.floor[k]) > 0.45) return false; }
+      const px = (gx + 0.5) * CS, pz = (gz + 0.5) * CS, f = c.floor[k];
+      return !story.blocked(px - 0.27, pz - 0.27, px + 0.27, pz + 0.27, f + 0.05, f + Math.min(1.75, c.ceil[k] - f - 0.02));
+    };
+    for (let r = 0; r <= 80; r++) for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+      if (ok(gx0 + dx, gz0 + dz)) return { x: (gx0 + dx + 0.5) * CS, z: (gz0 + dz + 0.5) * CS };
+    }
+    return null;
+  }
+  let safe = null;                      // the last place the walker stood on the ground (fall rescue)
   function teleport(x, z) {
     if (onSurface) setSurface(false, true);
+    const p = standable(x, z);
+    if (!p) return;
+    x = p.x; z = p.z;
     walker.place(x, z, walker.yaw);
     story.preload(x, z);
     mapUi.setOpen(false); input.clear(); input.lock();
@@ -147,6 +168,9 @@ export function createPathMode(shared) {
     if (sun < 0.1) sunWarned = 0;
     if (walking && sun > 0.6) ctl = { ...ctl, move: { x: ctl.move.x * (1.6 - sun), z: ctl.move.z * (1.6 - sun) }, sprint: false };
     walker.update(dt, ctl, settings.data.mouse);
+    // fall rescue: never fall out of the world (the deepest floor is about −40 m)
+    if (walker.ground && !onSurface) safe = { x: walker.x, z: walker.z };
+    if (walker.y < -60 && !onSurface) { const p = standable(safe ? safe.x : 0, safe ? safe.z : 7) || { x: 0, z: 7 }; walker.place(p.x, p.z, walker.yaw); story.preload(p.x, p.z); pipe.glitch = 0.6; }
     if (walking) { progress.dist += walker.dist - lastDist; lastDist = walker.dist; }
     // story guide
     const showGuide = settings.data.story.guide;

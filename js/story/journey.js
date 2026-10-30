@@ -290,7 +290,7 @@ export function paintJourney(h, xa, xb) {
   function skyStyle(x) {
     if (x >= JX.blackA && x < JX.blackB) return null;                                          // blackout
     if (x >= JX.squeeze - 30 && x < JX.lightAgain - 1) return null;                             // too deep, too dark
-    if ((x >= JX.columns && x < JX.columnsEnd) || (x >= JX.shaft - 2 && x < JX.gap + 2) || (x >= JX.roomA - ROOM_R - 1)) return null;
+    if ((x >= JX.columns && x < JX.columnsEnd) || (x >= JX.shaft - 2 && x < JX.gap + 2) || (x >= JX.roomA - ROOM_R - 1 && x < JX.roomB + ROOM_R + 1)) return null;
     if (x >= JX.grate && x < JX.grateEnd) return { sun: 0.5, p: 0.5 };
     if (x >= JX.night && x < JX.morning) return { sun: 0, p: 0.12, col: [0.45, 0.55, 1] };
     if (x >= JX.longNight && x < JX.floors - 8) return { sun: 0, p: 0.12, col: [0.45, 0.55, 1] };

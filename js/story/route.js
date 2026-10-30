@@ -4,6 +4,7 @@
 import * as THREE from '../../vendor/three.module.js';
 import { CS } from './grid.js';
 import { canvasTexture } from './textures.js';
+import { STAIRS, SURFACE_Y, base } from './journey.js';
 
 // key: i18n gp.s.<key> (title) and gp.sd.<key> (what happens there); t: story timestamp; r: reach radius; y: required floor level
 // The story starts where the film starts: at the gate of the Great Path (02:18), then follows the film's flashbacks
@@ -49,14 +50,18 @@ export const STEPS = [
   { key: 'jLightAgain', t: '1:43:32', x: 2712, z: -1, r: 3 },
   { key: 'jTiles', t: '1:45:22', x: 2840, z: -1, r: 3 },
   { key: 'jLever', t: '1:46:32', x: 2896, z: -2.4, r: 1.6 },
-  { key: 'jRoof', t: '1:47:27', x: 2905, z: -1, r: 3, y: -5.55 },
+  { key: 'jRoof', t: '1:47:27', x: 2905, z: -1, r: 3, y: -5.55, surface: true },
   { key: 'jMirror', t: '1:49:36', x: 2971, z: -1, r: 3 },
-  { key: 'jInscription', t: '1:50:15', x: 2936, z: -1, r: 4, y: -5.55 },
+  { key: 'jInscription', t: '1:50:15', x: 2936, z: -1, r: 4, y: -5.55, surface: true },
 ];
 
 export function createGuide(story) {
   const grid = story.grid;
-  let step = 0, path = [], target = null, lastFrom = null, age = 99, near = 0;
+  let step = 0, path = [], target = null, lastFrom = null, age = 99, near = 0, goal = null;
+  // The roof over the halls is not in the cell grid: a target up there (or a way down from there) goes through the
+  // nearest staircase — its foot in the halls, its hole on the roof.
+  const stairs = [STAIRS.A, STAIRS.B].map((s) => ({ foot: { x: s.x0 - s.dir * 0.6, z: base(s.x0).zc }, hole: { x: (s.hole[0] + s.hole[1]) / 2, z: base(s.x0).zc } }));
+  const nearestStairs = (w, t) => stairs.reduce((a, b) => (Math.abs(a.foot.x - w.x) + Math.abs(a.foot.x - t.x) <= Math.abs(b.foot.x - w.x) + Math.abs(b.foot.x - t.x) ? a : b));
 
   /* ---- route search on 0.5 m cells inside a box around the player and the target ---- */
   function search(from, to) {
@@ -132,6 +137,11 @@ export function createGuide(story) {
         const reached = target; step++; path = []; age = 99;
         return reached;
       }
+      // where to route to: the target itself, or a staircase when the roof is between us and it
+      const onRoof = w.y > SURFACE_Y - 1;
+      if (onRoof) goal = target.surface ? target : nearestStairs(w, target).hole;
+      else goal = target.surface ? nearestStairs(w, target).foot : target;
+      if (onRoof) { path = []; near = 0; placeArrows(false); return null; }       // no cells up there: straight line
       // where on the route are we?
       let best = 1e9;
       for (let i = Math.max(0, near - 10); i < Math.min(path.length, near + 40); i++) {
@@ -140,8 +150,9 @@ export function createGuide(story) {
       }
       age += dt;
       const moved = !lastFrom || Math.hypot(lastFrom.x - w.x, lastFrom.z - w.z) > 3;
-      if (!path.length || (best > 3 && age > 1.5 && moved)) {
-        const p = search(w, target);
+      // (at most every 1.5 s: a failed search used to repeat every frame, and it is not cheap far from the target)
+      if (age > 1.5 && (!path.length || (best > 3 && moved))) {
+        const p = search(w, goal);
         age = 0; lastFrom = { x: w.x, z: w.z };
         if (p) { path = p; near = 0; }
       }
@@ -151,11 +162,11 @@ export function createGuide(story) {
     // direction (world radians, atan2 convention used by yaw) and distance along the route to the next waypoint
     heading(w) {
       if (!target) return null;
-      let p = target;
+      let p = goal || target;
       if (path.length) { let acc = 0; for (let i = near; i < path.length; i++) { p = path[i]; acc += 1; if (Math.hypot(p.x - w.x, p.z - w.z) > 4) break; } }
       let len = 0;
       for (let i = Math.max(1, near); i < path.length; i++) len += Math.hypot(path[i].x - path[i - 1].x, path[i].z - path[i - 1].z);
-      if (!path.length) len = Math.hypot(target.x - w.x, target.z - w.z);
+      if (!path.length) len = Math.hypot(p.x - w.x, p.z - w.z);
       return { ang: Math.atan2(-(p.x - w.x), -(p.z - w.z)), dist: len };
     },
     hide() { arrows.count = 0; },
