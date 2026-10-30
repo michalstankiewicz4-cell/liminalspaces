@@ -41,13 +41,12 @@ void main(){
   vec3 c=texture2D(tColor,uv).rgb*bright;
   float d=lin(uv);
   float e=0.;
-  for(int k=1;k<=4;k++){                        // outline thickness: neighbours up to edgeW pixels away
-    if(float(k)>edgeW) break;
+  for(int k=1;k<=2;k++){                        // outline thickness 0..2: neighbours 1 and 2 pixels away, the last one weighted
+    float wk=clamp(edgeW-float(k-1),0.,1.);
+    if(wk<=0.) break;
     vec2 o=texel*float(k);
-    e=max(e,diff(d,lin(uv+vec2(o.x,0.))));
-    e=max(e,diff(d,lin(uv-vec2(o.x,0.))));
-    e=max(e,diff(d,lin(uv+vec2(0.,o.y))));
-    e=max(e,diff(d,lin(uv-vec2(0.,o.y))));
+    float ek=max(max(diff(d,lin(uv+vec2(o.x,0.))),diff(d,lin(uv-vec2(o.x,0.)))),max(diff(d,lin(uv+vec2(0.,o.y))),diff(d,lin(uv-vec2(0.,o.y)))));
+    e=max(e,ek*wk);
   }
   float em=persp<.5 ? smoothstep(.004,.009,e) : smoothstep(.16,.32,e);
   if(tone>.5){                                   // ACES filmic tone mapping for HDR scenes (Great Path world)
@@ -133,7 +132,7 @@ export class PixelPipeline {
 
   render(scene, camera) {
     const u = this.mat.uniforms, p = this.params;
-    u.levels.value = p.levels; u.dither.value = p.dither; u.edge.value = p.edge; u.edgeW.value = p.edgeW || 1; u.bright.value = p.bright;
+    u.levels.value = p.levels; u.dither.value = p.dither; u.edge.value = p.edge; u.edgeW.value = p.edgeW ?? 1; u.bright.value = p.bright;
     u.tone.value = p.tone; u.grain.value = p.grain; u.heat.value = this.heat; u.glitch.value = this.glitch; u.fear.value = this.fear; u.time.value = (performance.now() / 1000) % 100;
     u.persp.value = camera.isPerspectiveCamera ? 1 : 0;
     u.near.value = camera.near; u.far.value = camera.far;

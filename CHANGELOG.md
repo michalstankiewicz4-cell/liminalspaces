@@ -4,6 +4,13 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.16.0] - 2026-10-30
+Parts: start screen 1.5.1 · Endless Liminal Spaces 1.4.1 · The Great Path (Rudon's Plane) 1.5.0
+### Added (The Great Path 1.5.0)
+- **Rounded building edges**: convex wall corners (doorways, openings, pillars, room corners seen from outside) are rounded (12 cm radius), with the floor and the ceiling filled in around the curve; full walls meet the floor and the ceiling in small coves (8 cm; no floor cove where there is a skirting board). Collision is unchanged.
+### Changed
+- **Outline thickness** goes from 0 to 2 in steps of 0.1 (0 = no outlines; between whole numbers the farther ring is blended in). Default 1.0, as before; a saved 3 or 4 becomes 2.
+
 ## [0.15.0] - 2026-10-30
 Parts: start screen 1.5.0 · Endless Liminal Spaces 1.4.0 · The Great Path (Rudon's Plane) 1.4.0
 ### Added

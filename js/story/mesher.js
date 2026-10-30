@@ -68,6 +68,44 @@ export class Emitter {
     if (!skip.includes('py')) this.grid(mat, [x0, y1, z1], [1, 0, 0], [0, 0, -1], br(0, W), br(0, D), [0, 1, 0], uv, g);
     if (!skip.includes('ny')) this.grid(mat, [x0, y0, z0], [1, 0, 0], [0, 0, 1], br(0, W), br(0, D), [0, -1, 0], uv, g);
   }
+  // A profile swept along a straight line: prof = [{ p: [x,y,z], n: [nx,ny,nz] }, …] at u = 0, moved by U * u for u in
+  // us (metres). Rounded corners and coves. Winding follows the normals.
+  sweep(mat, prof, U, us) {
+    if (this.dry || prof.length < 2) return;
+    const b = this.bucket(mat), base = b.p.length / 3, sc = this.scale[mat] || 1;
+    let arc = 0;
+    const vs = prof.map((q, k) => (k ? (arc += Math.hypot(q.p[0] - prof[k - 1].p[0], q.p[1] - prof[k - 1].p[1], q.p[2] - prof[k - 1].p[2])) : 0));
+    for (const u of us) prof.forEach((q, k) => {
+      const x = q.p[0] + U[0] * u, y = q.p[1] + U[1] * u, z = q.p[2] + U[2] * u;
+      b.p.push(x, y, z); b.n.push(q.n[0], q.n[1], q.n[2]);
+      b.uv.push((x + z) / sc + (U[1] ? vs[k] / sc : 0), (U[1] ? -y : vs[k] - y) / sc);
+      const col = this.bake(x, y, z, q.n[0], q.n[1], q.n[2]); b.c.push(col[0], col[1], col[2]);
+    });
+    // orientation from the first quad
+    const P = prof.length, v = (k) => [b.p[(base + k) * 3], b.p[(base + k) * 3 + 1], b.p[(base + k) * 3 + 2]];
+    const a0 = v(0), a1 = v(1), a2 = v(P);
+    const e1 = [a1[0] - a0[0], a1[1] - a0[1], a1[2] - a0[2]], e2 = [a2[0] - a0[0], a2[1] - a0[1], a2[2] - a0[2]];
+    const cr = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+    const nn = prof[0].n, flip = cr[0] * nn[0] + cr[1] * nn[1] + cr[2] * nn[2] < 0;
+    for (let j = 0; j < us.length - 1; j++) for (let k = 0; k < P - 1; k++) {
+      const q = base + j * P + k, r = q + 1, s2 = q + P, t = s2 + 1;
+      if (flip) b.i.push(q, s2, r, r, s2, t); else b.i.push(q, r, s2, r, t, s2);
+    }
+  }
+  // A flat fan (centre + points), for the floor and ceiling under a rounded corner.
+  fan(mat, ctr, pts, nrm) {
+    if (this.dry) return;
+    const b = this.bucket(mat), base = b.p.length / 3, sc = this.scale[mat] || 1;
+    for (const q of [ctr, ...pts]) {
+      b.p.push(q[0], q[1], q[2]); b.n.push(nrm[0], nrm[1], nrm[2]); b.uv.push(q[0] / sc, q[2] / sc);
+      const col = this.bake(q[0], q[1], q[2], nrm[0], nrm[1], nrm[2]); b.c.push(col[0], col[1], col[2]);
+    }
+    for (let k = 0; k < pts.length - 1; k++) {
+      const A = b.p.slice((base) * 3, base * 3 + 3), B1 = pts[k], C = pts[k + 1];
+      const cy = (B1[2] - A[2]) * (C[0] - A[0]) - (B1[0] - A[0]) * (C[2] - A[2]);        // y of (B-A)x(C-A)
+      if (cy * nrm[1] >= 0) b.i.push(base, base + 1 + k, base + 2 + k); else b.i.push(base, base + 2 + k, base + 1 + k);
+    }
+  }
   // Vertical prism (n sides) between radii r0 (bottom) and r1 (top) — pipes, funnels, cups, bowls, cones, wheels.
   prism(mat, cx, cz, r0, r1, y0, y1, n = 8, o = {}) {
     const [X, Y, Z] = this.tp(cx, y0, cz);
@@ -288,6 +326,10 @@ export function meshChunk(grid, c, ctx) {
 
   /* vertical faces between neighbouring cells, merged into runs along each edge line */
   const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  const RC = 0.12, RV = 0.08, NC = 4, NV = 3;          // corner radius, cove radius, segments
+  const cellAt = (d, line, t) => (DIRS[d][0] ? [c.ci * CN + line, c.cj * CN + t] : [c.ci * CN + t, c.cj * CN + line]);
+  const matAt = (x, z, arr) => { const [q, k] = grid.at(Math.floor(x / CS), Math.floor(z / CS)); return q && q.open[k] ? name(q[arr][k]) : 'concrete'; };
+  const floorMatAt = (x, z) => matAt(x, z, 'fm'), ceilMatAt = (x, z) => matAt(x, z, 'cm');
   for (let d = 0; d < 4; d++) {
     const [dx, dz] = DIRS[d];
     // iterate edge lines perpendicular to the direction; run along the other axis
@@ -308,7 +350,7 @@ export function meshChunk(grid, c, ctx) {
             if (c.flags[k] & F.OUT) {
               // open to the sky: only the roof edge above a lower neighbour (0.6 m of building above its ceiling)
               if (nc && nc.open[nk] && nc.ceil[nk] < A.ce) parts.push([Math.max(nc.ceil[nk], A.f), Math.min(A.ce, nc.ceil[nk] + 0.6), nc.sm[nk] || A.wm, 0]);
-            } else if (!nc || !nc.open[nk]) parts.push([A.f, A.ce, A.wm, A.skirt ? 1 : 0]);
+            } else if (!nc || !nc.open[nk]) parts.push([A.f, A.ce, A.wm, A.skirt ? 1 : 0, 1, A.sky ? 1 : 0]);   // a full wall
             else {
               const bf = nc.floor[nk], bc = nc.ceil[nk], sm = nc.sm[nk] || A.wm;
               if (bf > A.f + 0.001) parts.push([A.f, Math.min(bf, A.ce), sm, 0]);
@@ -323,7 +365,7 @@ export function meshChunk(grid, c, ctx) {
               live.add(key);
               const run = runs.get(key);
               if (run && run.t1 === t) run.t1 = t + 1;
-              else { if (run) emitRun(d, line, run); runs.set(key, { t0: t, t1: t + 1, y0: p[0], y1: p[1], m: p[2], skirt: p[3] }); }
+              else { if (run) emitRun(d, line, run); runs.set(key, { t0: t, t1: t + 1, y0: p[0], y1: p[1], m: p[2], skirt: p[3], full: p[4] === 1, sky: p[5] === 1 }); }
             }
           }
         }
@@ -331,22 +373,75 @@ export function meshChunk(grid, c, ctx) {
       }
     }
   }
+  /* rounded building edges: convex vertical corners are rounded, and full walls meet the floor and the ceiling in
+     small coves (see emitRun) */
+  // the open cell along a wall line at index t, and whether the wall turns a convex corner just before it
+  function convexAt(d, line, t, run) {
+    const [dx, dz] = DIRS[d], [gi, gj] = cellAt(d, line, t);
+    const [a, ak] = grid.at(gi, gj), [b, bk] = grid.at(gi + dx, gj + dz);
+    const same = (q, k) => q && q.open[k] && !(q.flags[k] & (F.OUT | F.SKY)) && Math.abs(q.floor[k] - run.y0) < 0.01 && Math.abs(q.ceil[k] - run.y1) < 0.01;
+    return same(a, ak) && same(b, bk);
+  }
   function emitRun(d, line, run) {
     const [dx, dz] = DIRS[d];
     const mat = run.m === M_WELL ? 'plaster' : name(run.m);
     const ys = breaks(run.y0, run.y1);
+    const round = run.full && !run.sky && run.y1 - run.y0 > 1.2;
+    // convex corners at the ends: the wall stops RC short and a quarter round takes over
+    const cA = round && convexAt(d, line, run.t0 - 1, run), cB = round && convexAt(d, line, run.t1, run);
+    if (round) rounding(d, line, run, mat, cA, cB);
     if (dx) {
-      const X = x0 + (line + (dx > 0 ? 1 : 0)) * CS, Za = z0 + run.t0 * CS, Zb = z0 + run.t1 * CS;
+      const X = x0 + (line + (dx > 0 ? 1 : 0)) * CS, Za = z0 + run.t0 * CS + (cA ? RC : 0), Zb = z0 + run.t1 * CS - (cB ? RC : 0);
       const nrm = [-dx, 0, 0];
       E.grid(mat, [X, run.y0, Za], [0, 0, 1], [0, 1, 0], breaks(Za, Zb), ys, nrm);
       if (run.skirt) skirt(nrm, X - dx * 0.018, Za, Zb, run.y0, true);
       wallWear(mat, run, Za, Zb, (t, y) => [X - dx * 0.006, y, t], [0, 0, 1], nrm, X);
     } else {
-      const Z = z0 + (line + (dz > 0 ? 1 : 0)) * CS, Xa = x0 + run.t0 * CS, Xb = x0 + run.t1 * CS;
+      const Z = z0 + (line + (dz > 0 ? 1 : 0)) * CS, Xa = x0 + run.t0 * CS + (cA ? RC : 0), Xb = x0 + run.t1 * CS - (cB ? RC : 0);
       const nrm = [0, 0, -dz];
       E.grid(mat, [Xa, run.y0, Z], [1, 0, 0], [0, 1, 0], breaks(Xa, Xb), ys, nrm);
       if (run.skirt) skirt(nrm, Z - dz * 0.018, Xa, Xb, run.y0, false);
       wallWear(mat, run, Xa, Xb, (t, y) => [t, y, Z - dz * 0.006], [1, 0, 0], nrm, Z);
+    }
+  }
+  // coves along the bottom (unless there is a skirting board) and the top of a full wall, and the rounded corners
+  function rounding(d, line, run, mat, cA, cB) {
+    const [dx, dz] = DIRS[d];
+    const n = dx ? [-dx, 0, 0] : [0, 0, -dz], U = dx ? [0, 0, 1] : [1, 0, 0];
+    const W = (dx ? x0 : z0) + (line + ((dx || dz) > 0 ? 1 : 0)) * CS, A = (dx ? z0 : x0) + run.t0 * CS, B = (dx ? z0 : x0) + run.t1 * CS;
+    const at = (u, y, off) => (dx ? [W + n[0] * off, y, u] : [u, y, W + n[2] * off]);
+    const a = A + (cA ? RC : 0), b = B - (cB ? RC : 0);
+    if (b - a > 0.02) {
+      const us = breaks(0, b - a, 2);
+      for (const [y, up] of [[run.y0, 1], [run.y1, -1]]) {
+        if (up > 0 && run.skirt) continue;
+        const prof = [];
+        for (let k = 0; k <= NV; k++) {
+          const th = k / NV * Math.PI / 2, cs = Math.cos(th), sn = Math.sin(th);
+          const p = at(a, y + up * RV - up * RV * sn, RV - RV * cs);
+          prof.push({ p, n: [n[0] * cs, up * sn, n[2] * cs] });
+        }
+        E.sweep(mat, prof, U, us);
+      }
+    }
+    // a quarter round at each convex end (emitted by walls facing ±x only, so once per corner) + floor/ceiling fans
+    if (!dx) return;
+    for (const [has, u, sgn] of [[cA, A, -1], [cB, B, 1]]) {
+      if (!has) continue;
+      const ctr = at(u - sgn * RC, 0, -RC), prof = [], ring = [];
+      for (let k = 0; k <= NC; k++) {
+        const th = k / NC * Math.PI / 2, cs = Math.cos(th), sn = Math.sin(th);
+        const dir = [n[0] * cs, 0, sgn * sn];
+        const p = [ctr[0] + dir[0] * RC, run.y0, ctr[2] + dir[2] * RC];
+        prof.push({ p, n: dir }); ring.push(p);
+      }
+      E.sweep(mat, prof, [0, 1, 0], breaks(0, run.y1 - run.y0));
+      // the little square the rounding gives back to the room: floor and ceiling over it
+      const corner = at(u, 0, 0);
+      const ix = corner[0] + n[0] * 0.25, iz = corner[2] + sgn * 0.25;           // a point of the room right by the corner
+      const fm = floorMatAt(ix, iz), cm = ceilMatAt(ix, iz);
+      E.fan(fm, [corner[0], run.y0, corner[2]], ring.map((p) => [p[0], run.y0, p[2]]), [0, 1, 0]);
+      E.fan(cm, [corner[0], run.y1, corner[2]], ring.map((p) => [p[0], run.y1, p[2]]), [0, -1, 0]);
     }
   }
   // stains, scuffs, mould and cracks on full-height walls, every ~2.5 m with a per-material chance
