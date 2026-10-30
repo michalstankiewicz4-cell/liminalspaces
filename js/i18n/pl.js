@@ -102,6 +102,13 @@ export default {
   'audio.volume': 'Głośność',
   'audio.steps': 'Kroki',
   'map.compass': 'N E S W',
+  'load.boot': 'Uruchamianie…',
+  'load.code': 'Wczytywanie Wielkiej Ścieżki…',
+  'load.world': 'Budowanie Luceronu: tekstury, pomieszczenia, światło…',
+  'load.details': 'Posągi, dźwięki, wędrówka…',
+  'load.surface': 'Powierzchnia i niebo…',
+  'load.place': 'Ustawianie postaci…',
+  'load.walk': 'Budowanie przestrzeni…',
   'audio.hum': 'Brzęczenie świetlówek',
   'audio.reset': 'Przywróć dźwięk',
 

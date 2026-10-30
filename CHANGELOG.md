@@ -4,6 +4,10 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new version (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.10.0] - 2026-10-30
+### Added
+- **Loading screens**: one while the game downloads and starts (no more blank page), and one when a walk starts — the endless world ("Building the space…") and the Great Path, which builds in steps with a progress bar (loading the code, textures/rooms/light, statues and the journey, the surface, placing you). The screen stays until the new world has drawn its first frames (they stutter while shaders compile). A spinning ring keeps turning while the world is built.
+
 ## [0.9.1] - 2026-10-30
 ### Fixed
 - **The game froze after the mirror room**: when the next place of the story guide could not be reached through the halls (it is on the roof, or behind the roof), the guide searched for a route again on every frame, allocating big buffers — the frame rate collapsed and grew worse the further you walked. A failed search now waits 1.5 s, and the guide routes through the nearest staircase (its foot in the halls, its hole on the roof); on the roof it points straight at the target.

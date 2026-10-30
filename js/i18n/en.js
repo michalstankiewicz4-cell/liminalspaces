@@ -102,6 +102,13 @@ export default {
   'audio.volume': 'Volume',
   'audio.steps': 'Footsteps',
   'map.compass': 'N E S W',
+  'load.boot': 'Starting…',
+  'load.code': 'Loading the Great Path…',
+  'load.world': 'Building Luceron: textures, rooms, light…',
+  'load.details': 'Statues, sounds, the journey…',
+  'load.surface': 'The surface and the sky…',
+  'load.place': 'Placing you…',
+  'load.walk': 'Building the space…',
   'audio.hum': 'Fluorescent hum',
   'audio.reset': 'Reset audio',
 

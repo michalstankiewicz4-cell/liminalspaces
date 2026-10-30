@@ -8,6 +8,7 @@ import { createWalker } from '../story/walker.js';
 import { createHand } from '../story/hand.js';
 import { createPathAudio } from '../story/audio.js';
 import { MAT_NAMES } from '../story/textures.js';
+import { nextPaint } from '../ui/loader.js';
 
 // zones with scripted events of their own (no random scares there)
 const SCRIPTED = new Set(['gpBlackout', 'gpSqueeze', 'gpRound', 'gpMirror']);
@@ -26,14 +27,18 @@ export function createPathMode(shared) {
   const stepListeners = new Set();
   let sun = 0, sunWarned = 0, lightT = 0, lastLight = 1, stepMat = 'carpet', hudT = 0, lastDist = 0;
 
-  // Builds the world (textures, layout, worker, statues…) once. Resolves when ready.
+  // Builds the world (textures, layout, worker, statues…) once, in steps; stage(key, fraction) reports progress and
+  // gets a paint in between. Resolves when ready.
   let loading = null;
-  function load() {
+  function load(stage = () => {}) {
     if (loading) return loading;
+    stage('load.code', 0.05);
     loading = Promise.all([import('../story/index.js'), import('../story/events.js'), import('../story/route.js'), import('../story/statues.js'),
       import('../story/journey-run.js'), import('../story/surface.js'), import('../story/epilogue.js'), import('../story/journey.js')])
-      .then(([ix, ev, rt, st, jr, sf, ep, jy]) => {
+      .then(async ([ix, ev, rt, st, jr, sf, ep, jy]) => {
+        stage('load.world', 0.25); await nextPaint();
         story = ix.createStory(renderer);
+        stage('load.details', 0.7); await nextPaint();
         walker = createWalker(story);
         story.onZone = (id, first) => { if (first) hud.toast(t('gp.newPlace', { place: t('gp.z.' + story.zones[id].key), time: story.zones[id].t || '' }), 4.5); };
         story.importSeen(read(KEYS.pathMap));
@@ -51,6 +56,7 @@ export function createPathMode(shared) {
         };
         walker.onLand = (v) => { sound.land(stepMat); if (v > 10) { director.shake.k = 0.05; pipe.glitch = 0.3; hud.toast(t('gp.j.fall'), 4); } };
         journey = jr.createJourney({ story, walker, hand, sound, pipe, hud, t, progress });
+        stage('load.surface', 0.85); await nextPaint();
         surface = sf.createSurface(story.materials);
         epilogue = ep.createEpilogue();
         SY = jy.SURFACE_Y;

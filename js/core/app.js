@@ -18,6 +18,7 @@ import { createSession } from '../net/session.js';
 import { VERSION } from '../version.js';
 import { createMapUi } from '../ui/map.js';
 import { createPathMode } from './path-mode.js';
+import { createLoader, nextPaint } from '../ui/loader.js';
 
 const MENU_SEED = 20251031;
 const SAVE_VERSION = 2;
@@ -96,6 +97,9 @@ export function createApp({ appEl, uiEl }) {
   let lockPauseAt = 0, lastDist = 0, saveT = 0, poseT = 0;
   const hud = createHud(uiEl);
   const mapUi = createMapUi(uiEl);
+  // loading screen: the boot screen of index.html, hidden once the menu has drawn a few frames
+  const loader = createLoader(document.getElementById('boot'));
+  loader.show('load.boot', null); loader.hideAfter(4);
   // the Great Path world (built the first time it is opened)
   const path = createPathMode({ renderer, camera, pipe, input, hud, mapUi, settings, progress });
 
@@ -143,13 +147,26 @@ export function createApp({ appEl, uiEl }) {
     applySettings();
   }
   // Starts a walk in the Great Path world (see core/path-mode.js). where: 'gate' | 'hub' | 'wastes' | 'continue'
-  function startPath(where) {
-    if (!path.ready) {
-      if (app.onPathStatus) app.onPathStatus('path.loading');
-      // let the message paint before the (synchronous) build
-      setTimeout(() => path.load().then(() => startPath(where)).catch((e) => { console.error(e); if (app.onPathStatus) app.onPathStatus('path.failed'); }), 30);
-      return;
-    }
+  // A loading screen covers the build (first time) and the placing of the player; it goes once the new world has
+  // drawn a few frames.
+  let starting = false;
+  async function startPath(where) {
+    if (starting) return;
+    starting = true;
+    try {
+      loader.show(path.ready ? 'load.place' : 'load.code', path.ready ? 0.9 : 0.02);
+      await nextPaint();
+      if (!path.ready) await path.load((key, f) => loader.show(key, f));
+      loader.show('load.place', 0.95);
+      await nextPaint();
+      enterPath(where);
+      loader.hideAfter(3);
+    } catch (e) {
+      console.error(e); loader.hide();
+      if (app.onPathStatus) app.onPathStatus('path.failed');
+    } finally { starting = false; }
+  }
+  function enterPath(where) {
     closeSession();
     useWorld('path');
     path.start(where);
@@ -158,6 +175,13 @@ export function createApp({ appEl, uiEl }) {
     audio.setMuted(true);                                          // this world has its own sound (story/audio.js)
     input.lock();
     rememberWalk();
+  }
+
+  // the endless world: a short loading screen while its first rooms are built
+  async function withLoader(fn) {
+    if (starting) return;
+    starting = true;
+    try { loader.show('load.walk', null); await nextPaint(); fn(); loader.hideAfter(3); } finally { starting = false; }
   }
 
   function goMenu() {
@@ -198,9 +222,9 @@ export function createApp({ appEl, uiEl }) {
   const app = {
     settings, input, progress,
     onPlayers: null, onJoinError: null,
-    newWalk: () => startWalk(randomSeed()),
-    continueWalk: () => { const l = progress.last; if (l) startWalk(l.seed, l); },
-    seedWalk: (text) => startWalk(String(text).trim() ? seedFrom(text) : randomSeed()),
+    newWalk: () => withLoader(() => startWalk(randomSeed())),
+    continueWalk: () => { const l = progress.last; if (l) withLoader(() => startWalk(l.seed, l)); },
+    seedWalk: (text) => withLoader(() => startWalk(String(text).trim() ? seedFrom(text) : randomSeed())),
     resume, quit: goMenu, startPath, onPathStatus: null,
     info: () => kind === 'path' ? path.info()
       : { seed, zone: world.zone, dist: player.dist, odd: world.foundCount, host: !!session && session.role === 'host' },
@@ -352,7 +376,7 @@ export function createApp({ appEl, uiEl }) {
     hud.showClick(walking && !input.locked && !input.dragging && 'requestPointerLock' in canvas);
     hud.setClick(t('hud.click'));
     hud.tick(dt);
-    frames++;
+    frames++; loader.frame();
     if (now - fpsT > 500) {
       if (settings.data.gfx.showFps) hud.setFps(t('hud.fps', { version: VERSION, fps: Math.round(frames * 1000 / (now - fpsT)), w: pipe.rt.width, h: pipe.rt.height, c: chunks }));
       frames = 0; fpsT = now;
