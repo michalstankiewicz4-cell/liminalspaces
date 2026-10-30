@@ -66,6 +66,9 @@ const DIST = { tube: dTube, room: dRoom, shaft: dShaft, cavern: dCavern };
 export function buildCaves() {
   const R = mulberry32(1932);
   const prims = [], lamps = [], ladders = [], curtains = [], labels = [], props = [];
+  // story markers: a stone stele with the chapter's number where something of the story happens (read it up close)
+  const markers = [];
+  const mark = (key, ch, x, y, z) => markers.push({ key, ch, x, y, z });
   const starts = {};
 
   function tube(a, b, o) {
@@ -175,7 +178,19 @@ export function buildCaves() {
     tube([x, y, z - 1.4], [x, y, z - 5.5], { w: 0.7, h: 2.2, rt: 0.5, rb: 0.15, zone: Z.deadEnd, ext: 0.2 });
     room(x, y, z - 8, 2.2, 2.5, 2.8, { rr: 0.9, zone: Z.deadEnd });
     curtains.push({ x, y, z: z - 1.85, rot: 0, w: 1.4, h: 2.2, torn: true });
-    if (k === 2) props.push({ kind: 'book', x: x + 0.8, y, z: z - 9.2 });           // the metal-leaf book, in the dust
+    if (k === 2) { props.push({ kind: 'book', x: x + 0.8, y, z: z - 9.2 }); mark('book', 1, x - 1.2, y, z - 8.5); }   // the metal-leaf book, in the dust
+  }
+  { const [x, y, z] = deadAt(-93); mark('friends', 1, x, y, z + 1.3); }
+  // Tumithak's home: his father Tumlook is an alimentarist (makes food from rock); the three gifts on the table (chapter 2)
+  {
+    const [x, y, z] = deadAt(-99);
+    tube([x, y, z - 1.4], [x, y, z - 5.5], { w: 0.75, h: 2.3, rt: 0.5, rb: 0.15, zone: Z.loor, ext: 0.2 });
+    room(x, y, z - 9, 3.4, 3.2, 3, { rr: 1, zone: Z.loor });
+    curtains.push({ x, y, z: z - 1.85, rot: 0, w: 1.5, h: 2.3 });
+    lamps.push({ x, y: y + 2.85, z: z - 9, ceil: y + 3, p: 0.5, dead: false, flicker: false, r: 0.9, g: 0.95, b: 1, small: true });
+    props.push({ kind: 'gifts', x: x - 1.2, y, z: z - 9.5 }, { kind: 'synth', x: x + 2.2, y, z: z - 10.8 });
+    mark('home', 2, x + 1.1, y, z - 7.4);
+    labels.push({ key: 'home', x, y, z: z - 9 });
   }
   labels.push({ key: 'deadEnd', x: -120, y: LY, z: -6 });
 
@@ -210,6 +225,8 @@ export function buildCaves() {
   room(nx0 + 75, NY, nz0 - 26, 9, 7, 5, { rr: 2, zone: Z.nonone });           // Nennapuss' hall
   path([[nx0 + 75, NY, nz0], [nx0 + 75, NY, nz0 - 18]], { ...COR, w: 1.9, h: 4.2, zone: Z.nonone, lamp: 9 });
   labels.push({ key: 'hall', x: nx0 + 75, y: NY, z: nz0 - 26 });
+  props.push({ kind: 'feast', x: nx0 + 75, y: NY, z: nz0 - 27 });
+  mark('nonone', 2, nx0 + 71, NY, nz0 - 21);
   starts.nonone = { x: nx0 + 60, y: NY, z: nz0, yaw: -Math.PI / 2 };
 
   /* ---- Nonone -> Yakra: more passages, the guarded shaft ---- */
@@ -230,6 +247,8 @@ export function buildCaves() {
     sideCaves(pts[Math.floor(pts.length / 2)], 2);
   }
   labels.push({ key: 'guardedShaft', x: p[0], y: p[1], z: p[2] });
+  mark('yakran', 3, p[0] + 3.2, p[1], p[2] + 0.9);
+  props.push({ kind: 'bones', x: p[0] + 2.4, y: p[1], z: p[2] - 0.8 });
 
   /* ---- Yakra: the hostile city ---- */
   const YY = p[1];
@@ -237,6 +256,16 @@ export function buildCaves() {
   path([[yx0 - 6, YY, p[2]], [yx0 + 4, YY, p[2]]], { ...COR, w: 1.9, h: 4.2, zone: Z.yakra, lamp: 9 });
   city(yx0, YY, p[2], 170, Z.yakra, { dead: 0.12 });
   labels.push({ key: 'yakra', x: yx0 + 80, y: YY, z: p[2] });
+  mark('stampede', 3, yx0 + 52, YY, p[2] + 1.3);
+  // the forgotten corridor where the Yakran woman hid him, and the shaft she led him up (chapter 3)
+  {
+    const hx = yx0 + 140, hz = p[2];
+    const hp = path([[hx, YY, hz], [hx + 3, YY + 0.4, hz - 14], [hx - 2, YY + 0.8, hz - 28], [hx + 4, YY + 1.2, hz - 40]], { ...COR, w: 1.3, h: 3.2, amp: 0.1, zone: Z.yakra });
+    const e = hp[hp.length - 1];
+    room(e[0], e[1], e[2] - 4, 3, 3, 2.8, { rr: 1, zone: Z.yakra, amp: 0.1 });
+    mark('hideout', 3, e[0] + 1.2, e[1], e[2] - 3);
+    labels.push({ key: 'hideout', x: e[0], y: e[1], z: e[2] - 4 });
+  }
   starts.yakra = { x: yx0 + 20, y: YY, z: p[2], yaw: -Math.PI / 2 };
 
   /* ---- beyond Yakra: the lamps dim and fail; the Dark Corridors and the caves (chapter 4) ---- */
@@ -246,16 +275,21 @@ export function buildCaves() {
     const pts = lastLeg = wander(p, (R() - 0.5) * 0.6, 12, 9, 0.5, 0.5);
     path(pts, { ...COR, w: 1.9 - i * 0.1, h: 4 - i * 0.15, amp: 0.06 + i * 0.05, zone: i < 2 ? Z.yakra : Z.dark, lamp: lampP > 0.05 ? 12 : 0, lampP, dead: 0.3 + i * 0.15 });
     if (i === 2) { const m = pts[Math.floor(pts.length / 2)]; labels.push({ key: 'dark', x: m[0], y: m[1], z: m[2] }); }
+    if (i === 1) { const m = pts[3]; mark('lampsFail', 4, m[0], m[1], m[2] + 1.0); }
+    if (i === 3) { const m = pts[5]; mark('follower', 4, m[0], m[1], m[2] + 0.9); }
     lampP *= 0.45;
     p = pts[pts.length - 1];
     sideCaves(pts[Math.floor(pts.length / 2)], 3);
-    if (i === 3) { cavern(p[0] + 18, p[1] + 4, p[2] + 6, 22, 8, 16, p[1] - 0.5, Z.cave); labels.push({ key: 'bigCave', x: p[0] + 18, y: p[1], z: p[2] + 6 }); p = [p[0] + 36, p[1], p[2] + 4]; }
+    if (i === 3) { cavern(p[0] + 18, p[1] + 4, p[2] + 6, 22, 8, 16, p[1] - 0.5, Z.cave); labels.push({ key: 'bigCave', x: p[0] + 18, y: p[1], z: p[2] + 6 }); mark('dwellers', 4, p[0] + 12, p[1], p[2] + 3); props.push({ kind: 'dogBones', x: p[0] + 22, y: p[1] - 0.4, z: p[2] + 10 }); p = [p[0] + 36, p[1], p[2] + 4]; }
   }
   // the cells of the dwellers of the dark (their prison room, chapter 4)
   const cp = lastLeg[lastLeg.length - 4];
   tube([cp[0], cp[1], cp[2]], [cp[0], cp[1], cp[2] + 11], { w: 0.8, h: 2.3, rt: 0.6, rb: 0.2, amp: 0.15, zone: Z.dark });
   room(cp[0], cp[1], cp[2] + 14, 4, 3, 2.6, { rr: 1, zone: Z.dark, amp: 0.25 });
   labels.push({ key: 'cells', x: cp[0], y: cp[1], z: cp[2] + 14 });
+  mark('dogs', 4, cp[0] + 0.9, cp[1], cp[2] + 4);
+  mark('cells', 4, cp[0] - 2, cp[1], cp[2] + 15.5);
+  props.push({ kind: 'bonds', x: cp[0] + 1, y: cp[1], z: cp[2] + 14.5 });
 
   /* ---- the upper corridors and the last shaft (the Surface: the next chapters) ---- */
   const pts = wander(p, -0.2, 16, 9, 1.0, 0.5);
@@ -325,5 +359,5 @@ export function buildCaves() {
   function zoneAt(x, y, z) { field(x, y, z); return lastPrim ? lastPrim.zone : 0; }
 
   const lastZone = () => (lastPrim ? lastPrim.zone : 0);       // zone of the primitive that won the last field() call
-  return { prims, lamps, ladders, curtains, labels, props, starts, field, zoneAt, lastZone, hasChunk, near, topY, zones: ZONES };
+  return { prims, lamps, ladders, curtains, labels, props, markers, starts, field, zoneAt, lastZone, hasChunk, near, topY, zones: ZONES };
 }

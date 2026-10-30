@@ -73,6 +73,7 @@ export function createCaves() {
     scene.add(m);
   }
   for (const pr of W.props) scene.add(buildProp(pr));
+  for (const m of W.markers) scene.add(buildMarker(m));
 
   /* ---- streaming (two workers; main-thread fallback) ---- */
   const loaded = new Map(), inFlight = new Set();
@@ -226,28 +227,92 @@ export function createCaves() {
     scene.fog.far += (far - scene.fog.far) * Math.min(1, dt);
   }
 
+  // Props of the story, built from simple shapes. Unlit by the baked light, so each takes the light of its place
+  // (lightAt) into its colours; the flashlight lights them for real. Set on the floor found under them.
   function buildProp(p) {
     const g = new THREE.Group();
-    g.position.set(p.x, p.y, p.z);
-    const dark = new THREE.MeshStandardMaterial({ color: 0x3a3632, roughness: 0.5, metalness: 0.6 });
+    const fl = p.kind === 'hatch' ? p.y : support(p.x - 0.1, p.z - 0.1, p.x + 0.1, p.z + 0.1, p.y + 1.2);
+    g.position.set(p.x, Number.isFinite(fl) ? fl : p.y, p.z);
+    const k = Math.min(1, 0.04 + lightAt(p.x, g.position.y + 1, p.z) * 1.4);
+    const mat = (c, o = {}) => new THREE.MeshStandardMaterial({ color: new THREE.Color(c).multiplyScalar(k), roughness: 0.7, metalness: 0, ...o });
+    const add = (geo, m, x, y, z, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.y = ry; g.add(o); return o; };
+    const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+    const dark = mat(0x3a3632, { roughness: 0.5, metalness: 0.6 });
     if (p.kind === 'machine') {
       // the great machine of Loor: drums, pipes and a pulsing core
-      for (const [x, z, r, h] of [[-5, 0, 2.2, 6], [5, 0, 2.2, 6], [0, -4, 1.6, 4.5], [0, 4, 1.6, 4.5]]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 1.05, h, 20), dark); c.position.set(x, h / 2, z); g.add(c); }
-      const core = new THREE.Mesh(new THREE.SphereGeometry(1.3, 20, 14), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.6, 0.9, 1.4) }));
-      core.position.y = 3; g.add(core); g.userData.core = core;
-      for (let k = 0; k < 6; k++) { const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 9, 8), dark); pipe.position.set(-8 + k * 3.2, 4.5, -8); g.add(pipe); }
+      for (const [x, z, r, h] of [[-5, 0, 2.2, 6], [5, 0, 2.2, 6], [0, -4, 1.6, 4.5], [0, 4, 1.6, 4.5]]) add(new THREE.CylinderGeometry(r, r * 1.05, h, 20), dark, x, h / 2, z);
+      const core = add(new THREE.SphereGeometry(1.3, 20, 14), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.6, 0.9, 1.4) }), 0, 3, 0);
+      g.userData.core = core;
+      for (let n = 0; n < 6; n++) add(new THREE.CylinderGeometry(0.18, 0.18, 9, 8), dark, -8 + n * 3.2, 4.5, -8);
     } else if (p.kind === 'book') {
-      const b = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.05, 0.24), new THREE.MeshStandardMaterial({ color: 0x8a8070, roughness: 0.35, metalness: 0.8 }));
-      b.position.y = 0.025; b.rotation.y = 0.4; g.add(b);
+      // the old book of thin metal leaves
+      add(box(0.32, 0.05, 0.24), mat(0x9a9080, { roughness: 0.35, metalness: 0.8 }), 0, 0.025, 0, 0.4);
+      add(box(0.3, 0.004, 0.22), mat(0xb8b0a0, { roughness: 0.3, metalness: 0.9 }), 0.05, 0.06, 0.03, 0.9);
     } else if (p.kind === 'hatch') {
-      const h = new THREE.Mesh(new THREE.CylinderGeometry(1.35, 1.35, 0.12, 24), dark);
-      h.position.y = -0.06; g.add(h);
+      add(new THREE.CylinderGeometry(1.35, 1.35, 0.12, 24), dark, 0, -0.06, 0);
+    } else if (p.kind === 'gifts') {
+      // a table with the three gifts of Tumlook: the hand torch, the explosive charge, the small pistol
+      const wood = mat(0x6a4a30);
+      add(box(1.6, 0.06, 0.8), wood, 0, 0.78, 0);
+      for (const [x, z] of [[-0.72, -0.32], [0.72, -0.32], [-0.72, 0.32], [0.72, 0.32]]) add(box(0.06, 0.78, 0.06), wood, x, 0.39, z);
+      const torch = add(new THREE.CylinderGeometry(0.03, 0.035, 0.26, 12), mat(0x5a6a4a, { metalness: 0.5, roughness: 0.4 }), -0.45, 0.84, 0);
+      torch.rotation.z = Math.PI / 2;
+      add(new THREE.SphereGeometry(0.11, 12, 8), mat(0x8a7a5a), 0, 0.9, 0.05);                       // the charge, wrapped
+      add(box(0.18, 0.05, 0.1), mat(0x3a3a3c, { metalness: 0.8, roughness: 0.35 }), 0.45, 0.835, -0.05);  // the pistol
+      add(box(0.05, 0.1, 0.04), mat(0x3a3a3c, { metalness: 0.8, roughness: 0.35 }), 0.39, 0.79, -0.05);
+    } else if (p.kind === 'synth') {
+      // the alimentarist's machine that makes food from rock
+      add(box(1.2, 1.5, 0.8), mat(0x5a5650, { metalness: 0.6, roughness: 0.45 }), 0, 0.75, 0);
+      add(new THREE.CylinderGeometry(0.25, 0.3, 0.6, 14), mat(0x6a645a, { metalness: 0.6 }), 0, 1.8, 0);
+      add(box(0.5, 0.25, 0.05), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.3, 0.6, 0.4).multiplyScalar(0.8) }), 0, 1.1, 0.41);
+    } else if (p.kind === 'feast') {
+      // the feast of Nennapuss: a long table with biscuits
+      const wood = mat(0x5a4030);
+      add(box(6, 0.08, 1.2), wood, 0, 0.75, 0);
+      for (const x of [-2.8, 2.8]) for (const z of [-0.5, 0.5]) add(box(0.08, 0.75, 0.08), wood, x, 0.37, z);
+      for (let n = 0; n < 9; n++) add(new THREE.CylinderGeometry(0.06, 0.06, 0.02, 10), mat(0xc0a070), -2.4 + n * 0.6, 0.8, (n % 2 ? 0.25 : -0.25));
+      for (const z of [-1.1, 1.1]) add(box(6, 0.06, 0.35), wood, 0, 0.45, z);
+    } else if (p.kind === 'bones' || p.kind === 'dogBones') {
+      // bones: the Yakran giant's necklace of finger bones by the shaft; gnawed bones in the dark
+      const bone = mat(0xd8d0b8);
+      const n = p.kind === 'bones' ? 14 : 26;
+      for (let i = 0; i < n; i++) {
+        const a = i * 2.39, r = (p.kind === 'bones' ? 0.25 : 0.7) * Math.sqrt((i + 1) / n);
+        const b = add(new THREE.CylinderGeometry(0.012, 0.016, p.kind === 'bones' ? 0.07 : 0.22, 6), bone, Math.cos(a) * r, 0.02, Math.sin(a) * r, a);
+        b.rotation.z = Math.PI / 2;
+      }
+      if (p.kind === 'bones') add(new THREE.TorusGeometry(0.22, 0.006, 6, 24), mat(0x6a5a40), 0, 0.01, 0).rotation.x = Math.PI / 2;
+    } else if (p.kind === 'bonds') {
+      // the cords he untied
+      const rope = mat(0x7a6a4a);
+      for (let i = 0; i < 5; i++) { const r = add(new THREE.TorusGeometry(0.18 + i * 0.03, 0.012, 6, 20, 4), rope, i * 0.06, 0.012, i * 0.04); r.rotation.x = Math.PI / 2; }
     }
+    return g;
+  }
+  // the steles of the story: a stone slab with the chapter's number, faintly glowing so you can find it in the dark
+  function buildMarker(m) {
+    const g = new THREE.Group();
+    const fl = support(m.x - 0.1, m.z - 0.1, m.x + 0.1, m.z + 0.1, m.y + 1.2);
+    g.position.set(m.x, Number.isFinite(fl) ? fl : m.y, m.z);
+    const k = Math.min(1, 0.05 + lightAt(m.x, g.position.y + 1, m.z) * 1.4);
+    const stone = new THREE.MeshStandardMaterial({ color: new THREE.Color(0x8a8070).multiplyScalar(k), roughness: 0.85 });
+    const slab = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.95, 0.14), stone);
+    slab.position.y = 0.475; g.add(slab);
+    const roman = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII'][m.ch] || String(m.ch);
+    const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+    const x = c.getContext('2d');
+    x.fillStyle = '#000'; x.fillRect(0, 0, 128, 128);
+    x.strokeStyle = '#e8c070'; x.lineWidth = 4; x.strokeRect(10, 10, 108, 108);
+    x.fillStyle = '#ffd890'; x.font = 'bold 54px Georgia, serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(roman, 64, 68);
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    const sign = new THREE.MeshBasicMaterial({ map: tex, color: new THREE.Color(0.55, 0.45, 0.3), blending: THREE.AdditiveBlending, transparent: true, depthWrite: false });
+    for (const s of [1, -1]) { const q = new THREE.Mesh(new THREE.PlaneGeometry(0.36, 0.36), sign); q.position.set(0, 0.6, s * 0.072); if (s < 0) q.rotation.y = Math.PI; g.add(q); }
+    g.rotation.y = m.rot || 0;
     return g;
   }
 
   return {
-    W, scene, blocked, support, ladder, penetration, lightAt, update, stream, preload, zones: W.zones, starts: W.starts, labels: W.labels,
+    W, scene, blocked, support, ladder, penetration, markers: W.markers, lightAt, update, stream, preload, zones: W.zones, starts: W.starts, labels: W.labels,
     get zone() { return zone; }, get visited() { return visited; }, set onZone(fn) { onZone = fn; }, resetVisits() { visited.clear(); zone = 0; },
     get loadedCount() { let n = 0; for (const e of loaded.values()) if (e.mesh) n++; return n; },
     get pending() { return inFlight.size; },

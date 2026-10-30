@@ -65,7 +65,7 @@ export function createTumithakMode(shared) {
     const k = settings.data.keys;
     hud.setHint(t('hud.tmHint', { move: moveLabel(k), light: firstKey(k, 'flashlight'), map: firstKey(k, 'map') }), 12);
   }
-  function leave() { pipe.glitch = 0; hand.group.visible = false; hand.spot.visible = false; map.setOpen(false); map.save(); }
+  function leave() { pipe.glitch = 0; hud.setSign(null); hand.group.visible = false; hand.spot.visible = false; map.setOpen(false); map.save(); }
   function remember() {
     map.save();
     progress.tumi = { x: +walker.x.toFixed(2), y: +walker.y.toFixed(2), z: +walker.z.toFixed(2), yaw: +walker.yaw.toFixed(3), seen: [...caves.visited.keys()] };
@@ -105,6 +105,10 @@ export function createTumithakMode(shared) {
     lightT -= dt;
     if (lightT <= 0) { lightT = 0.2; hand.setLight(caves.lightAt(walker.x, eye.y - 0.3, walker.z) + (hand.spot.visible ? 0.15 : 0)); }
     pipe.render(caves.scene, camera);
+    // a stele of the story within reach: its chapter text
+    let near = null, nd = 2.6;
+    if (walking) for (const m of caves.markers) { const d = Math.hypot(m.x - walker.x, m.z - walker.z); if (d < nd && Math.abs(m.y - walker.y) < 3) { nd = d; near = m; } }
+    hud.setSign(near ? t('tm.n.' + near.key) : null);
     map.frame(walker);
     hudT += dt;
     if (hudT > 0.2 && walking) {

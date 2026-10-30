@@ -4,6 +4,13 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.20.0] - 2026-10-30
+Parts: Tumithak of the Corridors 1.3.0
+### Added — the story, chapters 1–4
+- **Steles of the story**: a stone slab with the chapter's number (faintly glowing, so you find it in the dark) wherever something of chapters 1–4 happens; come up close to read what happened there. Chapter 1: the dead end (Nikadur and Thupra), the room with the book. Chapter 2: **Tumithak's home** (new: a room by the dead end with the table of the three gifts — the hand torch, the explosive charge, the pistol — and Tumlook's food machine), Nonone (the feast of Nennapuss: a long table with biscuits). Chapter 3: the top of the guarded shaft (the Yakran giant's bone necklace), the stampede in Yakra, **the forgotten corridor** where the Yakran woman hid him (new: a winding side corridor with a room). Chapter 4: where the lamps fail, something following, the dwellers of the dark (gnawed bones in the big cave), the dogs, the cell (the cords he untied).
+- Story props take the light of their place (no longer lit as if in daylight in the dark); they stand on the floor found under them.
+- New places on the map: Tumithak's home, the forgotten corridor of Yakra.
+
 ## [0.19.3] - 2026-10-30
 Parts: Tumithak of the Corridors 1.2.1 · The Great Path (Rudon's Plane) 1.6.3 · Endless Liminal Spaces 2.0.2
 ### Fixed
