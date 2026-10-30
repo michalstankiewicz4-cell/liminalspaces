@@ -20,7 +20,9 @@ export function createWalker(world) {
     for (let i = 1; i < HEIGHTS.length - 1; i++) if (free(x, z, y, HEIGHTS[i])) return HEIGHTS[i];
     return low;
   };
-  const hits = (x, z, y) => { const h = fit(x, z, y); if (!h) return true; if (h < P.body) P.body = h; return false; };
+  // if the body is already inside something (a collider that changed, a teleport), it may move freely until it is out
+  let embedded = false;
+  const hits = (x, z, y) => { if (embedded) return false; const h = fit(x, z, y); if (!h) return true; if (h < P.body) P.body = h; return false; };
 
   P.place = (x, z, yaw = 0) => {
     P.x = x; P.z = z; P.yaw = yaw; P.pitch = 0; P.vx = P.vz = P.vy = 0; P.dist = 0;
@@ -43,6 +45,7 @@ export function createWalker(world) {
     P.vx += (tx - P.vx) * acc; P.vz += (tz - P.vz) * acc;
     if (ctl.jump && P.ground && !low && !P.hold) { P.vy = JUMP; P.ground = false; }
 
+    embedded = !fit(P.x, P.z, P.y);
     // horizontal movement in small sub-steps, axis by axis (slides along walls)
     const ox = P.x, oz = P.z;
     const n = Math.max(1, Math.ceil(Math.hypot(P.vx, P.vz) * dt / 0.08));

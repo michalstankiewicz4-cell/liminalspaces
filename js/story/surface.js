@@ -73,7 +73,8 @@ export function createSurface(mats) {
   for (const h of holes) { rect(px, zc - 0.75, h[0], zc + 0.75); px = h[1]; }
   rect(px, zc - 0.75, cx + EXT, zc + 0.75);
   // lines marked in the floor that go out into the distance (109:06): along the path below, and at 90° and 45°
-  const lineMat = new THREE.MeshBasicMaterial({ color: 0x8a8c90 });
+  // drawn on the plane with a depth offset (a few mm above it would flicker far away)
+  const lineMat = new THREE.MeshBasicMaterial({ color: 0x8a8c90, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 });
   const line = (a, len, w = 0.14) => {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(len, w).rotateX(-Math.PI / 2), lineMat);
     m.rotation.y = a; m.position.set(cx + Math.cos(a) * (len / 2 + DOME.r + 1), Y + 0.006, zc - Math.sin(a) * (len / 2 + DOME.r + 1));
@@ -85,12 +86,16 @@ export function createSurface(mats) {
   // the hatches: a steel rim, a dark pit, the staircase going down
   const steel = new THREE.MeshStandardMaterial({ color: 0x6f7378, roughness: 0.45, metalness: 0.8 });
   const pitMat = new THREE.MeshStandardMaterial({ color: 0x2a2a28, roughness: 0.95, side: THREE.BackSide });
+  const pitWall = (x, z, sx, sz, hgt, yMid) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(Math.max(sx, sz), hgt), pitMat); m.position.set(x, yMid, z); if (sx < sz) m.rotation.y = Math.PI / 2; scene.add(m); };
   for (const st of [STAIRS.A, STAIRS.B]) {
     const [h0, h1] = st.hole, w = h1 - h0, { f } = base(st.x0);
     for (const [ax, az, sx, sz] of [[h0 + w / 2, zc - 0.8, w + 0.2, 0.1], [h0 + w / 2, zc + 0.8, w + 0.2, 0.1], [h0 - 0.05, zc, 0.1, 1.7], [h1 + 0.05, zc, 0.1, 1.7]]) {
       const r = new THREE.Mesh(new THREE.BoxGeometry(sx, 0.08, sz), steel); r.position.set(ax, Y + 0.04, az); r.castShadow = true; scene.add(r);
     }
-    const pit = new THREE.Mesh(new THREE.BoxGeometry(w, Y - f, 1.5), pitMat); pit.position.set(h0 + w / 2, (Y + f) / 2 - 0.01, zc); scene.add(pit);
+    // the shaft's four walls, 2 cm outside the hole (open top and bottom: nothing lies in the stairs' planes)
+    const hh = Y - f, ym = (Y + f) / 2;
+    pitWall(h0 + w / 2, zc - 0.77, w + 0.04, 0, hh, ym); pitWall(h0 + w / 2, zc + 0.77, w + 0.04, 0, hh, ym);
+    pitWall(h0 - 0.02, zc, 0, 1.54, hh, ym); pitWall(h1 + 0.02, zc, 0, 1.54, hh, ym);
     scene.add(stairMesh(st, mats));
   }
 
@@ -142,7 +147,7 @@ export function createSurface(mats) {
     g.fillText('YOU ARE AT THE HALF-WAY POINT OF THIS DESIGN — 20', w / 2, h / 2 + 290);
     g.font = '18px serif'; g.fillText('CODENAME: "RAT MAZE"   ·   CONGRATULATIONS TRAVELER', w / 2, h / 2 + 318);
   });
-  const plaque = new THREE.Mesh(new THREE.CircleGeometry(DOME.r - 0.3, 48).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: plaqueTex, emissiveMap: plaqueTex, emissive: 0x6a6a66, roughness: 0.8, metalness: 0.2 }));
+  const plaque = new THREE.Mesh(new THREE.CircleGeometry(DOME.r - 0.3, 48).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: plaqueTex, emissiveMap: plaqueTex, emissive: 0x6a6a66, roughness: 0.8, metalness: 0.2, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6 }));
   plaque.position.y = 0.012; plaque.receiveShadow = true; B.add(plaque);
   scene.add(B);
 

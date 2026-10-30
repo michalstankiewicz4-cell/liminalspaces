@@ -71,7 +71,8 @@ export class Emitter {
   // Vertical prism (n sides) between radii r0 (bottom) and r1 (top) — pipes, funnels, cups, bowls, cones, wheels.
   prism(mat, cx, cz, r0, r1, y0, y1, n = 8, o = {}) {
     const [X, Y, Z] = this.tp(cx, y0, cz);
-    if (o.solid && this.solids) { const r = Math.max(r0, r1); this.solids.push([X - r, Y, Z - r, X + r, Y + (y1 - y0), Z + r]); }
+    // collider: a square a little inside the round shape (its corners stick out less than a full square would)
+    if (o.solid && this.solids) { const r = Math.max(r0, r1) * 0.9; this.solids.push([X - r, Y, Z - r, X + r, Y + (y1 - y0), Z + r]); }
     if (this.dry) return;
     const b = this.bucket(mat), g = o.glow || null, sc = this.scale[mat] || 1;
     const top = Y + (y1 - y0);
@@ -86,7 +87,8 @@ export class Emitter {
         b.uv.push((k + (idx === 1 || idx === 2 ? 1 : 0)) / n * (Math.PI * 2 * Math.max(r0, r1)) / sc, -p[1] / sc);
         const c = g || this.bake(p[0], p[1], p[2], N[0], N[1], N[2]); b.c.push(c[0], c[1], c[2]);
       });
-      if (o.inside) b.i.push(base, base + 2, base + 1, base, base + 3, base + 2); else b.i.push(base, base + 1, base + 2, base, base + 2, base + 3);
+      // counter-clockwise seen from the side the normal points to (outside, or inside for `inside`)
+      if (o.inside) b.i.push(base, base + 1, base + 2, base, base + 2, base + 3); else b.i.push(base, base + 2, base + 1, base, base + 3, base + 2);
     }
     if (o.capTop && r1 > 0) this.disc(mat, X, top, Z, r1, n, 1, g);
     if (o.capBottom && r0 > 0) this.disc(mat, X, Y, Z, r0, n, -1, g);

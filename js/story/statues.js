@@ -99,17 +99,17 @@ export function humanoid(o, mat, line) {
     const kn = new THREE.Group(); kn.position.y = -0.45 * s; hp.add(kn); kn.rotation.x = knee;
     add(kn, cap(0.056 * s * g, 0.34 * s), 0, 0, 0);
     const ft = new THREE.Group(); ft.position.y = -0.45 * s; kn.add(ft); ft.rotation.x = -knee + fwd - (pose.seat ? 0 : 0);
-    add(ft, geom('Box', [0.09 * s, 0.06 * s, 0.24 * s], () => new THREE.BoxGeometry(0.09 * s, 0.06 * s, 0.24 * s)), 0, -0.01 * s, 0.06 * s);
+    add(ft, geom('Box', [0.09 * s, 0.1 * s, 0.24 * s], () => new THREE.BoxGeometry(0.09 * s, 0.1 * s, 0.24 * s)), 0, 0.01 * s, 0.06 * s);   // tall enough to meet the shin
   }
   if (o.robe) add(hips, geom('Cylinder', [0.2 * s * g, 0.36 * s * g, 0.86 * s, 12, 1, true], () => new THREE.CylinderGeometry(0.2 * s * g, 0.36 * s * g, 0.86 * s, 12, 1, true)), 0, -0.45 * s, 0);
   // held and worn things
   const it = o.items || [];
-  if (it.includes('backpack')) add(torso, geom('Box', [0.34 * s, 0.42 * s, 0.18 * s], () => new THREE.BoxGeometry(0.34 * s, 0.42 * s, 0.18 * s)), 0, 0.3 * s, -0.2 * s * g);
-  if (it.includes('bigpack')) add(torso, geom('Box', [0.42 * s, 0.6 * s, 0.26 * s], () => new THREE.BoxGeometry(0.42 * s, 0.6 * s, 0.26 * s)), 0, 0.3 * s, -0.24 * s * g);
+  if (it.includes('backpack')) add(torso, geom('Box', [0.34 * s, 0.42 * s, 0.18 * s], () => new THREE.BoxGeometry(0.34 * s, 0.42 * s, 0.18 * s)), 0, 0.3 * s, -0.19 * s * g);
+  if (it.includes('bigpack')) add(torso, geom('Box', [0.42 * s, 0.6 * s, 0.26 * s], () => new THREE.BoxGeometry(0.42 * s, 0.6 * s, 0.26 * s)), 0, 0.3 * s, -0.23 * s * g);
   if (it.includes('vest')) add(torso, geom('Box', [0.4 * s * g, 0.34 * s, 0.3 * s * g], () => new THREE.BoxGeometry(0.4 * s * g, 0.34 * s, 0.3 * s * g)), 0, 0.3 * s, 0);
   if (it.includes('holster')) add(hips, geom('Box', [0.06, 0.16, 0.1], () => new THREE.BoxGeometry(0.06, 0.16, 0.1)), -0.22 * s * g, -0.05, 0);
   if (it.includes('skateboard')) add(arms.L, geom('Box', [0.2, 0.78, 0.025], () => new THREE.BoxGeometry(0.2, 0.78, 0.025)), 0, -0.36, 0.03);
-  if (it.includes('notebook')) add(arms.R, geom('Box', [0.16, 0.02, 0.22], () => new THREE.BoxGeometry(0.16, 0.02, 0.22)), -0.08 * s, -0.04, 0.06);
+  if (it.includes('notebook')) add(arms.R, geom('Box', [0.16, 0.02, 0.22], () => new THREE.BoxGeometry(0.16, 0.02, 0.22)), -0.03 * s, -0.04, 0.06);
   if (it.includes('slip')) add(arms.R, geom('Box', [0.2, 0.004, 0.26], () => new THREE.BoxGeometry(0.2, 0.004, 0.26)), -0.1 * s, -0.04, 0.04);
   if (it.includes('cup')) add(arms.R, geom('Cylinder', [0.04, 0.035, 0.09, 10], () => new THREE.CylinderGeometry(0.04, 0.035, 0.09, 10)), 0, -0.05, 0.04);
   if (it.includes('ruler')) add(arms.L, geom('Box', [0.03, 0.6, 0.006], () => new THREE.BoxGeometry(0.03, 0.6, 0.006)), 0, -0.25, 0.03);

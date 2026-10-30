@@ -36,8 +36,8 @@ export function stairMesh(st, mats) {
   for (const b of stairBoxes(st)) {
     const top = new THREE.Mesh(new THREE.BoxGeometry(b[3] - b[0], 0.06, b[5] - b[2]), cm);
     top.position.set((b[0] + b[3]) / 2, b[4] - 0.03 - f, (b[2] + b[5]) / 2);
-    const rise = new THREE.Mesh(new THREE.BoxGeometry(0.03, STAIRS.rise, b[5] - b[2]), sm);
-    rise.position.set(st.dir > 0 ? b[0] + 0.015 : b[3] - 0.015, b[4] - STAIRS.rise / 2 - f, (b[2] + b[5]) / 2);
+    const rise = new THREE.Mesh(new THREE.BoxGeometry(0.03, STAIRS.rise - 0.062, b[5] - b[2] - 0.01), sm);      // under the tread, a bit narrower
+    rise.position.set(st.dir > 0 ? b[0] + 0.015 : b[3] - 0.015, b[4] - 0.062 - (STAIRS.rise - 0.062) / 2 - f, (b[2] + b[5]) / 2);
     g.add(top, rise);
   }
   const L = STAIRS.steps * STAIRS.run, Hh = STAIRS.steps * STAIRS.rise, len = Math.hypot(L, Hh), ang = Math.atan2(Hh, L);
