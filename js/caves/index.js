@@ -75,6 +75,59 @@ export function createCaves() {
   for (const pr of W.props) scene.add(buildProp(pr));
   for (const m of W.markers) scene.add(buildMarker(m));
 
+  /* ---- the Surface (chapter 7): sky, a far ground plane, trees, the leaning towers of Shawm and their cables ---- */
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(290, 32, 16), new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false, fog: false,
+    uniforms: { sun: { value: new THREE.Vector3(-0.5, 0.62, -0.6).normalize() } },
+    vertexShader: 'varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: `uniform vec3 sun; varying vec3 vD;
+      void main(){ float h = clamp(vD.y, 0.0, 1.0);
+        vec3 c = mix(vec3(0.72, 0.8, 0.88), vec3(0.3, 0.5, 0.82), pow(h, 0.6));
+        float s = max(dot(vD, sun), 0.0); c += vec3(1.0, 0.98, 0.9) * (pow(s, 900.0) * 6.0 + pow(s, 60.0) * 0.12);
+        if (vD.y < 0.0) c = mix(vec3(0.72, 0.8, 0.88), vec3(0.5, 0.48, 0.42), clamp(-vD.y * 6.0, 0.0, 1.0));
+        gl_FragColor = vec4(c, 1.0); }`,
+  }));
+  sky.renderOrder = -1; sky.frustumCulled = false; sky.visible = false;
+  scene.add(sky);
+  const surfaceGroup = new THREE.Group(); surfaceGroup.visible = false; scene.add(surfaceGroup);
+  {
+    const dust = new THREE.MeshStandardMaterial({ color: new THREE.Color(0.5, 0.45, 0.37), roughness: 1 });
+    const far = new THREE.Mesh(new THREE.CircleGeometry(1400, 48).rotateX(-Math.PI / 2), dust);
+    far.position.set(W.exit.x, W.surfaceY - 3.6, W.exit.z); surfaceGroup.add(far);
+    // trees: a trunk and a few round green masses
+    const trunkGeo = new THREE.CylinderGeometry(0.18, 0.28, 1, 7).translate(0, 0.5, 0), crownGeo = new THREE.IcosahedronGeometry(1, 1);
+    const trunks = new THREE.InstancedMesh(trunkGeo, new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 0.9 }), W.trees.length);
+    const crowns = new THREE.InstancedMesh(crownGeo, new THREE.MeshStandardMaterial({ color: 0x3e6a2e, roughness: 0.85, flatShading: true }), W.trees.length * 3);
+    const d = new THREE.Object3D();
+    W.trees.forEach((t, i) => {
+      const gy = W.ground(t.x, t.z);
+      d.position.set(t.x, gy - 0.2, t.z); d.rotation.set(0, 0, 0); d.scale.set(1, t.h * 0.7, 1); d.updateMatrix(); trunks.setMatrixAt(i, d.matrix);
+      for (let c = 0; c < 3; c++) {
+        d.position.set(t.x + Math.cos(i + c * 2.1) * t.r * 0.4, gy + t.h * (0.62 + c * 0.13), t.z + Math.sin(i + c * 2.1) * t.r * 0.4);
+        d.scale.set(t.r * (1 - c * 0.18), t.r * 0.75 * (1 - c * 0.15), t.r * (1 - c * 0.18)); d.rotation.set(0, i + c, 0); d.updateMatrix();
+        crowns.setMatrixAt(i * 3 + c, d.matrix);
+      }
+    });
+    trunks.castShadow = crowns.castShadow = true;
+    surfaceGroup.add(trunks, crowns);
+    // the towers of the shelks: four-sided, very tall, leaning steeply, of a metal no one knows; cables between them
+    const metal = new THREE.MeshStandardMaterial({ color: 0x7a8a7a, roughness: 0.35, metalness: 0.85 });
+    const tops = [];
+    for (const t of W.towers) {
+      const gy = W.ground(t.x, t.z);
+      const g = new THREE.Group(); g.position.set(t.x, gy, t.z); g.rotation.y = t.rot;
+      const m = new THREE.Mesh(new THREE.BoxGeometry(4.5, t.h, 4.5).translate(0, t.h / 2, 0), metal);
+      m.rotation.z = t.lean; g.add(m);
+      surfaceGroup.add(g);
+      g.updateMatrixWorld(true);
+      tops.push(new THREE.Vector3(0, t.h * 0.95, 0).applyMatrix4(m.matrixWorld));
+    }
+    const cable = [];
+    for (let i = 0; i < tops.length; i++) for (let j = i + 1; j < tops.length; j++) if (tops[i].distanceTo(tops[j]) < 42) cable.push(tops[i].x, tops[i].y, tops[i].z, tops[j].x, tops[j].y - 3, tops[j].z);
+    const cg = new THREE.BufferGeometry(); cg.setAttribute('position', new THREE.Float32BufferAttribute(cable, 3));
+    surfaceGroup.add(new THREE.LineSegments(cg, new THREE.LineBasicMaterial({ color: 0x3a3a34 })));
+  }
+
   /* ---- streaming (two workers; main-thread fallback) ---- */
   const loaded = new Map(), inFlight = new Set();
   const key = (i, j, k) => i + ',' + j + ',' + k;
@@ -117,8 +170,10 @@ export function createCaves() {
   // Builds missing chunks nearest first (workers: up to 2 each in flight; sync: on this thread). Drops far chunks.
   function stream(x, y, z, sync = false) {
     const ci = fdiv(x), cj = fdiv(y), ck = fdiv(z), want = [];
-    for (let dk = -VIEW; dk <= VIEW; dk++) for (let dj = -2; dj <= 2; dj++) for (let di = -VIEW; di <= VIEW; di++) {
-      if (di * di + dk * dk > VIEW * VIEW + 1) continue;
+    // under the open sky you see much further: more chunks around, fewer above and below
+    const outside = y > W.surfaceY - 3, V = outside ? VIEW + 2 : VIEW, J = outside ? 1 : 2;
+    for (let dk = -V; dk <= V; dk++) for (let dj = -J; dj <= J; dj++) for (let di = -V; di <= V; di++) {
+      if (di * di + dk * dk > V * V + 1) continue;
       const a = ci + di, b = cj + dj, c = ck + dk, kk = key(a, b, c);
       if (loaded.has(kk) || inFlight.has(kk)) continue;
       if (!W.hasChunk(a, b, c)) { loaded.set(kk, { i: a, j: b, k: c, mesh: null }); continue; }
@@ -132,7 +187,7 @@ export function createCaves() {
         w.busy++; inFlight.add(key(a, b, c)); w.postMessage({ t: 'mesh', i: a, j: b, k: c });
       }
     } else for (const [, a, b, c] of want.slice(0, sync ? want.length : 1)) add(a, b, c, meshCaveChunk(W, a, b, c));
-    for (const [kk, e] of loaded) if (Math.abs(e.i - ci) > VIEW + 1 || Math.abs(e.k - ck) > VIEW + 1 || Math.abs(e.j - cj) > 3) unload(kk);
+    for (const [kk, e] of loaded) if (Math.abs(e.i - ci) > V + 1 || Math.abs(e.k - ck) > V + 1 || Math.abs(e.j - cj) > 3) unload(kk);
     return want.length;
   }
   // the chunks right around a point at once (on spawn: the first frame must not be empty)
@@ -221,6 +276,9 @@ export function createCaves() {
       if (!visited.has(z)) { visited.set(z, visited.size + 1); if (onZone) onZone(z, true); }
     }
     const zd = W.zones[zone] || W.zones[0];
+    const out = pos.y > W.surfaceY - 2.5 && Math.hypot(pos.x - W.exit.x, pos.z - W.exit.z) < 600;
+    sky.visible = surfaceGroup.visible = out || pos.y > W.surfaceY - 9;
+    if (sky.visible) sky.position.set(pos.x, pos.y, pos.z);
     fogT.setRGB(zd.fog[0], zd.fog[1], zd.fog[2]);
     scene.fog.color.lerp(fogT, 1 - Math.exp(-1.2 * dt));
     const far = (zd.far || 30) * FOG_K;
@@ -249,7 +307,21 @@ export function createCaves() {
       add(box(0.32, 0.05, 0.24), mat(0x9a9080, { roughness: 0.35, metalness: 0.8 }), 0, 0.025, 0, 0.4);
       add(box(0.3, 0.004, 0.22), mat(0xb8b0a0, { roughness: 0.3, metalness: 0.9 }), 0.05, 0.06, 0.03, 0.9);
     } else if (p.kind === 'hatch') {
-      add(new THREE.CylinderGeometry(1.35, 1.35, 0.12, 24), dark, 0, -0.06, 0);
+      const lid = add(new THREE.CylinderGeometry(1.1, 1.1, 0.12, 24), dark, 0, -0.06, 0);
+      if (p.open) { lid.rotation.x = 1.25; lid.position.set(0, 0.9, 0.4); }
+    } else if (p.kind === 'shelk') {
+      // a shelk, dead: a rounded body on ten jointed legs, the hairless head cut off
+      const hide = mat(0x4a463e, { roughness: 0.55 }), pale = mat(0x9a8a7a, { roughness: 0.6 });
+      const body = add(new THREE.SphereGeometry(0.55, 16, 10), hide, 0, 0.35, 0); body.scale.set(1.25, 0.6, 0.9);
+      add(new THREE.CylinderGeometry(0.12, 0.16, 0.25, 10), pale, 0.62, 0.42, 0).rotation.z = Math.PI / 2;   // the stump of the neck
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * Math.PI * 2 + 0.3, ca = Math.cos(a), sa = Math.sin(a);
+        const upper = add(new THREE.CylinderGeometry(0.035, 0.045, 0.75, 6), hide, ca * 0.55, 0.45, sa * 0.4, -a);
+        upper.rotation.z = ca > 0 ? -1.0 : 1.0; upper.rotation.order = 'YZX'; upper.rotation.y = -a;
+        const lower = add(new THREE.CylinderGeometry(0.025, 0.03, 0.8, 6), hide, ca * 1.05, 0.2, sa * 0.78, -a);
+        lower.rotation.order = 'YZX'; lower.rotation.y = -a; lower.rotation.z = (ca > 0 ? 1 : -1) * 0.5;
+      }
+      const stain = add(new THREE.CircleGeometry(0.6, 20), mat(0x3a342c, { roughness: 1, transparent: true, opacity: 0.55, depthWrite: false }), 0.5, 0.02, 0.1); stain.rotation.x = -Math.PI / 2;
     } else if (p.kind === 'gifts') {
       // a table with the three gifts of Tumlook: the hand torch, the explosive charge, the small pistol
       const wood = mat(0x6a4a30);

@@ -25,6 +25,7 @@ export const ZONES = [
   { key: 'cave', amb: 0.001, tint: [0.4, 0.37, 0.33], rough: 0.9, fog: [0.005, 0.005, 0.005], map: '#706860', far: 40 },
   { key: 'esthett', amb: 0.02, tint: [0.72, 0.64, 0.54], rough: 0.4, fog: [0.06, 0.05, 0.04], map: '#e0b0c0', far: 56 },
   { key: 'pit', amb: 0.004, tint: [0.42, 0.38, 0.33], rough: 0.7, fog: [0.02, 0.02, 0.02], map: '#c0b090', far: 44 },
+  { key: 'surface', amb: 1.0, tint: [0.56, 0.5, 0.42], rough: 0.95, fog: [0.66, 0.74, 0.82], map: '#d8c8a0', far: 320, sky: true },
   { key: 'upper', amb: 0.002, tint: [0.4, 0.35, 0.3], rough: 0.6, fog: [0.01, 0.01, 0.01], map: '#807060', far: 40 },
 ];
 export const Z = Object.fromEntries(ZONES.map((z, i) => [z.key, i]));
@@ -347,9 +348,44 @@ export function buildCaves() {
     tube([end[0] + dir * 1.2, end[1], end[2]], sp, { w: 0.75, h: 2.7, rt: 0.6, rb: 0.15, amp: 0.06, zone: Z.pit, ext: 0.2 });
   }
   p = sp;
-  props.push({ kind: 'hatch', x: p[0], y: p[1] + 2.7, z: p[2] });
   labels.push({ key: 'toSurface', x: p[0], y: p[1], z: p[2] });
-  const topY = p[1] + 2.7;
+  // the last steps come out through the ground (the hatch stands open beside the opening)
+  const topY = p[1] + 4.2;                           // the ground level of the Surface around the pit
+  tube(p, [p[0] - 7, topY + 0.6, p[2]], { w: 0.85, h: 3.2, rt: 0.6, rb: 0.15, amp: 0.05, zone: Z.pit, ext: 0.4, run: 0.36 });
+  const exit = { x: p[0] - 8.5, y: topY, z: p[2] };
+  props.push({ kind: 'hatch', x: exit.x + 1.6, y: topY + 0.05, z: exit.z + 1.9, open: true });
+
+  /* ---- chapter 7: the Surface — the sky, the trees, the leaning towers of the shelks; the shelk; the way back ---- */
+  const surf = { k: 'surface', zone: Z.surface, amp: 0.25, floorAt: (x, z) => ground(x, z) };
+  starts.surface = { x: exit.x - 4, y: topY, z: exit.z, yaw: Math.PI / 2 };
+  labels.push({ key: 'surface', x: exit.x - 4, y: topY, z: exit.z });
+  mark('surface', 7, exit.x - 3, topY, exit.z + 2.2);
+  // a dead shelk not far from the pit: ten legs, a hairless head like a man's (the head is gone: he took it)
+  const sk = { x: exit.x - 30, z: exit.z - 18 };
+  props.push({ kind: 'shelk', x: sk.x, y: topY, z: sk.z });
+  mark('shelk', 7, sk.x + 3, topY, sk.z + 2);
+  labels.push({ key: 'shelk', x: sk.x, y: topY, z: sk.z });
+  mark('return', 7, exit.x + 2.5, topY, exit.z - 2.2);
+  // trees with green, billowing crowns; Shawm, the town of the shelks, on the horizon: tall four-sided towers that lean
+  const trees = [];
+  for (let k = 0; k < 140; k++) {
+    const a = R() * Math.PI * 2, r = 12 + Math.sqrt(R()) * 230;
+    const x = exit.x + Math.cos(a) * r, z = exit.z + Math.sin(a) * r;
+    if (Math.hypot(x - sk.x, z - sk.z) < 8) continue;
+    trees.push({ x, z, h: 5 + R() * 6, r: 2 + R() * 2.5 });
+  }
+  const towers = [];
+  const shawm = { x: exit.x - 260, z: exit.z - 120 };
+  for (let k = 0; k < 16; k++) towers.push({ x: shawm.x + (R() - 0.5) * 120, z: shawm.z + (R() - 0.5) * 90, h: 26 + R() * 10, rot: R() * Math.PI * 2, lean: 0.42 + (R() - 0.5) * 0.1 });
+  labels.push({ key: 'shawm', x: shawm.x, y: topY, z: shawm.z });
+  // the ground: bare packed dust, gently uneven, flat around the pit
+  const GX = exit.x, GZ = exit.z;
+  function ground(x, z) {
+    const flat = Math.min(1, Math.hypot(x - GX, z - GZ) / 30);
+    return topY + (fbm3(x * 0.012, 0.5, z * 0.012, 3) * 3.2 + noise3(x * 0.08, 1.5, z * 0.08) * 0.25) * flat;
+  }
+  const SURF_R = 330;                                  // how far from the pit the Surface is meshed (the rest is a far plane)
+  const surfaceChunk = (i, j, k) => j * CH <= topY + 6 && (j + 1) * CH >= topY - 6 && Math.hypot((i + 0.5) * CH - GX, (k + 0.5) * CH - GZ) < SURF_R;
 
   // side caves: natural branching tunnels (rough, unlit), some ending in caverns
   function sideCaves(from, depth) {
@@ -384,11 +420,19 @@ export function buildCaves() {
         }
   }
   const near = (x, y, z) => cells.get(ckey(Math.floor(x / HC), Math.floor(y / HC), Math.floor(z / HC)));
-  const hasChunk = (i, j, k) => chunks.has(ckey(i, j, k));
+  const hasChunk = (i, j, k) => chunks.has(ckey(i, j, k)) || surfaceChunk(i, j, k);
 
   // the dominant primitive at a point (zone, floor) and the field value
   let lastPrim = null;
+  // the caves, and above them the Surface: rock is where the caves are not, and below the ground
   function field(x, y, z) {
+    const fc = caveField(x, y, z);
+    if (y < topY - 8 || Math.hypot(x - GX, z - GZ) > SURF_R + 40) return fc;
+    const fg = ground(x, z) - y + noise3(x * 0.6, y * 0.6, z * 0.6) * 0.05;
+    if (fg < fc) { lastPrim = surf; return fg; }
+    return fc;
+  }
+  function caveField(x, y, z) {
     const list = near(x, y, z);
     if (!list) { lastPrim = null; return 4; }
     let d = 1e9, best = null, bd = 1e9;
@@ -409,5 +453,5 @@ export function buildCaves() {
   function zoneAt(x, y, z) { field(x, y, z); return lastPrim ? lastPrim.zone : 0; }
 
   const lastZone = () => (lastPrim ? lastPrim.zone : 0);       // zone of the primitive that won the last field() call
-  return { prims, lamps, ladders, curtains, labels, props, markers, starts, field, zoneAt, lastZone, hasChunk, near, topY, zones: ZONES };
+  return { prims, lamps, ladders, curtains, labels, props, markers, starts, trees, towers, ground, surfaceY: topY, exit, field, zoneAt, lastZone, hasChunk, near, topY, zones: ZONES };
 }

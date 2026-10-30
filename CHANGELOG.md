@@ -4,6 +4,12 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.23.0] - 2026-10-30
+Parts: Tumithak of the Corridors 1.6.0
+### Added — chapter 7
+- **The Surface**: the last flight of stairs comes out through the ground beside the open hatch. Above: a sky with the sun, a gently uneven plain of bare packed dust, trees with green, billowing crowns, and on the horizon **Shawm** — tall four-sided towers of an unknown metal, leaning steeply, joined by cables. The ground is part of the same distance field (rock is where the caves are not and below the ground), meshed around the pit out to about 330 m, with a far plane beyond; under the open sky more chunks are streamed around you, and the fog and light are daylight.
+- **The dead shelk** not far from the pit (ten legs, the head cut off), and steles: the Surface (the terror of open space), the shelk (the ten shots, the head), back into the pit (home to Loor, the beginning of the fight). The Surface, the shelk and Shawm are on the map.
+
 ## [0.22.0] - 2026-10-30
 Parts: Tumithak of the Corridors 1.5.0
 ### Added — chapter 6
