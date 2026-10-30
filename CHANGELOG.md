@@ -4,6 +4,11 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.21.0] - 2026-10-30
+Parts: Tumithak of the Corridors 1.4.0
+### Added — chapter 5
+- Out of the cell and on upwards: steles where he escapes the cell and on the long climb through the black corridors, and **the den of the dogs** (new: a low cave off the way with bones, on the map). The texts of chapters 5–7 follow the story's outline from the sources found (the books are not at hand); they will be corrected from the films if needed.
+
 ## [0.20.0] - 2026-10-30
 Parts: Tumithak of the Corridors 1.3.0
 ### Added — the story, chapters 1–4

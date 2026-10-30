@@ -291,9 +291,20 @@ export function buildCaves() {
   mark('cells', 4, cp[0] - 2, cp[1], cp[2] + 15.5);
   props.push({ kind: 'bonds', x: cp[0] + 1, y: cp[1], z: cp[2] + 14.5 });
 
-  /* ---- the upper corridors and the last shaft (the Surface: the next chapters) ---- */
+  /* ---- chapter 5: out of the cell, away from the dwellers and their dogs, on up through the black corridors ---- */
+  mark('escape', 5, cp[0] + 0.7, cp[1], cp[2] + 7);
   const pts = wander(p, -0.2, 16, 9, 1.0, 0.5);
   path(pts, { ...COR, w: 1.6, h: 3.6, amp: 0.2, zone: Z.upper });
+  // the den of the dogs: a low cave off the way, littered with bones
+  {
+    const d = pts[4];
+    path([d, [d[0] + 2, d[1] + 0.3, d[2] + 9], [d[0] - 1, d[1] + 0.6, d[2] + 17]], { w: 1.2, h: 2.4, rt: 1.0, rb: 0.4, amp: 0.45, zone: Z.dark, ext: 1.2 });
+    cavern(d[0] - 2, d[1] + 2.2, d[2] + 24, 7, 3, 6, d[1] + 0.3, Z.dark, 0.6);
+    props.push({ kind: 'dogBones', x: d[0] - 2, y: d[1] + 0.3, z: d[2] + 24 }, { kind: 'dogBones', x: d[0] + 1, y: d[1] + 0.3, z: d[2] + 21 });
+    mark('den', 5, d[0] - 4.5, d[1] + 0.3, d[2] + 22);
+    labels.push({ key: 'den', x: d[0] - 2, y: d[1] + 0.3, z: d[2] + 24 });
+  }
+  { const m = pts[10]; mark('climb', 5, m[0], m[1], m[2] + 0.9); }
   p = pts[pts.length - 1];
   shaft(p[0] + 2, p[2], p[1], p[1] + 30, 1.5, Z.upper);
   tube([p[0], p[1], p[2]], [p[0] + 2, p[1], p[2]], { ...NAR, zone: Z.upper, ext: 0.4 });
