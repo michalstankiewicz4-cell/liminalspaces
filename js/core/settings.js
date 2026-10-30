@@ -6,8 +6,8 @@ import { sanitizeKeys } from '../input/bindings.js';
 export const DEFAULTS = {
   lang: 'en',
   // graphics of the endless world (the pixel-art look) and, separately, of the Great Path world (fine-grained)
-  gfx: { pixelH: 200, levels: 7, dither: 0.8, edge: 0.6, bright: 1.15, fov: 60, viewDist: 2, headBob: true, showFps: false },
-  gfxPath: { pixelH: 720, levels: 40, dither: 0.25, edge: 0.3, bright: 1.15, fov: 60, viewDist: 2, headBob: true, grain: true },
+  gfx: { pixelH: 200, levels: 7, dither: 0.8, edge: 0.6, edgeW: 1, bright: 1.15, fov: 60, viewDist: 2, headBob: true, showFps: false },
+  gfxPath: { pixelH: 720, levels: 40, dither: 0.25, edge: 0.3, edgeW: 1, bright: 1.15, fov: 60, viewDist: 2, headBob: true, grain: true },
   mouse: { sens: 1, invertY: false },
   audio: { volume: 0.6, steps: 0.5, hum: true, scratch: true },
   hud: { show: true },
@@ -16,7 +16,7 @@ export const DEFAULTS = {
 };
 // numeric ranges used by both the sanitiser and the option sliders
 export const RANGES = {
-  pixelH: [100, 400, 10], levels: [3, 16, 1], dither: [0, 1, 0.05], edge: [0, 1, 0.05], bright: [0.5, 3, 0.05], fov: [50, 110, 1],
+  pixelH: [100, 400, 10], levels: [3, 16, 1], dither: [0, 1, 0.05], edge: [0, 1, 0.05], edgeW: [1, 4, 1], bright: [0.5, 3, 0.05], fov: [50, 110, 1],
   pixelHPath: [180, 720, 10], levelsPath: [3, 64, 1],
   viewDist: [1, 3, 1], sens: [0.2, 3, 0.1], volume: [0, 1, 0.05], steps: [0, 1, 0.05],
 };
@@ -45,13 +45,13 @@ export function sanitize(raw) {
     lang: r.lang === 'pl' ? 'pl' : 'en',
     gfx: {
       pixelH: Math.round(num(g.pixelH, 'pixelH', D.gfx.pixelH) / 10) * 10, levels: Math.round(num(g.levels, 'levels', D.gfx.levels)),
-      dither: num(g.dither, 'dither', D.gfx.dither), edge: num(g.edge, 'edge', D.gfx.edge), bright: num(g.bright, 'bright', D.gfx.bright),
+      dither: num(g.dither, 'dither', D.gfx.dither), edge: num(g.edge, 'edge', D.gfx.edge), edgeW: Math.round(num(g.edgeW, 'edgeW', D.gfx.edgeW)), bright: num(g.bright, 'bright', D.gfx.bright),
       fov: Math.round(num(g.fov, 'fov', D.gfx.fov)), viewDist: Math.round(num(g.viewDist, 'viewDist', D.gfx.viewDist)),
       headBob: g.headBob !== false, showFps: g.showFps === true,
     },
     gfxPath: {
       pixelH: Math.round(num(gp.pixelH, 'pixelHPath', P.pixelH) / 10) * 10, levels: Math.round(num(gp.levels, 'levelsPath', P.levels)),
-      dither: num(gp.dither, 'dither', P.dither), edge: num(gp.edge, 'edge', P.edge), bright: num(gp.bright, 'bright', P.bright),
+      dither: num(gp.dither, 'dither', P.dither), edge: num(gp.edge, 'edge', P.edge), edgeW: Math.round(num(gp.edgeW, 'edgeW', P.edgeW)), bright: num(gp.bright, 'bright', P.bright),
       fov: Math.round(num(gp.fov, 'fov', P.fov)), viewDist: Math.round(num(gp.viewDist, 'viewDist', P.viewDist)),
       headBob: gp.headBob !== false, grain: gp.grain !== false,
     },

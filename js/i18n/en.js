@@ -73,6 +73,7 @@ export default {
   'gfx.levels': 'Colour levels',
   'gfx.dither': 'Dithering',
   'gfx.edge': 'Outline',
+  'gfx.edgeW': 'Outline thickness',
   'gfx.bright': 'Brightness',
   'gfx.fov': 'Field of view',
   'gfx.viewDist': 'View distance (chunks)',

@@ -73,6 +73,7 @@ export default {
   'gfx.levels': 'Poziomy kolorów',
   'gfx.dither': 'Dithering',
   'gfx.edge': 'Kontury',
+  'gfx.edgeW': 'Grubość konturów',
   'gfx.bright': 'Jasność',
   'gfx.fov': 'Pole widzenia',
   'gfx.viewDist': 'Zasięg widoku (chunki)',

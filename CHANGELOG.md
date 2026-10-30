@@ -4,6 +4,11 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.15.0] - 2026-10-30
+Parts: start screen 1.5.0 · Endless Liminal Spaces 1.4.0 · The Great Path (Rudon's Plane) 1.4.0
+### Added
+- Options > Graphics: **Outline thickness** (1–4 px of the low-resolution picture), separately for each world; default 1 px (as before).
+
 ## [0.14.0] - 2026-10-30
 Parts: start screen 1.4.0 · Endless Liminal Spaces 1.3.0 · The Great Path (Rudon's Plane) 1.3.0
 ### Changed

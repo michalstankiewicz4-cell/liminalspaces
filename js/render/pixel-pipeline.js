@@ -7,7 +7,7 @@ const VERT = `varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0
 const FRAG = `precision highp float;
 uniform sampler2D tColor,tDepth;
 uniform vec2 texel;
-uniform float levels,dither,edge,bright,persp,near,far,tone,grain,time,heat,glitch,fear;
+uniform float levels,dither,edge,edgeW,bright,persp,near,far,tone,grain,time,heat,glitch,fear;
 varying vec2 vUv;
 float bayer(vec2 p){
   p=floor(mod(p,4.));
@@ -41,10 +41,14 @@ void main(){
   vec3 c=texture2D(tColor,uv).rgb*bright;
   float d=lin(uv);
   float e=0.;
-  e=max(e,diff(d,lin(uv+vec2(texel.x,0.))));
-  e=max(e,diff(d,lin(uv-vec2(texel.x,0.))));
-  e=max(e,diff(d,lin(uv+vec2(0.,texel.y))));
-  e=max(e,diff(d,lin(uv-vec2(0.,texel.y))));
+  for(int k=1;k<=4;k++){                        // outline thickness: neighbours up to edgeW pixels away
+    if(float(k)>edgeW) break;
+    vec2 o=texel*float(k);
+    e=max(e,diff(d,lin(uv+vec2(o.x,0.))));
+    e=max(e,diff(d,lin(uv-vec2(o.x,0.))));
+    e=max(e,diff(d,lin(uv+vec2(0.,o.y))));
+    e=max(e,diff(d,lin(uv-vec2(0.,o.y))));
+  }
   float em=persp<.5 ? smoothstep(.004,.009,e) : smoothstep(.16,.32,e);
   if(tone>.5){                                   // ACES filmic tone mapping for HDR scenes (Great Path world)
     c*=.6;
@@ -81,7 +85,7 @@ void main(){
 export class PixelPipeline {
   constructor(renderer) {
     this.r = renderer;
-    this.params = { pixelH: 200, levels: 7, dither: 0.8, edge: 0.8, bright: 1.4, tone: 0, grain: 0 };
+    this.params = { pixelH: 200, levels: 7, dither: 0.8, edge: 0.8, edgeW: 1, bright: 1.4, tone: 0, grain: 0 };
     this.heat = 0;                     // sun exposure effect 0..1 (Great Path)
     this.glitch = 0; this.fear = 0;    // event effects 0..1 (Great Path)
     this.mat = new THREE.ShaderMaterial({
@@ -92,7 +96,7 @@ export class PixelPipeline {
       uniforms: {
         tColor: { value: null }, tDepth: { value: null },
         texel: { value: new THREE.Vector2(1, 1) },
-        levels: { value: 7 }, dither: { value: 0.8 }, edge: { value: 0.8 }, bright: { value: 1.4 },
+        levels: { value: 7 }, dither: { value: 0.8 }, edge: { value: 0.8 }, edgeW: { value: 1 }, bright: { value: 1.4 },
         persp: { value: 0 }, near: { value: 0.1 }, far: { value: 100 }, tone: { value: 0 }, grain: { value: 0 }, time: { value: 0 }, heat: { value: 0 }, glitch: { value: 0 }, fear: { value: 0 },
       },
     });
@@ -129,7 +133,7 @@ export class PixelPipeline {
 
   render(scene, camera) {
     const u = this.mat.uniforms, p = this.params;
-    u.levels.value = p.levels; u.dither.value = p.dither; u.edge.value = p.edge; u.bright.value = p.bright;
+    u.levels.value = p.levels; u.dither.value = p.dither; u.edge.value = p.edge; u.edgeW.value = p.edgeW || 1; u.bright.value = p.bright;
     u.tone.value = p.tone; u.grain.value = p.grain; u.heat.value = this.heat; u.glitch.value = this.glitch; u.fear.value = this.fear; u.time.value = (performance.now() / 1000) % 100;
     u.persp.value = camera.isPerspectiveCamera ? 1 : 0;
     u.near.value = camera.near; u.far.value = camera.far;

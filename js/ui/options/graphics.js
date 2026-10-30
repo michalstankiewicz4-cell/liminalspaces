@@ -14,6 +14,7 @@ export function buildGraphics({ settings }) {
       slider({ label: 'gfx.levels', range: levRange, get: () => g().levels, set: set('levels'), fmt: (v) => String(v) }),
       slider({ label: 'gfx.dither', range: RANGES.dither, get: () => g().dither, set: set('dither') }),
       slider({ label: 'gfx.edge', range: RANGES.edge, get: () => g().edge, set: set('edge') }),
+      slider({ label: 'gfx.edgeW', range: RANGES.edgeW, get: () => g().edgeW, set: set('edgeW'), fmt: (v) => v + ' px' }),
       slider({ label: 'gfx.bright', range: RANGES.bright, get: () => g().bright, set: set('bright') }),
       slider({ label: 'gfx.fov', range: RANGES.fov, get: () => g().fov, set: set('fov'), fmt: (v) => v + '°' }),
       slider({ label: 'gfx.viewDist', range: RANGES.viewDist, get: () => g().viewDist, set: set('viewDist'), fmt: (v) => String(v) }),
