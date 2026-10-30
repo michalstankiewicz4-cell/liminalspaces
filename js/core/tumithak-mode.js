@@ -11,6 +11,22 @@ export function createTumithakMode(shared) {
   const { camera, pipe, input, hud, settings, progress, audio, hand } = shared;
   const map = createMap3d(shared.uiEl);
   let exploreT = 0;
+  // teleport (from the list beside the map): the nearest spot near the place where a person can stand
+  map.onTeleport = (l) => {
+    const c = caves;
+    for (let r = 0; r < 40; r += 0.5) for (let a = 0; a < 16; a++) {
+      const x = l.x + Math.cos(a / 16 * Math.PI * 2) * r, z = l.z + Math.sin(a / 16 * Math.PI * 2) * r;
+      const s = c.support(x - 0.27, z - 0.27, x + 0.27, z + 0.27, l.y + 3);
+      if (!Number.isFinite(s) || Math.abs(s - l.y) > 4 || c.ladder(x, z, s + 0.1)) continue;
+      if (c.blocked(x - 0.27, z - 0.27, x + 0.27, z + 0.27, s + 0.1, s + 1.75)) continue;
+      walker.place(x, z, walker.yaw); walker.y = s; walker.eyeY = s + 1.62;
+      c.preload(x, s, z);
+      safe = { x, y: s, z };
+      setMap(false);
+      pipe.glitch = 0.8; hud.toast(t('map.teleported'), 2);
+      return;
+    }
+  };
   let caves = null, walker = null, hudT = 0, lightT = 0, lastDist = 0, safe = null, pendingView = null;
 
   let loading = null;

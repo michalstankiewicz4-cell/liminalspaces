@@ -236,6 +236,7 @@ export default {
   'tm.l.dark': "The Dark Corridors",
   'tm.l.cells': "The cells",
   'tm.l.toSurface': "The last shaft (to the Surface)",
+  'map3d.tpNote': "Click a place to go there.",
   'tile.endlessBy': 'Procedural world of this game',
   'menu.versions': 'start screen v{menu} · release v{rel}',
   'path.intro': 'Explore the district of Luceron, the Wastelands, the chapel and the Great Path itself. Where the story walks for hours or months, the route is shortened and a note on the wall says so.',

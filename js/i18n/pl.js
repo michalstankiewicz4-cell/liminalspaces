@@ -236,6 +236,7 @@ export default {
   'tm.l.dark': "Ciemne Korytarze",
   'tm.l.cells': "Cele",
   'tm.l.toSurface': "Ostatni szyb (ku Powierzchni)",
+  'map3d.tpNote': "Kliknij miejsce, aby się tam przenieść.",
   'tile.endlessBy': 'Proceduralny świat tej gry',
   'menu.versions': 'ekran startowy v{menu} · wydanie v{rel}',
   'path.intro': 'Zwiedzaj dystrykt Luceron, Pustkowia, kaplicę i samą Wielką Ścieżkę. Tam, gdzie w opowieści idzie się godzinami lub miesiącami, droga jest skrócona, a kartka na ścianie o tym mówi.',

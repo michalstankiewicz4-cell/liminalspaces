@@ -257,7 +257,7 @@ export function buildCaves() {
   shaft(p[0] + 2, p[2], p[1], p[1] + 30, 1.5, Z.upper);
   tube([p[0], p[1], p[2]], [p[0] + 2, p[1], p[2]], { ...NAR, zone: Z.upper, ext: 0.4 });
   props.push({ kind: 'hatch', x: p[0] + 2, y: p[1] + 30, z: p[2] });
-  labels.push({ key: 'toSurface', x: p[0] + 2, y: p[1] + 28, z: p[2] });
+  labels.push({ key: 'toSurface', x: p[0] + 2, y: p[1], z: p[2] });
   const topY = p[1] + 30;
 
   // side caves: natural branching tunnels (rough, unlit), some ending in caverns

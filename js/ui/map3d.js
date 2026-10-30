@@ -20,9 +20,14 @@ export function createMap3d(uiEl) {
   const title = h('div', { class: 'map3d-title' });
   const help = h('div', { class: 'map3d-help' });
   const labelBox = h('div', { class: 'map3d-labels' });
-  const root = h('div', { id: 'map3d', hidden: true }, canvas, labelBox, title, help);
+  // beside the view: the places you know (in the order of the way up), each a button that takes you there
+  const list = h('ol', { class: 'journal' });
+  const panelHead = h('h3'), panelNote = h('p', { class: 'note' });
+  const viewEl = h('div', { class: 'map3d-view' }, canvas, labelBox, title, help);
+  const root = h('div', { id: 'map3d', hidden: true }, viewEl, h('div', { class: 'mappanel' }, panelHead, list, panelNote));
+  let onTeleport = null;
   uiEl.append(root);
-  const relabel = () => { title.textContent = t('map3d.title'); help.textContent = t('map3d.help'); };
+  const relabel = () => { title.textContent = t('map3d.title'); help.textContent = t('map3d.help'); panelHead.textContent = t('map.journal'); panelNote.textContent = t('map3d.tpNote'); };
   relabel(); onLang(() => { relabel(); drawn = -1; });
 
   function init() {
@@ -80,7 +85,7 @@ export function createMap3d(uiEl) {
   // place names of the visited zones, projected to the screen each frame
   let labelEls = [];
   function placeLabels() {
-    labelBox.textContent = '';
+    labelBox.textContent = ''; list.textContent = '';
     labelEls = [];
     for (const l of caves.labels) {
       const z = caves.zones.findIndex((q) => q.key === l.key);
@@ -89,13 +94,15 @@ export function createMap3d(uiEl) {
       const el = h('div', { class: 'map3d-label' }, t('tm.l.' + l.key));
       labelBox.append(el);
       labelEls.push([el, new THREE.Vector3(l.x, l.y + 3, l.z)]);
+      const name = t('tm.l.' + l.key);
+      list.append(h('li', {}, onTeleport ? h('button', { type: 'button', title: t('map.teleport'), on: { click: () => onTeleport(l) } }, name) : name));
     }
   }
 
   /* ---- mouse: orbit, pan, zoom ---- */
   let drag = null;
   root.addEventListener('contextmenu', (e) => e.preventDefault());
-  root.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); drag = { x: e.clientX, y: e.clientY, pan: e.button === 2 || e.shiftKey }; });
+  viewEl.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); drag = { x: e.clientX, y: e.clientY, pan: e.button === 2 || e.shiftKey }; });
   addEventListener('mousemove', (e) => {
     if (!drag || !open) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
@@ -110,7 +117,7 @@ export function createMap3d(uiEl) {
     }
   });
   addEventListener('mouseup', () => { drag = null; });
-  root.addEventListener('wheel', (e) => { e.preventDefault(); view.dist = Math.max(8, Math.min(1500, view.dist * Math.exp(e.deltaY * 0.0012))); }, { passive: false });
+  viewEl.addEventListener('wheel', (e) => { e.preventDefault(); view.dist = Math.max(8, Math.min(1500, view.dist * Math.exp(e.deltaY * 0.0012))); }, { passive: false });
   addEventListener('keydown', (e) => { if (open && e.code === 'KeyR') centre(); });
 
   let player = null;
@@ -119,6 +126,7 @@ export function createMap3d(uiEl) {
   return {
     attach(c) { caves = c; drawn = -1; },
     get open() { return open; },
+    set onTeleport(fn) { onTeleport = fn; },
     toggleReveal() { reveal = !reveal; if (renderer) { rebuild(); placeLabels(); } return reveal; },
     get revealed() { return reveal; },
     setOpen(o, p) {
@@ -139,7 +147,7 @@ export function createMap3d(uiEl) {
     frame(p) {
       if (!open) return;
       player = p;
-      const w = root.clientWidth, hh = root.clientHeight;
+      const w = viewEl.clientWidth, hh = viewEl.clientHeight;
       if (canvas.width !== Math.round(w * renderer.getPixelRatio()) || canvas.height !== Math.round(hh * renderer.getPixelRatio())) { renderer.setSize(w, hh, false); cam.aspect = w / Math.max(1, hh); cam.updateProjectionMatrix(); }
       if (drawn !== explored.size) rebuild();
       const cp = Math.cos(view.pitch);

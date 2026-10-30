@@ -4,6 +4,13 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.19.2] - 2026-10-30
+Parts: Tumithak of the Corridors 1.2.0
+### Added
+- Beside the 3D map: **the places you have found** (in the order of the way up; all of them with L), each a button that **teleports you there** — to the nearest spot near the place where you can stand.
+### Changed
+- The place “the last shaft” is now marked at its foot (where you can stand), not at its top.
+
 ## [0.19.1] - 2026-10-30
 Parts: Tumithak of the Corridors 1.1.0
 ### Added

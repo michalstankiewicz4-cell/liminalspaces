@@ -49,7 +49,7 @@ Published at: repo <https://github.com/michalstankiewicz4-cell/liminalspaces>, s
 | `js/story/worker.js` | Great Path: mesh worker (layout copy, returns vertex buffers) |
 | `js/story/walker.js`, `hand.js` | Great Path: multi-level walker (step-up 0.45 m, falling, jumping); flashlight view model + shadowed spot light |
 | `js/ui/map.js` | Minimap and full map with journal (Great Path) |
-| `js/ui/map3d.js` | 3D map of the caves of Tumithak (M): explored lines by zone, visited place names, the player arrow; orbit / pan / zoom with the mouse, R centres, L reveals all; its own small WebGL renderer; explored 4 m cells in `ls:tumimap:v1` |
+| `js/ui/map3d.js` | 3D map of the caves of Tumithak (M): explored lines by zone, visited place names, the player arrow; orbit / pan / zoom with the mouse, R centres, L reveals all; beside it the list of places found, each teleports you there (`onTeleport`, the mode finds a spot to stand); its own small WebGL renderer; explored 4 m cells in `ls:tumimap:v1` |
 | `js/world/avatars.js` | Other players' figures (interpolated; multiplayer is switched off for now) |
 | `js/render/pixel-pipeline.js` | `PixelPipeline` from Capital Quarantine: low-res target + final shader (palette, dither, depth outline, vignette) |
 | `js/input/bindings.js`, `input.js` | Rebindable actions and key labels; keyboard + mouse look (pointer lock or drag) |
