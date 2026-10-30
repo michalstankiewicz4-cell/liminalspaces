@@ -54,8 +54,12 @@ export function createTumithakMode(shared) {
     const sp = where === 'continue' && saved ? saved : caves.starts[where] || caves.starts.loor;
     caves.resetVisits();
     if (where === 'continue' && saved) for (const id of saved.seen || []) caves.visited.set(id, caves.visited.size + 1);
-    walker.place(sp.x, sp.z, sp.yaw || 0);
-    if (Number.isFinite(sp.y)) { walker.y = sp.y; const s = caves.support(sp.x - 0.27, sp.z - 0.27, sp.x + 0.27, sp.z + 0.27, sp.y + 1.5); if (Number.isFinite(s)) walker.y = s; walker.eyeY = walker.y + 1.62; }
+    // a saved spot can lie in rock or in the air after the world changed (a new version moved the Surface): the nearest
+    // place to stand instead — up or down the same column first, then around it; failing that, the start in Loor
+    const at = Number.isFinite(sp.y) ? stand(sp.x, sp.y, sp.z) : null;
+    const p = at || (Number.isFinite(sp.y) ? caves.starts.loor : sp);
+    walker.place(p.x, p.z, sp.yaw || 0);
+    if (Number.isFinite(p.y)) { walker.y = at ? at.y : p.y; const s = at ? at.y : caves.support(p.x - 0.27, p.z - 0.27, p.x + 0.27, p.z + 0.27, p.y + 1.5); if (Number.isFinite(s)) walker.y = s; walker.eyeY = walker.y + 1.62; }
     caves.preload(walker.x, walker.y, walker.z);
     caves.setWorkLights(false);
     caves.scene.add(camera);
@@ -64,6 +68,24 @@ export function createTumithakMode(shared) {
     lastDist = 0;
     const k = settings.data.keys;
     hud.setHint(t('hud.tmHint', { move: moveLabel(k), light: firstKey(k, 'flashlight'), map: firstKey(k, 'map') }), 12);
+  }
+  // the standable spot nearest to (x, y, z): floor under the body, room for it, not on a ladder; null if none within reach
+  function stand(x, y, z) {
+    const c = caves;
+    const ok = (px, pz, top) => {
+      const s = c.support(px - 0.27, pz - 0.27, px + 0.27, pz + 0.27, top);
+      if (!Number.isFinite(s) || c.ladder(px, pz, s + 0.1) || c.blocked(px - 0.27, pz - 0.27, px + 0.27, pz + 0.27, s + 0.1, s + 1.75)) return null;
+      return s;
+    };
+    for (let r = 0; r <= 24; r += r < 2 ? 0.5 : 2) for (let a = 0; a < (r ? 12 : 1); a++) {
+      const px = x + Math.cos(a / 12 * Math.PI * 2) * r, pz = z + Math.sin(a / 12 * Math.PI * 2) * r;
+      let best = null;
+      // support scans 8 m down from where it starts: tops every 6 m from 40 m above to 40 m below cover the column
+      for (let top = y + 40; top >= y - 40; top -= 6) { const s = ok(px, pz, top); if (s !== null && (best === null || Math.abs(s - y) < Math.abs(best - y))) best = s; }
+      if (best === null) best = ok(px, pz, y + 1.5);
+      if (best !== null) return { x: px, y: best, z: pz };
+    }
+    return null;
   }
   function leave() { pipe.glitch = 0; hud.setSign(null); hand.group.visible = false; hand.spot.visible = false; map.setOpen(false); map.save(); }
   function remember() {

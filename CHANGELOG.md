@@ -4,6 +4,11 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.27.1] - 2026-10-30
+Parts: Tumithak of the Corridors 1.10.1
+### Fixed
+- Continuing a walk saved on the Surface before 0.26.0 dropped you under the ground: chapter 6 moved the Surface, so the saved spot now lay in rock, with no floor to find, and the fall rescue kept putting you back there. On continue the saved spot is now checked: you are put on the nearest place to stand (up or down the same column first, then around it), or at the start in Loor if there is none nearby.
+
 ## [0.27.0] - 2026-10-30
 Parts: Tumithak of the Corridors 1.10.0
 ### Changed — chapter 7 after the original text (the whole story now follows the book)
