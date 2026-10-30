@@ -85,7 +85,7 @@ export function createPathMode(shared) {
     if (where === 'gate') story.startGate(); else story.setGate(true);
     story.setWorkLights(false);
     (onSurface ? surface.scene : story.scene).add(camera);
-    hand.group.visible = true; hand.setOn(true);
+    hand.group.visible = true; hand.setOn(true); hand.setBeam(60, 1.6);
     mapUi.show(true); mapUi.setOpen(false);
     sound.unlock(); sound.resume(); sound.reset(where === 'continue' ? 15 : 25);
     sun = 0; sunWarned = 0; pipe.heat = 0; lastDist = 0;

@@ -4,6 +4,7 @@
 .screen{width:min(400px,calc(100vw - 32px));box-sizing:border-box;padding:24px 28px;margin-left:clamp(16px,6vw,90px);max-height:calc(100vh - 24px);overflow:auto}
 #menu:not([data-screen=main]):not([data-screen=single]):not([data-screen=multi]):not([data-screen=room]) .screen{margin-left:0;background:#15130d;border:1px solid #4d4630;text-align:center}
 #menu[data-screen=options] .screen{width:min(560px,calc(100vw - 24px))}
+#menu[data-screen=tumiAbout] .screen{width:min(620px,calc(100vw - 24px));text-align:left}
 #menu[data-screen=host] .screen,#menu[data-screen=join] .screen{width:min(480px,calc(100vw - 24px));text-align:left}
 .logo{margin:0 0 6px;font-size:36px;line-height:1.05;letter-spacing:.18em;color:#efe2a6;text-shadow:3px 3px 0 #5a4c18}
 .screen h2{margin:0 0 14px;font-size:20px;color:#efe2a6;letter-spacing:.06em}
@@ -32,14 +33,15 @@
 .key{min-width:92px;text-align:center}
 @media (max-width:640px){.orow{grid-template-columns:1fr 1fr 44px}.logo{font-size:28px}}
 /* world tiles on the start screen */
-.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0 6px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0 6px}
 .tile{display:flex;flex-direction:column;text-align:left;padding:0;background:rgba(29,26,18,.92);overflow:hidden}
 .tile img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;image-rendering:pixelated;border-bottom:1px solid #4d4630;filter:saturate(.95)}
 .tile .ttl{padding:8px 10px 2px;font-size:15px;color:#efe2a6;letter-spacing:.04em}
 .tile .dsc{padding:0 10px 10px;font-size:11px;color:#b3aa8c;line-height:1.4}
 .tile:hover:not(:disabled){border-color:#d8c56a;background:#2e2a1a}
-#menu[data-screen=main] .screen{width:min(620px,calc(100vw - 32px))}
+#menu[data-screen=main] .screen{width:min(860px,calc(100vw - 32px))}
 #menu[data-screen=path] .screen{width:min(460px,calc(100vw - 32px))}
+@media (max-width:900px){.tiles{grid-template-columns:1fr 1fr}}
 @media (max-width:640px){.tiles{grid-template-columns:1fr}}
 .update{border:1px solid #6a5a2a;padding:6px 8px;background:rgba(40,34,14,.8)}
 /* tile credits, per-world version, the menu background per world */
@@ -50,5 +52,10 @@
 .credit a:hover,.foot a:hover{color:#f4e8b8;border-bottom-color:#f4e8b8}
 .menubg{position:absolute;inset:0;z-index:-1;opacity:0;transition:opacity .45s;pointer-events:none;background:linear-gradient(90deg,rgba(8,7,4,.88) 0,rgba(8,7,4,.55) 40%,rgba(8,7,4,.25) 100%),url(../assets/tile-path.png) center/cover no-repeat;image-rendering:pixelated}
 #menu[data-bg=path] .menubg{opacity:1}
+#menu[data-bg=tumi] .menubg{opacity:1;background-image:linear-gradient(90deg,rgba(8,7,4,.9) 0,rgba(8,7,4,.6) 40%,rgba(8,7,4,.3) 100%),url(../assets/tile-tumi.png)}
+.about{text-align:left}
+.about p{font-size:12px;line-height:1.5;color:#c9c0a2;margin:0 0 8px;white-space:pre-line}
+.about a{color:#d8c56a;text-decoration:none;border-bottom:1px dotted #8a7a3a}
+.about a:hover{color:#f4e8b8}
 .worldtabs{align-items:center;margin-bottom:6px}
 .worldtabs>span{color:#948c74;margin-right:4px}

@@ -8,6 +8,8 @@ export const DEFAULTS = {
   // graphics profiles, one per game, with the same options: the endless world (the pixel-art look) and the Great Path
   // world (fine-grained). showFps lives in gfx and is shared.
   gfx: { pixelH: 200, levels: 7, dither: 0.8, edge: 0.6, edgeW: 1, bright: 1.15, fov: 60, viewDist: 2, headBob: true, grain: false, round: 12, cove: 8, showFps: false, scan: false, crt: false },
+  // the caves of Tumithak (dark: lit by the lamps of the cities and your flashlight)
+  gfxTumi: { pixelH: 540, levels: 40, dither: 0.25, edge: 0.3, edgeW: 1, bright: 1.15, fov: 60, viewDist: 2, headBob: true, grain: true, round: 12, cove: 8, scan: false, crt: false },
   gfxPath: { pixelH: 720, levels: 40, dither: 0.25, edge: 0.3, edgeW: 1, bright: 1.15, fov: 60, viewDist: 2, headBob: true, grain: true, round: 12, cove: 8, scan: false, crt: false },
   mouse: { sens: 1, invertY: false },
   audio: { volume: 0.6, steps: 0.5, hum: true, scratch: true },
@@ -55,6 +57,7 @@ export function sanitize(raw) {
     lang: r.lang === 'pl' ? 'pl' : 'en',
     gfx: { ...profile(g, D.gfx), showFps: g.showFps === true },
     gfxPath: profile(gp, D.gfxPath),
+    gfxTumi: profile(r.gfxTumi || {}, D.gfxTumi),
     mouse: { sens: num(m.sens, 'sens', 1), invertY: m.invertY === true },
     audio: { volume: num(a.volume, 'volume', D.audio.volume), steps: num(a.steps, 'steps', D.audio.steps), hum: a.hum !== false, scratch: a.scratch !== false },
     hud: { show: u.show !== false },

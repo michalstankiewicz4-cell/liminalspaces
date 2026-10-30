@@ -4,6 +4,16 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.19.0] - 2026-10-30
+Parts: start screen 1.7.0 · Endless Liminal Spaces 2.0.1 · The Great Path (Rudon's Plane) 1.6.2 · Tumithak of the Corridors 1.0.0
+### Added (Tumithak of the Corridors 1.0.0)
+- **A third world: “Tumithak of the Corridors”** (Charles R. Tanner, 1932; after the Polish narration by Polish Creepypasta, chapters 1–2). Real caves instead of rectangular rooms: the world is a signed distance field (arched carved corridors about 4.5 m high and wide with flat floors, rooms, ladder shafts, caverns, natural side caves), displaced by 3D noise and meshed with surface nets in 16 m cubic chunks by two workers. The rock is textured in the shader from the world position (blotches, strata, veins, grain, small bumps), so nothing repeats. About 2 km of route rising some 200 m: Loor (the start, the hall of the great machine, the dusty dead end where the book lies), the steep narrow passages and ladder shafts, Nonone (Nennapuss' hall), the guarded shaft, Yakra, then the lamps dim and fail — the Dark Corridors, the big cave, the cells — and the upper corridors to the last shaft under the hatch (the Surface comes with the next chapters). Long side caves branch off the passages.
+- Light: the cities are lit by flat lamp plates on the ceilings (some flicker, some are dead; baked light with occlusion by rock), beyond Yakra only your flashlight. Ladders: walk to the rungs, W climbs, S goes down, at the top step forward.
+- Start screen: a third tile with the author and the films; its screen (begin in Loor, continue, Nonone, Yakra) and **About** — the story, Charles R. Tanner, the series, the Polish narration, the music credited in the films, links. Options > Graphics: a third profile.
+### Changed
+- The flashlight is stronger and reaches further: in the caves much stronger (160, softer falloff), in the other worlds 60 instead of 40 with a softer falloff.
+- The shared walker can climb ladders where a world has them (used by the caves only).
+
 ## [0.18.1] - 2026-10-30
 Parts: start screen 1.6.1
 ### Changed

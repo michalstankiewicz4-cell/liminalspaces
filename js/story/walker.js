@@ -1,7 +1,8 @@
 // First-person walker for the multi-level Great Path world: box-vs-cells collision with step-up (stairs, sills),
 // gravity and falling (the chapel floor is 6 m down), jumping onto podiums, head bob. The body crouches and then
 // crawls by itself where the ceiling comes down (the long squeeze on the Great Path) and stands up again after.
-// `world` ({ blocked, support }) can be swapped (the surface above the halls has its own).
+// `world` ({ blocked, support }) can be swapped (the surface above the halls has its own). A world with
+// `ladder(x, z, y)` (the caves) lets the walker climb: forward goes up, back goes down, nothing pressed holds on.
 import { clamp } from '../core/util.js';
 
 export const EYE = 1.62;
@@ -40,7 +41,9 @@ export function createWalker(world) {
     const low = P.body < 1.5;
     const sp = (ctl.sprint && !low ? RUN : WALK) * (P.body < 0.7 ? 0.28 : P.body < 1.0 ? 0.45 : P.body < 1.3 ? 0.65 : 1) * (P.hold ? 0 : 1);
     const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw), rx = Math.cos(P.yaw), rz = -Math.sin(P.yaw);
-    const tx = (fx * ctl.move.z + rx * ctl.move.x) * sp, tz = (fz * ctl.move.z + rz * ctl.move.x) * sp;
+    // on a ladder (below its top) W/S climb instead of walking
+    const lad = P.world.ladder ? P.world.ladder(P.x, P.z, P.y) : null, hold = lad && P.y > lad.y0 + 0.3 && P.y < lad.y1 - 0.5 ? 0 : 1;
+    const tx = (fx * ctl.move.z + rx * ctl.move.x) * sp * hold, tz = (fz * ctl.move.z + rz * ctl.move.x) * sp * hold;
     const acc = 1 - Math.exp(-(P.ground ? 11 : 2.5) * dt);
     P.vx += (tx - P.vx) * acc; P.vz += (tz - P.vz) * acc;
     if (ctl.jump && P.ground && !low && !P.hold) { P.vy = JUMP; P.ground = false; }
@@ -58,11 +61,18 @@ export function createWalker(world) {
       const sup = P.world.support(P.x - R, P.z - R, P.x + R, P.z + R, P.y + STEP);
       if (sup > P.y && P.vy <= 0.01) { P.y = sup; P.vy = 0; P.ground = true; }
     }
-    // vertical
-    P.vy -= GRAV * dt;
+    // vertical (on a ladder: climbing instead of falling)
+    P.climbing = !!(P.world.ladder && P.world.ladder(P.x, P.z, P.y));      // (again: the walker may have moved)
+    if (P.climbing) {
+      const c = ctl.move.z, L = P.world.ladder(P.x, P.z, P.y);
+      P.vy = c > 0.1 ? 2.3 : c < -0.1 ? -2.3 : 0; P.ground = false;
+      if (L.px !== undefined && P.y > L.y0 + 0.3) { const k = Math.min(1, 8 * dt); P.x += (L.px - P.x) * k; P.z += (L.pz - P.z) * k; P.vx = P.vz = 0; }   // hang at the rungs
+    }
+    else P.vy -= GRAV * dt;
     let ny = P.y + P.vy * dt;
     const sup = P.world.support(P.x - R, P.z - R, P.x + R, P.z + R, P.y + 0.05);
-    if (P.vy > 0 && P.world.blocked(P.x - R, P.z - R, P.x + R, P.z + R, ny + P.body - 0.05, ny + P.body + 0.02)) { P.vy = 0; ny = P.y; }   // head bump
+    const hr = P.climbing ? R * 0.5 : R;      // on a ladder the body leans in to the rungs: only the head can bump
+    if (P.vy > 0 && P.world.blocked(P.x - hr, P.z - hr, P.x + hr, P.z + hr, ny + P.body - 0.05, ny + P.body + 0.02)) { P.vy = 0; ny = P.y; }   // head bump
     if (ny <= sup) { if (!P.ground && P.vy < -4) { P.lastFall = P.vy; if (P.onLand) P.onLand(-P.vy); } P.y = sup; P.vy = 0; P.ground = true; }
     else { P.y = ny; P.ground = ny - sup < 0.03; }
 

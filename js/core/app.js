@@ -1,6 +1,7 @@
 // Application shell: renderer, both worlds, players, audio, UI, multiplayer session and the frame loop.
 // Worlds ('kind'): 'endless' (procedural liminal spaces, core/endless-mode.js) and 'path' (the Great Path / Luceron,
-// core/path-mode.js, built on demand). Both run on the same cell engine (story/index.js).
+// core/path-mode.js, built on demand) run on the same cell engine (story/index.js); 'tumi' (the caves of Tumithak,
+// core/tumithak-mode.js, built on demand) shares its walker, flashlight and pipeline with natural cave geometry.
 // Modes: 'menu' (start screen with a slowly turning view of a generated place) and 'play' (a walk), with pause.
 import * as THREE from '../../vendor/three.module.js';
 import { PixelPipeline } from '../render/pixel-pipeline.js';
@@ -18,6 +19,7 @@ import { VERSION } from '../version.js';
 import { createMapUi } from '../ui/map.js';
 import { createPathMode } from './path-mode.js';
 import { createEndlessMode } from './endless-mode.js';
+import { createTumithakMode } from './tumithak-mode.js';
 import { createLoader, nextPaint } from '../ui/loader.js';
 import { createHotbar } from '../ui/hotbar.js';
 
@@ -56,9 +58,9 @@ export function createApp({ appEl, uiEl }) {
 
   /* ---- persistent progress: totals and the last single-player walk ---- */
   const progress = {
-    dist: 0, odd: 0, last: null, path: null,
+    dist: 0, odd: 0, last: null, path: null, tumi: null,
     // save format version: bump SAVE_VERSION and add a step to migrate() when the meaning of saved data changes
-    save() { write(KEYS.save, { v: SAVE_VERSION, game: VERSION, dist: Math.round(this.dist), odd: this.odd, last: this.last, path: this.path }); },
+    save() { write(KEYS.save, { v: SAVE_VERSION, game: VERSION, dist: Math.round(this.dist), odd: this.odd, last: this.last, path: this.path, tumi: this.tumi }); },
     load() {
       const d = migrate(read(KEYS.save));
       if (!d || typeof d !== 'object') return;
@@ -69,9 +71,12 @@ export function createApp({ appEl, uiEl }) {
       const p = d.path;
       this.path = p && [p.x, p.z, p.yaw].every(Number.isFinite) && Math.abs(p.x) < 1e7 && Math.abs(p.z) < 1e7
         ? { x: p.x, z: p.z, yaw: p.yaw, seen: Array.isArray(p.seen) ? p.seen.filter((n) => Number.isInteger(n) && n > 0 && n < 64).slice(0, 64) : [], step: Number.isInteger(p.step) ? Math.max(0, Math.min(64, p.step)) : 0 } : null;
+      const q = d.tumi;
+      this.tumi = q && [q.x, q.y, q.z, q.yaw].every(Number.isFinite) && [q.x, q.y, q.z].every((v) => Math.abs(v) < 1e6)
+        ? { x: q.x, y: q.y, z: q.z, yaw: q.yaw, seen: Array.isArray(q.seen) ? q.seen.filter((n) => Number.isInteger(n) && n > 0 && n < 64).slice(0, 64) : [] } : null;
     },
     wipe() {
-      this.dist = 0; this.odd = 0; this.last = null; this.path = null; this.save(); write(KEYS.pathMap, null);
+      this.dist = 0; this.odd = 0; this.last = null; this.path = null; this.tumi = null; this.save(); write(KEYS.pathMap, null);
       path.clearSeen();
       menu.refresh();
     },
@@ -92,6 +97,8 @@ export function createApp({ appEl, uiEl }) {
   // the endless world (one per seed; the start screen shows one too). The flashlight in hand is shared.
   const endless = createEndlessMode({ renderer, camera, pipe, hud, settings, progress, audio, hand: path.hand, session: () => session });
   const hand = path.hand;
+  // the caves of Tumithak (built the first time they are opened)
+  const tumi = createTumithakMode({ camera, pipe, input, hud, settings, progress, audio, hand });
 
   endless.onFind = (kind) => {
     progress.odd++;
@@ -124,6 +131,7 @@ export function createApp({ appEl, uiEl }) {
   }
   function rememberWalk() {
     if (mode === 'play' && kind === 'path') path.remember();
+    else if (mode === 'play' && kind === 'tumi') tumi.remember();
     else if (mode === 'play' && !session) { const w = endless.walker; progress.last = { seed, x: +w.x.toFixed(2), z: +w.z.toFixed(2), yaw: +w.yaw.toFixed(3) }; }
     progress.save();
   }
@@ -131,7 +139,7 @@ export function createApp({ appEl, uiEl }) {
   /* ---- switching worlds ---- */
   function useWorld(k) {
     if (kind === k) return;
-    if (kind === 'path') path.leave(); else endless.leave();
+    if (kind === 'path') path.leave(); else if (kind === 'tumi') tumi.leave(); else endless.leave();
     kind = k;
     applySettings();
   }
@@ -165,6 +173,32 @@ export function createApp({ appEl, uiEl }) {
     audio.setMuted(true);                                          // this world has its own sound (story/audio.js)
     input.lock();
     rememberWalk();
+  }
+
+  // Starts a walk in the caves of Tumithak. where: 'loor' | 'nonone' | 'yakra' | 'continue'
+  async function startTumi(where) {
+    if (starting) return;
+    starting = true;
+    try {
+      loader.show(tumi.ready ? 'load.place' : 'load.tmCode', tumi.ready ? 0.9 : 0.02);
+      await nextPaint();
+      if (!tumi.ready) await tumi.load((key, f) => loader.show(key, f));
+      loader.show('load.place', 0.95);
+      await nextPaint();
+      closeSession();
+      useWorld('tumi');
+      tumi.start(where);
+      hotbar.setItems(['flashlight']); hotbar.select(0);
+      mode = 'play'; paused = false;
+      input.clear(); menu.hide();
+      audio.unlock(); audio.setMuted(false);
+      input.lock();
+      rememberWalk();
+      loader.hideAfter(3);
+    } catch (e) {
+      console.error(e); loader.hide();
+      if (app.onTumiStatus) app.onTumiStatus('path.failed');
+    } finally { starting = false; }
   }
 
   // the endless world: a short loading screen while its first rooms are built
@@ -212,9 +246,9 @@ export function createApp({ appEl, uiEl }) {
     newWalk: () => withLoader(() => startWalk(randomSeed())),
     continueWalk: () => { const l = progress.last; if (l) withLoader(() => startWalk(l.seed, l)); },
     seedWalk: (text) => withLoader(() => startWalk(String(text).trim() ? seedFrom(text) : randomSeed())),
-    resume, quit: goMenu, startPath, onPathStatus: null,
+    resume, quit: goMenu, startPath, onPathStatus: null, startTumi, onTumiStatus: null,
     get worldKind() { return mode === 'play' ? kind : null; },
-    info: () => kind === 'path' ? path.info()
+    info: () => kind === 'path' ? path.info() : kind === 'tumi' ? tumi.info()
       : { seed, zone: endless.zone, dist: endless.walker.dist, odd: endless.foundCount, host: !!session && session.role === 'host' },
     // host: start a walk and open the invite screen
     startHost() {
@@ -266,6 +300,7 @@ export function createApp({ appEl, uiEl }) {
     if (act === 'toggleHud') settings.update((d) => { d.hud.show = !d.hud.show; });
     else if (act.startsWith('hotbar')) useSlot(+act.slice(6) - 1);
     else if (kind === 'path') path.onPress(act);
+    else if (kind === 'tumi') tumi.onPress(act);
     else if (act === 'flashlight') { hand.setOn(!hand.spot.visible); audio.click(); }
     else if (act === 'workLights') { const st = endless.story; st.setWorkLights(!st.workLights); hud.toast(t(st.workLights ? 'hud.workOn' : 'hud.workOff'), 2); }
   };
@@ -283,9 +318,9 @@ export function createApp({ appEl, uiEl }) {
     const d = settings.data;
     // each world has its own graphics profile (gfx: endless, gfxPath: the Great Path) with the same options; both
     // render HDR with tone mapping (brightness is relative to that)
-    const gp = d.gfxPath, ge = d.gfx, g = kind === 'path' ? gp : ge;
-    pipe.setParams({ pixelH: g.pixelH, levels: g.levels, dither: g.dither, edge: g.edge, edgeW: g.edgeW, scan: g.scan, crt: g.crt, bright: g.bright / 1.15, tone: 1, grain: g.grain ? 0.045 : 0 });
-    path.setViewDist(gp.viewDist); path.setRounding(gp.round / 100, gp.cove / 100);
+    const gp = d.gfxPath, ge = d.gfx, g = kind === 'path' ? gp : kind === 'tumi' ? d.gfxTumi : ge;
+    pipe.setParams({ pixelH: g.pixelH, levels: g.levels, dither: g.dither, edge: g.edge, edgeW: g.edgeW, scan: g.scan, crt: g.crt, bright: g.bright / 1.15, tone: 1, grain: g.grain ? (kind === 'tumi' ? 0.02 : 0.045) : 0 });
+    path.setViewDist(gp.viewDist); path.setRounding(gp.round / 100, gp.cove / 100); tumi.setViewDist(d.gfxTumi.viewDist);
     endless.setViewDist(mode === 'menu' ? Math.min(2, ge.viewDist) : ge.viewDist); endless.setRounding(ge.round / 100, ge.cove / 100);
     const fov = g.fov;
     hud.showFps(d.gfx.showFps);
@@ -322,6 +357,14 @@ export function createApp({ appEl, uiEl }) {
       path.frame(dt, t0, walking, ctl, rememberWalk);
       autosave(now, walking);
       commonHud(dt, now, walking, path.loadedCount);
+      requestAnimationFrame(frame);
+      return;
+    }
+    if (kind === 'tumi') {
+      const ctl = walking ? { look: input.takeLook(), turn: input.turnAxis(), move: input.moveVector(), sprint: input.isDown('sprint'), jump: input.isDown('jump') } : (input.takeLook(), still);
+      tumi.frame(dt, t0, walking, ctl);
+      autosave(now, walking);
+      commonHud(dt, now, walking, tumi.loadedCount);
       requestAnimationFrame(frame);
       return;
     }
@@ -366,8 +409,8 @@ export function createApp({ appEl, uiEl }) {
     if (m && newer(m[1], VERSION)) menu.showUpdate(m[1]);
   }).catch(() => {});
   Object.defineProperties(app, Object.getOwnPropertyDescriptors({
-    endless, camera, pipe, audio, goMenu, startWalk, startPath, pause, mapUi, path, hand: path.hand, scratches: path.sound, teleport: path.teleport,
-    get story() { return path.story; }, get director() { return path.director; }, get guide() { return path.guide; }, get walker() { return kind === 'path' ? path.walker : endless.walker; }, get kind() { return kind; },
+    endless, tumi, camera, pipe, audio, goMenu, startWalk, startPath, pause, mapUi, path, hand: path.hand, scratches: path.sound, teleport: path.teleport,
+    get story() { return path.story; }, get director() { return path.director; }, get guide() { return path.guide; }, get walker() { return kind === 'path' ? path.walker : kind === 'tumi' ? tumi.walker : endless.walker; }, get kind() { return kind; },
     get mode() { return mode; }, get paused() { return paused; }, get session() { return session; }, get seed() { return seed; },
   }));
   return app;

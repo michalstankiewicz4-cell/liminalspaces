@@ -72,7 +72,7 @@ export function createHand() {
   g.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
 
   // the beam: a spot light at the lens with soft shadows
-  const spot = new THREE.SpotLight(0xfff1d6, 40, 32, 0.46, 0.55, 2);
+  const spot = new THREE.SpotLight(0xfff1d6, 160, 50, 0.5, 0.5, 1.35);    // reaches well down a corridor (0.19.0: was 40 / 32 m / decay 2)
   spot.position.set(0.19, -0.18, -0.5);
   spot.target.position.set(0.05, -0.3, -6);
   spot.castShadow = true;
@@ -80,7 +80,7 @@ export function createHand() {
   spot.shadow.bias = -0.0003;
   spot.shadow.normalBias = 0.025;
   spot.shadow.camera.near = 0.15;
-  spot.shadow.camera.far = 32;
+  spot.shadow.camera.far = 50;
   spot.shadow.radius = 3;
 
   green.color.setScalar(0.62); greenKnurl.color.setScalar(0.62);
@@ -91,6 +91,8 @@ export function createHand() {
     group: g, spot, lens: lensMat,
     // brightness of the place the torch is in, so the view model is not lit in the dark
     setLight(k) { mats.forEach((m, i) => m.color.copy(base[i]).multiplyScalar(Math.max(0.1, Math.min(1.3, k)))); },
+    // beam strength per world: lit halls need less than the dark caves (intensity, decay)
+    setBeam(i, d) { spot.intensity = i; spot.decay = d; },
     setOn(on) { spot.visible = on; lensMat.emissiveIntensity = on ? 1.6 : 0; },
     // gentle sway with the walk
     sway(t, bob, amp) {

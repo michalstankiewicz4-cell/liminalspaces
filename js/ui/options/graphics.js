@@ -8,7 +8,7 @@ import { slider, checkbox } from './widgets.js';
 
 export function buildGraphics({ settings }) {
   // the same rows for every game's profile (sec: 'gfx' = endless, 'gfxPath' = the Great Path)
-  const rowsFor = (sec) => {
+  const rowsFor = (sec, rounding = true) => {
     const g = () => settings.data[sec];
     const set = (k) => (v) => settings.update((d) => { d[sec][k] = v; });
     return [
@@ -20,8 +20,9 @@ export function buildGraphics({ settings }) {
       slider({ label: 'gfx.bright', range: RANGES.bright, get: () => g().bright, set: set('bright') }),
       slider({ label: 'gfx.fov', range: RANGES.fov, get: () => g().fov, set: set('fov'), fmt: (v) => v + '°' }),
       slider({ label: 'gfx.viewDist', range: RANGES.viewDist, get: () => g().viewDist, set: set('viewDist'), fmt: (v) => String(v) }),
-      slider({ label: 'gfx.round', range: RANGES.round, get: () => g().round, set: set('round'), fmt: (v) => v + ' cm' }),
-      slider({ label: 'gfx.cove', range: RANGES.cove, get: () => g().cove, set: set('cove'), fmt: (v) => v + ' cm' }),
+      ...(rounding ? [
+        slider({ label: 'gfx.round', range: RANGES.round, get: () => g().round, set: set('round'), fmt: (v) => v + ' cm' }),
+        slider({ label: 'gfx.cove', range: RANGES.cove, get: () => g().cove, set: set('cove'), fmt: (v) => v + ' cm' })] : []),
       checkbox({ label: 'gfx.bob', get: () => g().headBob, set: set('headBob') }),
       checkbox({ label: 'gfx.grain', get: () => g().grain, set: set('grain') }),
       checkbox({ label: 'gfx.scan', get: () => g().scan, set: set('scan') }),
@@ -34,24 +35,26 @@ export function buildGraphics({ settings }) {
     checkbox({ label: 'story.guide', get: () => settings.data.story.guide, set: (v) => settings.update((d) => { d.story.guide = v; }) }),
     checkbox({ label: 'story.events', get: () => settings.data.story.events, set: (v) => settings.update((d) => { d.story.events = v; }) }),
   ];
+  const tumi = rowsFor('gfxTumi', false);            // the caves are round by nature: no rounding sliders
   const fps = checkbox({ label: 'gfx.fps', get: () => settings.data.gfx.showFps, set: (v) => settings.update((d) => { d.gfx.showFps = v; }) });
-  const all = [...endless, ...path, fps];
+  const all = [...endless, ...path, ...tumi, fps];
   settings.onChange(() => all.forEach((r) => r.refresh()));
 
-  const boxE = h('div', {}, endless.map((r) => r.el)), boxP = h('div', {}, path.map((r) => r.el));
+  // one box of rows and one tab per game; SEC: the settings section of each
+  const SEC = { endless: 'gfx', path: 'gfxPath', tumi: 'gfxTumi' };
+  const boxes = { endless: h('div', {}, endless.map((r) => r.el)), path: h('div', {}, path.map((r) => r.el)), tumi: h('div', {}, tumi.map((r) => r.el)) };
+  const tabs = {};
+  for (const w of Object.keys(SEC)) tabs[w] = h('button', { type: 'button', class: 'tab', on: { click: () => setWorld(w) } }, tx('tile.' + w));
   let world = 'endless';
-  const bE = h('button', { type: 'button', class: 'tab', on: { click: () => setWorld('endless') } }, tx('tile.endless'));
-  const bP = h('button', { type: 'button', class: 'tab', on: { click: () => setWorld('path') } }, tx('tile.path'));
   function setWorld(w) {
-    world = w === 'path' ? 'path' : 'endless';
-    boxE.hidden = world !== 'endless'; boxP.hidden = world !== 'path';
-    bE.classList.toggle('on', world === 'endless'); bP.classList.toggle('on', world === 'path');
+    world = SEC[w] ? w : 'endless';
+    for (const k of Object.keys(SEC)) { boxes[k].hidden = k !== world; tabs[k].classList.toggle('on', k === world); }
   }
   setWorld('endless');
   const el = h('div', { class: 'tabbody' },
-    h('div', { class: 'tabs worldtabs' }, tx('gfx.world', 'span'), bE, bP),
-    boxE, boxP, fps.el,
-    h('div', { class: 'btns' }, btn('gfx.reset', () => settings.resetSection(world === 'path' ? 'gfxPath' : 'gfx'))));
+    h('div', { class: 'tabs worldtabs' }, tx('gfx.world', 'span'), ...Object.values(tabs)),
+    ...Object.values(boxes), fps.el,
+    h('div', { class: 'btns' }, btn('gfx.reset', () => settings.resetSection(SEC[world]))));
   el.onSelect = (o) => { if (o && o.world) setWorld(o.world); };
   return el;
 }

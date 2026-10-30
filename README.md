@@ -1,6 +1,6 @@
 # Creepypasta Explorator
 
-A first-person exploration game with two worlds: **Endless Liminal Spaces** — walk forever through procedurally generated empty yellow offices, hotel corridors, parking levels and pool halls — and **The Great Path** — the district of Luceron and its halls, built in real multi-level 3D from the story “Rudon's Plane – Part 1” (Solar Sands). Low-resolution 3D with a pixel-art filter (three.js), built on the engine of [Capital Quarantine](https://github.com/michalstankiewicz4-cell/VS). Play: <https://michalstankiewicz4-cell.github.io/liminalspaces/>
+A first-person exploration game with three worlds — **Tumithak of the Corridors** (real caves after Charles R. Tanner's 1932 story) and these two: **Endless Liminal Spaces** — walk forever through procedurally generated empty yellow offices, hotel corridors, parking levels and pool halls — and **The Great Path** — the district of Luceron and its halls, built in real multi-level 3D from the story “Rudon's Plane – Part 1” (Solar Sands). Low-resolution 3D with a pixel-art filter (three.js), built on the engine of [Capital Quarantine](https://github.com/michalstankiewicz4-cell/VS). Play: <https://michalstankiewicz4-cell.github.io/liminalspaces/>
 
 Default controls (all rebindable in Options): click the game to capture the mouse, mouse to look, WASD walk, arrows turn, Shift run, Space jump, F flashlight, H hide/show HUD, Esc pause.
 

@@ -36,7 +36,7 @@ export function createEndlessMode(shared) {
     story.preload(walker.x, walker.z);
     story.setPower(1); story.setWorkLights(false);
     story.scene.add(camera);
-    hand.group.visible = !menu; hand.setOn(false);
+    hand.group.visible = !menu; hand.setOn(false); hand.setBeam(60, 1.6);
     lastDist = 0;
   }
   // the nearest spot with room to stand (a walk saved before 0.18.0 can lie inside today's thicker walls)
