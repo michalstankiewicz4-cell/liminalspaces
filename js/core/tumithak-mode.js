@@ -64,6 +64,7 @@ export function createTumithakMode(shared) {
     caves.setWorkLights(false);
     caves.scene.add(camera);
     hand.group.visible = true; hand.setOn(true); hand.setBeam(160, 1.35);   // the dark: a strong beam down the corridors
+    hand.spot.shadow.camera.layers.set(2);   // the beam throws the shadows of props, not of the rock around it (acne)
     safe = { x: walker.x, y: walker.y, z: walker.z };
     lastDist = 0;
     const k = settings.data.keys;
@@ -87,7 +88,7 @@ export function createTumithakMode(shared) {
     }
     return null;
   }
-  function leave() { pipe.glitch = 0; hud.setSign(null); hand.group.visible = false; hand.spot.visible = false; map.setOpen(false); map.save(); }
+  function leave() { hand.spot.shadow.camera.layers.set(0); pipe.glitch = 0; hud.setSign(null); hand.group.visible = false; hand.spot.visible = false; map.setOpen(false); map.save(); }
   function remember() {
     map.save();
     progress.tumi = { x: +walker.x.toFixed(2), y: +walker.y.toFixed(2), z: +walker.z.toFixed(2), yaw: +walker.yaw.toFixed(3), seen: [...caves.visited.keys()] };

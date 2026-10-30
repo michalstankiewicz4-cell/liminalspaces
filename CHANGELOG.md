@@ -4,6 +4,16 @@ Versioning: `MAJOR.MINOR.PATCH`. Every push to the repository is a new release (
 The owner creates `vX.Y.Z` tags in GitHub Releases on commits from this history; pushing tags from a Claude session is blocked.
 Bug fix = PATCH, new feature = MINOR, big change to gameplay, the save format or world generation (changes every seed) = MAJOR.
 
+## [0.28.0] - 2026-10-30
+Parts: Tumithak of the Corridors 1.11.0
+### Added — real lamp light and shadows
+- The lamps nearest to you (eight at a time) are real lights: they light the rock, the props and the steles directly and cast shadows — of the rock (bends, pillars, doorways) and of everything standing in the halls. Further off the light stays baked into the rock; within 12–20 m of you the baked lamp light fades to a little bounce light while the real lights fade in, so nothing is lit twice. The world is still, so a light's shadow map (256 px, a cube) is drawn again only when the light moves to another lamp or new rock is built near it.
+- The flashlight now throws the shadows of props (not of the rock around you).
+### Changed
+- The baked light of the rock and of the props is now indirect light instead of a darkening of their colour, so the flashlight lights the rock properly in the dark corridors too (before, it showed almost only glints there). The glassy walls are a little less glossy (no glitter of tiny highlights).
+### Fixed
+- The food-rooms on the road to Nonone could not be entered: their doorway ended short of the room.
+
 ## [0.27.1] - 2026-10-30
 Parts: Tumithak of the Corridors 1.10.1
 ### Fixed

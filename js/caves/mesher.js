@@ -2,8 +2,8 @@
 // surface with naive surface nets (one vertex per cell that the surface crosses, placed at the mean of the edge
 // crossings; one quad per crossed grid edge). Each edge belongs to exactly one chunk, so chunks meet without seams.
 // Per vertex: normal (field gradient), albedo tint and roughness of the zone, and baked light — the zone's ambient
-// light and the lamp plates (wrap Lambert, distance falloff, occlusion by rock tested along the ray), times ambient
-// occlusion from the field.
+// light (colour `c`) and the lamp plates (`l`: wrap Lambert, distance falloff, occlusion by rock tested along the ray),
+// both times ambient occlusion from the field.
 import { CH, VOX } from './field.js';
 import { noise3 } from './noise.js';
 
@@ -85,7 +85,7 @@ export function meshCaveChunk(W, ci, cj, ck) {
 
   /* baked light and colours */
   const nv = P.length / 3;
-  const col = new Float32Array(nv * 3), tint = new Float32Array(nv * 4);
+  const col = new Float32Array(nv * 3), bake = new Float32Array(nv * 3), tint = new Float32Array(nv * 4);
   const lamps = W.lamps.filter((l) => !l.dead && l.x > ox - REACH && l.x < ox + CH + REACH && l.y > oy - REACH && l.y < oy + CH + REACH && l.z > oz - REACH && l.z < oz + CH + REACH);
   for (let v = 0; v < nv; v++) {
     const x = P[v * 3], y = P[v * 3 + 1], z = P[v * 3 + 2], nx = Nn[v * 3], ny = Nn[v * 3 + 1], nz = Nn[v * 3 + 2];
@@ -96,6 +96,7 @@ export function meshCaveChunk(W, ci, cj, ck) {
     let r = zd.amb, g = zd.amb, b = zd.amb;
     if (zd.ambC) { r = zd.ambC[0]; g = zd.ambC[1]; b = zd.ambC[2]; }
     if (zd.sun) { const s = zd.sun, l = Math.max(0, nx * s[0] + ny * s[1] + nz * s[2]); r += s[3] * l; g += s[4] * l; b += s[5] * l; }   // the low sun on what faces it
+    let lr = 0, lg = 0, lb = 0;                 // the lamps, kept apart: near you the real lights take over (materials.js)
     const sx = x + nx * 0.25, sy = y + ny * 0.25, sz = z + nz * 0.25;
     for (const l of lamps) {
       const dx = l.x - sx, dy = l.y - sy, dz = l.z - sz, d2 = dx * dx + dy * dy + dz * dz;
@@ -107,9 +108,10 @@ export function meshCaveChunk(W, ci, cj, ck) {
       for (const t of [0.25, 0.5, 0.75]) if (W.field(sx + dx * t, sy + dy * t, sz + dz * t) > 0.1) { occ = 1; break; }
       if (occ) continue;
       const k = l.p * lam / (1 + d2 / R2);
-      r += l.r * k; g += l.g * k; b += l.b * k;
+      lr += l.r * k; lg += l.g * k; lb += l.b * k;
     }
     col[v * 3] = r * ao; col[v * 3 + 1] = g * ao; col[v * 3 + 2] = b * ao;
+    bake[v * 3] = lr * ao; bake[v * 3 + 1] = lg * ao; bake[v * 3 + 2] = lb * ao;
     let t0 = zd.tint[0], t1 = zd.tint[1], t2 = zd.tint[2];
     if (zd.grass) {           // dust by the pit, then a carpet of grass (in patches at its edge)
       const d = Math.hypot(x - W.exit.x, z - W.exit.z) + noise3(x * 0.3, 0.7, z * 0.3) * 3;
@@ -119,5 +121,5 @@ export function meshCaveChunk(W, ci, cj, ck) {
     tint[v * 4] = t0; tint[v * 4 + 1] = t1; tint[v * 4 + 2] = t2; tint[v * 4 + 3] = zd.rough;
   }
   const big = nv > 65535;
-  return { p: new Float32Array(P), n: new Float32Array(Nn), c: col, t: tint, i: big ? new Uint32Array(I) : new Uint16Array(I) };
+  return { p: new Float32Array(P), n: new Float32Array(Nn), c: col, l: bake, t: tint, i: big ? new Uint32Array(I) : new Uint16Array(I) };
 }

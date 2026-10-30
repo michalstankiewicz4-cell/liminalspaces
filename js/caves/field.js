@@ -234,7 +234,7 @@ export function buildCaves() {
     if (i === 1) { const m = pts[Math.floor(pts.length / 2)]; labels.push({ key: 'passage', x: m[0], y: m[1], z: m[2] }); }   // on the way itself
     if (i === 0 || i === 2) {          // a food-room by the road: the machines that make food and fuel out of the rock
       const m = pts[Math.floor(pts.length / 2)];
-      tube(m, [m[0], m[1], m[2] + 4], { w: 0.75, h: 2.4, rt: 0.5, rb: 0.15, amp: 0.04, zone: Z.passage, ext: 0.2 });
+      tube(m, [m[0], m[1], m[2] + 5.8], { w: 0.75, h: 2.4, rt: 0.5, rb: 0.15, amp: 0.04, zone: Z.passage, ext: 0.2 });   // into the room (its wall is 3 m from its middle)
       room(m[0], m[1], m[2] + 8, 3.5, 3, 3.2, { rr: 1, zone: Z.passage });
       addLamp(m[0], m[1] + 3.2, m[2] + 8, { dead: 0, lampP: 0.6 });
       props.push({ kind: 'synth', x: m[0] - 1.6, y: m[1], z: m[2] + 9.5 }, { kind: 'synth', x: m[0] + 1.6, y: m[1], z: m[2] + 9.5 });

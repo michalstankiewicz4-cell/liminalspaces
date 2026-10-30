@@ -6,7 +6,7 @@
 import * as THREE from '../../vendor/three.module.js';
 import { buildCaves, CH } from './field.js';
 import { meshCaveChunk } from './mesher.js';
-import { rockMaterial, sackcloth } from './materials.js';
+import { rockMaterial, sackcloth, baked, LIT } from './materials.js';
 
 let VIEW = 3;                         // chunks streamed around you horizontally (radius); 2 vertically
 let FOG_K = 1;
@@ -40,6 +40,55 @@ export function createCaves() {
     im.frustumCulled = false;
     scene.add(im);
   }
+  /* ---- real lamp light: the lamps nearest to you are point lights with shadows (the rest stays baked; the two
+     blend by distance, materials.js LIT). The world is still, so a light's shadow is drawn again only when it moves
+     to another lamp or new rock is built near it. ---- */
+  const POOL = 8, PR2 = 3.6 * 3.6;
+  const pool = [];
+  for (let n = 0; n < POOL; n++) {
+    const L = new THREE.PointLight(0xffffff, 0, 16, 2);
+    L.castShadow = true;
+    L.shadow.mapSize.set(256, 256);
+    L.shadow.bias = -0.002; L.shadow.normalBias = 0.03;
+    L.shadow.camera.near = 0.1; L.shadow.camera.far = 16;
+    L.shadow.autoUpdate = false; L.shadow.needsUpdate = true;
+    L.userData.lamp = null;
+    scene.add(L); pool.push(L);                // always in the scene (a changing light count would recompile shaders)
+  }
+  const live = W.lamps.filter((l) => !l.dead);
+  let poolT = 0;
+  function lampsDirty(x, y, z) { for (const L of pool) if (L.userData.lamp && Math.abs(L.position.x - x) < 26 && Math.abs(L.position.y - y) < 26 && Math.abs(L.position.z - z) < 26) L.shadow.needsUpdate = true; }
+  // choose the lamps (every 0.25 s; a lamp keeps its light while it stays chosen) and set their strength (every frame)
+  function lampLights(dt, px, py, pz) {
+    LIT.uPlayer.value.set(px, py, pz);
+    const near = LIT.uNear.value, far = LIT.uFar.value, keep = 1 - LIT.uBounce.value;
+    const fade = (l) => { const d = Math.hypot(l.x - px, l.y - py, l.z - pz); const t = Math.min(1, Math.max(0, (d - near) / (far - near))); return 1 - t * t * (3 - 2 * t); };
+    poolT -= dt;
+    if (poolT <= 0) {
+      poolT = 0.25;
+      const want = [];
+      for (const l of live) { const d2 = (l.x - px) ** 2 + (l.y - py) ** 2 + (l.z - pz) ** 2; if (d2 < far * far) want.push([d2 / l.p, l]); }
+      want.sort((a, b) => a[0] - b[0]);
+      const chosen = new Set(want.slice(0, POOL).map((w) => w[1]));
+      const free = [];
+      for (const L of pool) { if (L.userData.lamp && chosen.has(L.userData.lamp)) chosen.delete(L.userData.lamp); else free.push(L); }
+      for (const l of chosen) {
+        const L = free.pop();
+        L.userData.lamp = l;
+        L.position.set(l.x, l.hidden ? l.y : l.y - 0.25, l.z);     // just under the plate (inside the noise of the ceiling it would shadow everything)
+        L.color.setRGB(l.r, l.g, l.b);
+        L.shadow.needsUpdate = true;
+      }
+      for (const L of free) { L.userData.lamp = null; L.intensity = 0; }
+    }
+    // the same light as the baked lamps far off (p / (1 + d^2 / 3.6^2), as a point light: I / (pi d^2)), faded in near you
+    for (const L of pool) {
+      const l = L.userData.lamp;
+      if (!l) continue;
+      L.intensity = Math.PI * PR2 * l.p * keep * fade(l) * (l.flicker ? lampFl.color.r / 2.3 : 1);
+    }
+  }
+
   // ladders: two rails and rungs every 0.3 m on the shaft wall
   const iron = new THREE.MeshStandardMaterial({ color: 0x6a5e52, roughness: 0.55, metalness: 0.7 });
   let rungs = 0;
@@ -55,21 +104,19 @@ export function createCaves() {
   }
   rungMesh.count = ri; rungMesh.frustumCulled = false; scene.add(rungMesh);
   // curtains: sackcloth hanging in doorways (a little slack)
-  const cloth = sackcloth();
+  const cloth = sackcloth(); cloth.vertexColors = false;
   for (const c of W.curtains) {
     const g = new THREE.PlaneGeometry(c.w, c.h, 6, 6);
     const p = g.attributes.position;
-    const col = new Float32Array(p.count * 3);
     for (let i = 0; i < p.count; i++) {
       const x = p.getX(i), y = p.getY(i);
       p.setZ(i, Math.sin(x * 4.1 + y * 1.3) * 0.04 + (c.torn && y < -c.h * 0.2 ? 0.08 : 0));
       if (c.torn && y < -c.h * 0.3 && x > 0) p.setY(i, -c.h * 0.3);
     }
-    const m = new THREE.Mesh(g, cloth);
+    const [ca, cl] = lightParts(c.x, c.y + 1.2, c.z);
+    const m = new THREE.Mesh(g, baked(cloth.clone(), ca * 0.9, cl * 0.9, { x: c.x, y: c.y + 1.2, z: c.z }));
     m.position.set(c.x, c.y + c.h / 2, c.z); m.rotation.y = c.rot;
-    const lk = lightAt(c.x, c.y + 1.2, c.z) * 0.9;
-    for (let i = 0; i < p.count; i++) col.set([lk, lk, lk], i * 3);
-    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    m.castShadow = true; m.layers.enable(2);
     scene.add(m);
   }
   for (const pr of W.props) scene.add(buildProp(pr));
@@ -199,12 +246,15 @@ export function createCaves() {
       g.setAttribute('position', new THREE.BufferAttribute(r.p, 3));
       g.setAttribute('normal', new THREE.BufferAttribute(r.n, 3));
       g.setAttribute('color', new THREE.BufferAttribute(r.c, 3));
+      g.setAttribute('bake', new THREE.BufferAttribute(r.l, 3));
       g.setAttribute('tint', new THREE.BufferAttribute(r.t, 4));
       g.setIndex(new THREE.BufferAttribute(r.i, 1));
       g.computeBoundingSphere();
       const m = new THREE.Mesh(g, rock);
-      m.matrixAutoUpdate = false; m.castShadow = false; m.receiveShadow = true;    // the beam comes from the eye: rock shadowing rock only adds acne
+      // rock casts shadows of the lamps (its back faces, so no acne); the flashlight's shadows leave it out (layer 2)
+      m.matrixAutoUpdate = false; m.castShadow = true; m.receiveShadow = true;
       root.add(m); e.mesh = m;
+      lampsDirty((i + 0.5) * CH, (j + 0.5) * CH, (k + 0.5) * CH);
     }
     loaded.set(key(i, j, k), e);
   }
@@ -294,9 +344,11 @@ export function createCaves() {
   }
 
   /* ---- light at a point (the flashlight model, curtains) ---- */
-  function lightAt(x, y, z) {
+  function lightAt(x, y, z) { const [a, l] = lightParts(x, y, z); return a + l; }
+  // [ambient, lamps] at a point
+  function lightParts(x, y, z) {
     const zd = W.zones[W.zoneAt(x, y, z)] || W.zones[0];
-    let v = zd.amb;
+    let v = 0;
     for (const l of W.lamps) {
       if (l.dead) continue;
       const dx = l.x - x, dy = l.y - y, dz = l.z - z, d2 = dx * dx + dy * dy + dz * dz;
@@ -304,7 +356,7 @@ export function createCaves() {
       if (f(x + dx / 2, y + dy / 2, z + dz / 2) > 0.1) continue;
       v += l.p / (1 + d2 / 13);
     }
-    return v;
+    return [zd.amb, v];
   }
 
   /* ---- zones, fog, flicker ---- */
@@ -318,6 +370,7 @@ export function createCaves() {
       zone = z;
       if (!visited.has(z)) { visited.set(z, visited.size + 1); if (onZone) onZone(z, true); }
     }
+    lampLights(dt, pos.x, pos.y + 1.4, pos.z);
     const zd = W.zones[zone] || W.zones[0];
     const out = pos.y > W.surfaceY - 2.5 && Math.hypot(pos.x - W.exit.x, pos.z - W.exit.z) < 600;
     // (from the stairs below the pit, the sky shows through the opening ahead)
@@ -335,8 +388,9 @@ export function createCaves() {
     const g = new THREE.Group();
     const fl = p.kind === 'hatch' ? p.y : support(p.x - 0.1, p.z - 0.1, p.x + 0.1, p.z + 0.1, p.y + 1.2);
     g.position.set(p.x, Number.isFinite(fl) ? fl : p.y, p.z);
-    const k = Math.min(1, 0.04 + lightAt(p.x, g.position.y + 1, p.z) * 1.4);
-    const mat = (c, o = {}) => new THREE.MeshStandardMaterial({ color: new THREE.Color(c).multiplyScalar(k), roughness: 0.7, metalness: 0, ...o });
+    const [la, ll] = lightParts(p.x, g.position.y + 1, p.z), pa = 0.04 + la * 1.4, pl = ll * 1.4, at = { x: p.x, y: g.position.y + 1, z: p.z };
+    const lit = (m) => baked(m, pa, pl, at);
+    const mat = (c, o = {}) => lit(new THREE.MeshStandardMaterial({ color: new THREE.Color(c), roughness: 0.7, metalness: 0, ...o }));
     const add = (geo, m, x, y, z, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.y = ry; g.add(o); return o; };
     const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
     const dark = mat(0x3a3632, { roughness: 0.5, metalness: 0.6 });
@@ -422,7 +476,7 @@ export function createCaves() {
       gx.fillStyle = '#f0e8d0'; gx.fillRect(0, 0, 64, 64);
       for (let i = 0; i < 14; i++) { gx.fillStyle = `hsl(${(i * 47 + p.x * 13) % 360},70%,55%)`; gx.beginPath(); gx.arc((i * 23) % 64, (i * 37) % 64, 6 + (i % 4) * 4, 0, 7); gx.fill(); }
       const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
-      add(box(0.9, 0.7, 0.03), new THREE.MeshStandardMaterial({ map: tex, color: new THREE.Color(1, 1, 1).multiplyScalar(k), roughness: 0.8 }), 0, 1.35, 0.08);
+      add(box(0.9, 0.7, 0.03), lit(new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8 })), 0, 1.35, 0.08);
     } else if (p.kind === 'tapestry') {
       // a woven hanging: deep colours in bands
       const cv = document.createElement('canvas'); cv.width = 32; cv.height = 64;
@@ -431,7 +485,7 @@ export function createCaves() {
       for (let y = 0; y < 64; y += 4) { gx.fillStyle = pal[(y / 4 + (p.x | 0)) % pal.length]; gx.fillRect(0, y, 32, 4); }
       gx.fillStyle = '#e8d8a0'; for (let y = 6; y < 64; y += 12) gx.fillRect(10, y, 12, 3);
       const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.magFilter = THREE.NearestFilter;
-      add(box(2.2, 3.4, 0.04), new THREE.MeshStandardMaterial({ map: tex, color: new THREE.Color(1, 1, 1).multiplyScalar(k), roughness: 0.95 }), 0, 1.9, 0, p.rot || 0);
+      add(box(2.2, 3.4, 0.04), lit(new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95 })), 0, 1.9, 0, p.rot || 0);
     } else if (p.kind === 'metalDoor') {
       // the Esthetts have true doors, of metal, high and wide
       const met = mat(0x9a9488, { metalness: 0.85, roughness: 0.35 });
@@ -480,7 +534,7 @@ export function createCaves() {
       }
     } else if (p.kind === 'bloodJars') {
       // what the shelks drew from beneath the table: huge transparent jars, dark red, and the small pumps with their hoses
-      const glass = new THREE.MeshStandardMaterial({ color: new THREE.Color(0.75, 0.8, 0.82).multiplyScalar(k), roughness: 0.15, transparent: true, opacity: 0.35, depthWrite: false });
+      const glass = lit(new THREE.MeshStandardMaterial({ color: new THREE.Color(0.75, 0.8, 0.82), roughness: 0.15, transparent: true, opacity: 0.35, depthWrite: false }));
       const blood = mat(0x4a0a0c, { roughness: 0.3 });
       for (let i = 0; i < 4; i++) {
         const z = -2.4 + i * 1.6;
@@ -529,6 +583,8 @@ export function createCaves() {
       const rope = mat(0x7a6a4a);
       for (let i = 0; i < 5; i++) { const r = add(new THREE.TorusGeometry(0.18 + i * 0.03, 0.012, 6, 20, 4), rope, i * 0.06, 0.012, i * 0.04); r.rotation.x = Math.PI / 2; }
     }
+    // props cast shadows from the lamps, and (layer 2) from the flashlight
+    g.traverse((o) => { if (o.isMesh && !o.material.transparent && o.material.isMeshStandardMaterial) { o.castShadow = true; o.receiveShadow = true; o.layers.enable(2); } });
     return g;
   }
   // pictures painted on the walls of the Esthetts' corridor (chapter 5): a dance around a shelk, the car on wheels
@@ -545,9 +601,9 @@ export function createCaves() {
     else if (m.pic === 'car') { x.fillStyle = '#6a7078'; x.fillRect(70, 50, 120, 30); x.beginPath(); x.arc(70, 65, 15, 0, 7); x.arc(190, 65, 15, 0, 7); x.fill(); x.fillStyle = '#222'; for (const wx of [90, 170]) { x.beginPath(); x.arc(wx, 86, 9, 0, 7); x.fill(); } for (let i = 0; i < 6; i++) fat(30 + i * 40 + (i > 2 ? 40 : 0), 92, cols[i % 5]); }
     else { shelk(70, 50); shelk(110, 54); shelk(150, 50); for (let i = 0; i < 4; i++) fat(40 + i * 60, 88, cols[(i + 2) % 5]); }
     const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
-    const k = Math.min(1, 0.06 + lightAt(m.x, m.y + 1, m.z) * 1.4);
+    const [ma, ml] = lightParts(m.x, m.y + 1, m.z);
     const W2 = 1.5, H = 1.5;
-    const q = new THREE.Mesh(new THREE.PlaneGeometry(W2 * 2, H), new THREE.MeshStandardMaterial({ map: tex, color: new THREE.Color(1, 1, 1).multiplyScalar(k), roughness: 0.8 }));
+    const q = new THREE.Mesh(new THREE.PlaneGeometry(W2 * 2, H), baked(new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8 }), 0.06 + ma * 1.4, ml * 1.4, { x: m.x, y: m.y + 1, z: m.z }));
     // on the wall: from the axis point sideways (along z) to the rock, then turned to face along the rock's normal
     // (the corridors curve) and moved out until neither end of the picture sinks into the wall
     const y = m.y + 1.3;
@@ -573,8 +629,8 @@ export function createCaves() {
     const g = new THREE.Group();
     const fl = support(m.x - 0.1, m.z - 0.1, m.x + 0.1, m.z + 0.1, m.y + 1.2);
     g.position.set(m.x, Number.isFinite(fl) ? fl : m.y, m.z);
-    const k = Math.min(1, 0.05 + lightAt(m.x, g.position.y + 1, m.z) * 1.4);
-    const stone = new THREE.MeshStandardMaterial({ color: new THREE.Color(0x8a8070).multiplyScalar(k), roughness: 0.85 });
+    const [sa, sl] = lightParts(m.x, g.position.y + 1, m.z);
+    const stone = baked(new THREE.MeshStandardMaterial({ color: new THREE.Color(0x8a8070), roughness: 0.85 }), 0.05 + sa * 1.4, sl * 1.4, { x: m.x, y: g.position.y + 1, z: m.z });
     const slab = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.95, 0.14), stone);
     slab.position.y = 0.475; g.add(slab);
     const roman = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII'][m.ch] || String(m.ch);
