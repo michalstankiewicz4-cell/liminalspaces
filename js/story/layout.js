@@ -7,6 +7,7 @@ import { M } from './textures.js';
 import { rand4, hash4 } from '../core/util.js';
 import { JOURNEY_ZONES, paintJourney, JX } from './journey.js';
 
+const TALL = new Set(['studs', 'steelDoor', 'doorFrame', 'bars', 'support', 'shelf', 'column', 'frame', 'machine', 'cupboard']);
 const R = (a, b = 0, c = 0) => rand4(4242, Math.round(a * 2), Math.round(b * 2), c);
 
 /* ---- zones: name key, story timestamp, light & fog, materials, map colour, label position ---- */
@@ -133,7 +134,7 @@ export function buildLayout(grid0) {
   skylight(-2, -2, 2, 2, 1.0, 1.4);
   prop('funnel', 0, 0, 0, { big: true, top: H });
   for (const [x, z, r] of [[-6, -6, 0], [6, -6, 0], [-6, 6, Math.PI], [6, 6, Math.PI]]) prop('bench', x, z, r);
-  note(0, 9, 0, 1, 'gp.n.hub');
+  note(4, 9, 0, 1, 'gp.n.hub');                                             // beside the avenue opening, not in it
   // avenues
   room('avenue', -1.5, -60, 1.5, -10); room('avenue', -1.5, 10, 1.5, 60);
   room('avenue', 10, -1.5, 44, 1.5); room('avenue', -60, -1.5, -10, 1.5);
@@ -147,8 +148,8 @@ export function buildLayout(grid0) {
   for (let k = 0; k < 4; k++) for (let r = 0; r < 3; r++) prop('desk', 10 + k * 5.5, -44 + r * 5, 0, { lamp: r === 1, chair: true });
   // explorers' guild: a room full of scientific equipment (42:50), with a cramped office at its end
   room('guild', -34, -22, -14, -4); door('guild', -25, -4, -23, -1.5);
-  for (let k = 0; k < 3; k++) prop('labbench', -29 + k * 7.5, -16, 0, { w: 4 });
-  for (let k = 0; k < 3; k++) prop('labbench', -29 + k * 7.5, -10, Math.PI, { w: 4 });
+  for (let k = 0; k < 3; k++) prop('labbench', -29.5 + k * 6.5, -16, 0, { w: 3.6 });
+  for (let k = 0; k < 3; k++) prop('labbench', -29.5 + k * 6.5, -10, Math.PI, { w: 3.6 });
   for (let k = 0; k < 5; k++) prop('crate', -32.5, -20.5 + k * 0.7, 0, { bricks: k % 2 === 0, s: 0.6 });
   for (let k = 0; k < 4; k++) prop('jug', -16 + k * 0.35, -21.4, 0);
   prop('bike', -16.5, -7.5, Math.PI / 2, { drum: true }); prop('bike', -18.5, -7.5, Math.PI / 2, { drum: true });
@@ -161,7 +162,7 @@ export function buildLayout(grid0) {
   for (let k = 0; k < 4; k++) { prop('shelf', -30 + k * 4.5, -37, 0, { w: 3.6, rolls: true }); prop('shelf', -30 + k * 4.5, -36.4, Math.PI, { w: 3.6, rolls: true }); }
   prop('maptable', -24, -29, 0);
   room('machine', -28, -47, -20, -40.5); door('machine', -25.5, -40.5, -22.5, -40, 2.6);
-  prop('bars', -21.4, -40.25, Math.PI / 2, { w: 1.8, h: 2.3 });
+  prop('bars', -24, -40.25, 0, { w: 3, h: 2.6 });                          // the gate across the way to the machine
   prop('machine', -24, -46.2, 0);
   note(-21, -43, 1, 0, 'gp.n.machine');
   // the court and the layered gate to the Great Path (01:20, 35:33)
@@ -173,7 +174,7 @@ export function buildLayout(grid0) {
   note(56.5, -3, 0, -1, 'gp.n.gate');
   // gardens (skylights over planters), market with a tailor, factory
   room('gardens', -34, 4, -14, 22); door('gardens', -25, 1.5, -23, 4);
-  for (let k = 0; k < 3; k++) for (let r = 0; r < 2; r++) { prop('planter', -29 + k * 7, 9 + r * 7, 0, { w: 4.5, d: 1.4 }); skylight(-30 + k * 7, 8 + r * 7, -28 + k * 7, 10 + r * 7, 0.9, 0.9); }
+  for (let k = 0; k < 3; k++) for (let r = 0; r < 2; r++) { prop('planter', -29.5 + k * 6.5, 9 + r * 7, 0, { w: 4, d: 1.4 }); skylight(-30.5 + k * 6.5, 8 + r * 7, -28.5 + k * 6.5, 10 + r * 7, 0.9, 0.9); }
   room('market', 4, 14, 30, 30); door('market', 1.5, 20, 4, 22);
   for (let k = 0; k < 4; k++) { prop('stall', 8 + k * 5.5, 17, 0, { w: 3.2 }); prop(k === 1 ? 'tailor' : 'stall', 8 + k * 5.5, 27, Math.PI, { w: 3.2 }); }
   room('factory', -32, 30, -8, 50); door('factory', -8, 38, -1.5, 40, 2.8);
@@ -207,12 +208,19 @@ export function buildLayout(grid0) {
     const r = R(gx, gz, 2), horiz = R(gx, gz, 3) < 0.5;
     const len = 2 + Math.floor(R(gx, gz, 4) * 4);
     const ax = horiz ? gx + 1 : gx, az = horiz ? gz : gz + 1;
+    // loose things stay inside the ring and out of the mine (dug later, deeper): nothing pokes into walls or floats
+    const inMine = (x, z) => x > -100 && x < -61 && z > -10 && z < 75;
+    const fits = (x0, z0, x1, z1) => [[x0, z0], [x1, z0], [x0, z1], [x1, z1]].every(([x, z]) => inRing1(x, z) && !inMine(x, z));
+    const lumLen = 2.5 + R(gx, gz, 7) * 2, lumH = R(gx, gz, 6) < 0.5;
     if (r < 0.3) solid(horiz ? ax : ax - 0.25, horiz ? az - 0.25 : az, horiz ? ax + len : ax + 0.25, horiz ? az + 0.25 : az + len);
+    else if (r < 0.6 && !fits(ax - 0.3, az - 0.3, horiz ? ax + len + 0.3 : ax + 0.3, horiz ? az + 0.3 : az + len + 0.3)) continue;
+    else if (r >= 0.6 && r < 0.75 && !fits(gx + 3 - (lumH ? lumLen / 2 : 0.4), gz + 3 - (lumH ? 0.4 : lumLen / 2), gx + 3 + (lumH ? lumLen / 2 : 0.4), gz + 3 + (lumH ? 0.4 : lumLen / 2))) continue;
+    else if (r >= 0.75 && r < 0.9 && !fits(gx + 2.5, gz + 0.5, gx + 5.5, gz + 3.5)) continue;
     else if (r < 0.6) prop('studs', horiz ? ax + len / 2 : ax, horiz ? az : az + len / 2, horiz ? 0 : Math.PI / 2, { len, panel: R(gx, gz, 5) < 0.5 });
-    else if (r < 0.75) prop('lumber', gx + 3, gz + 3, R(gx, gz, 6) < 0.5 ? 0 : Math.PI / 2, { len: 2.5 + R(gx, gz, 7) * 2 });
+    else if (r < 0.75) prop('lumber', gx + 3, gz + 3, lumH ? 0 : Math.PI / 2, { len: lumLen });
     else if (r < 0.9) prop('rubble', gx + 4, gz + 2, 0, { n: 12, r: 1.3 });
   }
-  note(0, 61.5, -1, 0, 'gp.n.ring1', {}, {});
+  note(6, 64, 1, 0, 'gp.n.ring1', {}, {});                                  // on the west face of the pillar at (8, 64)
 
   /* ---- mine (07:51, 18:50): dug in one direction, away from the Hub; descends into soil and stone ---- */
   function mineCells(x0, z0, x1, z1, fFloor, ceilH = 3.0) {
@@ -292,7 +300,7 @@ export function buildLayout(grid0) {
       room(zk, ax, side < 0 ? -2.5 : 1.5, ax + 1, side < 0 ? -1.5 : 2.5, { floor: 2.75, ceil: 3.15, flags: 0 });
       prop('vent', ax + 0.5, side * 1.5, side < 0 ? 0 : Math.PI, { y: 0 });
     } else if (r < 0.28) prop('doorClosed', ax, side * 1.5, side < 0 ? 0 : Math.PI, { y: 0 });  // a door into solid wall
-    else if (r < 0.36) grid.paint(ax, -1.5, ax + 6, 1.5, { ceil: H + 0.15, cm: M.agarite, where: (x, z) => grid.isOpen(x, z) && !(grid.flagsAt(x, z) & F.SKY) });
+    else if (r < 0.36) { const p0 = Math.floor(ax / 8) * 8 + 5.5; grid.paint(p0, -1.5, p0 + 5, 1.5, { ceil: H + 0.15, cm: M.agarite, where: (x, z) => grid.isOpen(x, z) && !(grid.flagsAt(x, z) & F.SKY) }); }   // panels gone between two skylights
     else if (r < 0.42) prop('chair', ax, side * 0.9, side < 0 ? Math.PI : 0);                  // a chair facing the wall
     else if (r < 0.48) prop('frame', ax, 0, 0, { w: 0.9 });                                    // a door frame with no wall
     else if (r < 0.54 && far) {                                                                // a small empty side room
@@ -402,14 +410,14 @@ export function buildLayout(grid0) {
     const t = 56.25 + k * 1.6;
     if (Math.abs(t - 61) > 1.3) prop('doorClosed', t, 295, 0, { y: 0 });
     if (Math.abs(t - 61) > 1.3) prop('doorClosed', t, 307, Math.PI, { y: 0 });
-    prop('doorClosed', 55, t + 39, Math.PI / 2, { y: 0 });
-    prop('doorClosed', 67, t + 39, -Math.PI / 2, { y: 0 });
+    prop('doorClosed', 55, t + 240, Math.PI / 2, { y: 0 });
+    prop('doorClosed', 67, t + 240, -Math.PI / 2, { y: 0 });
   }
   room('doors', 60.5, 307, 61.5, 311, { ceil: 2.2, flags: 0 });
   for (let k = 0; k < 6; k++) prop('doorFrame', 61, 307.3 + k * 0.62, 0, { w: 1.0, y: 0 });
   room('doors', 60.5, 311, 61.5, 312, { ceil: 2.4, flags: 0 });            // the tiny room at the end
   grid.addLight({ x: 61, z: 311.5, y: 2.3, r: 1, g: 0.85, b: 0.6, p: 0.5, fixture: 'bulb', ceil: 2.4 });
-  note(56, 300, -1, 0, 'gp.n.doors');
+  note(61, 290, 1, 0, 'gp.n.doors');                                      // in the passage before the room (its walls are all doors)
 
   /* ---- branch west: a corridor that ends in a blank wall; behind the first layer only Agarite (43:28) ---- */
   room('wastes', -20, 308.5, -1.5, 311.5);
@@ -441,7 +449,7 @@ export function buildLayout(grid0) {
   }
   skylight(-2, CZ1 - 4.5, 2, CZ1 - 0.5, 1.9, 4.0);
   prop('symbol', 0, CZ1, Math.PI, { y: CF + 1.0, w: 7, h: 4.5 });
-  note(2.2, 401, 1, 0, 'gp.n.chapel', {}, { h: 1.6 });
+  note(2.5, 400.6, 0, -1, 'gp.n.chapel', {}, { h: 7.55 });                // on the north wall right of the landing, at eye level from it
 
   /* ---- brass plaques on stone pedestals next to the statue scenes (statues.js), text from the guide step ---- */
   const PLAQUES = {
@@ -483,6 +491,8 @@ export function buildLayout(grid0) {
         if (!cc || !cc.open[kk] || Math.abs(cc.ceil[kk] - ce) > 0.01 || (cc.flags[kk] & F.SKY) || ce < 2.5 || cc.zone[kk] !== c.zone[k]) { ok = false; break; }
       }
       if (!ok) continue;
+      // not into a prop that reaches the ceiling (stud frames, door frames, steel doors…)
+      if (c.props.some((p) => TALL.has(p.kind) && Math.abs(p.x - x) < 1.6 && Math.abs(p.z - z) < 1.6)) continue;
       const r = rand4(99, gx, gz, 1), dead = r < deadP, flicker = !dead && rand4(99, gx, gz, 2) < 0.06;
       const cl = col || [1.0, 0.93, 0.78];
       const along = zd.key === 'greatPath' || zd.key === 'westPath' || zd.key === 'avenue';

@@ -145,14 +145,14 @@ export function paintJourney(h, xa, xb) {
     prop('chalk', x + 2, zc - width(x + 2) / 2, 0, { n: 1, red: true, y: f });
   }
   // rain water collectors under a skylight every 160 m (64:28, 104:35)
-  for (const x of [84, 244, 404, 724, 884, 1044, 1364, 1524, 1844, 2164, 2324, JX.lastMeal - 4]) if (x >= xa && x < xb) prop('funnel', x, base(x).zc, 0, { top: base(x).f + 3.35, y: base(x).f });
+  for (const x of [84, 244, 404, 724, 884, 1044, 1364, 1524, 1844, 2164, 2324, JX.lastMeal - 4]) if (x >= xa && x < xb) prop('funnel', x, base(x).zc, 0, { top: grid.ceilAt(x, base(x).zc) - base(x).f, y: base(x).f });
 
   /* ================= 59:21 departure: decay and trash that thin out ================= */
   if (over(60, 140)) {
     for (let k = 0; k < 28; k++) {
       const x = 62 + k * 2.6 + R(k, 3, 71) * 2, p = Math.max(0, 1 - (x - 60) / 80);
       if (R(k, 0, 72) > p) continue;
-      const zz = (R(k, 1, 73) - 0.5) * 2.2;
+      const zz = (R(k, 1, 73) - 0.5) * 1.3;
       prop(R(k, 2, 74) < 0.5 ? 'papers' : 'trash', x, zz, R(k, 4, 75) * 6, { seed: k, n: 2 + (k % 3) });
     }
     note(66, 0, 0, -1, 'gp.n.greatPath');
@@ -168,7 +168,7 @@ export function paintJourney(h, xa, xb) {
   if (over(196, 340)) {
     note(200, 0, 0, 1, 'gp.n.j.dusk');
     prop('meal', 229, 1.0, Math.PI);
-    note(260, 0, 0, -1, 'gp.n.j.night');
+    note(263, 0, 0, -1, 'gp.n.j.night');
     prop('camp', JX.camp, 0.4, Math.PI / 2);
   }
   /* 62:58 morning: the explorers' marks, Rudon starts his own red marks (63:15) */
@@ -181,7 +181,7 @@ export function paintJourney(h, xa, xb) {
   if (over(410, 430)) note(JX.niches + 8, 0, 0, 1, 'gp.n.j.niches');
   /* 67:12 cracks in the concrete; 67:28 the floor turns to carpet at a line between skylights */
   if (over(500, 570)) {
-    for (let k = 0; k < 16; k++) { const x = 502 + k * 3.4 + R(k, 0, 81) * 1.5; prop('crack', x, (R(k, 1, 82) - 0.5) * 2, R(k, 2, 83) * 3, { seed: k }); }
+    for (let k = 0; k < 16; k++) { const x = 502 + k * 3.4 + R(k, 0, 81) * 1.5; prop('crack', x, (R(k, 1, 82) - 0.5) * 1.6, R(k, 2, 83) < 0.5 ? 0 : Math.PI, { seed: k }); }
     note(504, 0, 0, -1, 'gp.n.j.cracks');
     note(JX.carpet + 3, 0, 0, 1, 'gp.n.j.carpet');
   }
@@ -233,10 +233,10 @@ export function paintJourney(h, xa, xb) {
   if (over(JX.half - 2, JX.half + 4)) { prop('boxes', JX.half, 1.1, 0); note(JX.half + 2, 0, 0, 1, 'gp.n.j.half'); }
   /* 89:25 a long shallow room on the left: bar stools bolted to the floor, a counter, cupboards */
   if (over(JX.bar, JX.bar + 34)) {
-    room('gpBar', JX.bar + 2, -4.6, JX.bar + 30, -1.5, { floor: 0, ceil: H, flags: F.SKIRT });
+    room('gpBar', JX.bar + 2, -4.5, JX.bar + 30, -1.5, { floor: 0, ceil: H, flags: F.SKIRT });
     prop('counter', JX.bar + 16, -3.55, 0, { w: 24 });
     for (let k = 0; k < 18; k++) prop('stool', JX.bar + 4 + k * 1.35, -2.75, 0);
-    for (let k = 0; k < 9; k++) prop('cupboard', JX.bar + 4.5 + k * 2.7, -4.6, 0, { y: 0 });
+    for (let k = 0; k < 9; k++) prop('cupboard', JX.bar + 4.5 + k * 2.7, -4.5, 0, { y: 0 });
     note(JX.bar + 1, 0, 0, -1, 'gp.n.j.bar');
   }
   /* 89:48 the hall moves a few feet to the left and down */
@@ -369,9 +369,9 @@ export function paintJourney(h, xa, xb) {
       if (Math.abs(zz - zc) < 2.6) continue;
       prop('column', x, zz, 0, { h: 5.5, r: 0.45, y: f });
     }
-    for (let x = JX.columns + 2; x < JX.columnsEnd - 2; x += 8) for (const s of [-1, 1]) prop('glowStrip', x + 4, zc + s * 1.9, 0, { len: 8, y: f });
+    for (let x = JX.columns + 2; x + 8 <= JX.columnsEnd - 1; x += 8) for (const s of [-1, 1]) prop('glowStrip', x + 4, zc + s * 1.9, 0, { len: 8, y: f });
     for (let x = JX.columns + 4; x < JX.columnsEnd; x += 6) for (const s of [-1, 1]) grid.addLight({ x, z: zc + s * 1.9, y: f + 0.12, r: 1, g: 0.8, b: 0.55, p: 0.32 });
-    note(JX.columns + 2, zc - 2.4, 0, -1, 'gp.n.j.columns', {}, {});
+    note(JX.columns + 0.5, zc - 3.4, -1, 0, 'gp.n.j.columns', {}, {});          // on the west wall, beside the way in
   }
   // an empty district: halls branch off more and more often; rooms with windows, dusty furniture (92:07)
   function paintDistrict() {
@@ -392,9 +392,9 @@ export function paintJourney(h, xa, xb) {
         room('gpDistrict', side < 0 ? x - 1.5 : x + 1, zA + 3.5, side < 0 ? x - 1 : x + 1.5, zA + 4.5, { floor: f + 1.0, ceil: f + 2.1, flags: 0 });
         const cx = rx0 + 3, cz = zA + 2.5, r = R(i, side, 95);
         prop('table', cx, cz, 0, { w: 1.4, d: 0.8, y: f });
-        prop('chair', cx - 0.9, cz, Math.PI / 2, { y: f });
+        prop('chair', cx + 0.95, cz, -Math.PI / 2, { y: f });
         if (r < 0.5) prop('bed', rx0 + 1.2, zA + 2.5, Math.PI / 2, { y: f }); else prop('shelf', rx0 + 3, zA + 0.3, 0, { w: 2.2, books: r > 0.75, y: f });
-        prop('papers', cx + 1, cz + 1, 0, { seed: i * 3 + side + 3, n: 3, y: f });
+        prop('papers', cx - 0.3, cz - 1.5, 0, { seed: i * 3 + side + 3, n: 3, y: f });
         if (r > 0.6) emitter('commotion', cx, f + 1.4, cz);
       }
       skylight(x - 1, s < 0 ? zc - 1.5 - len / 2 - 1 : zc + 1.5 + len / 2 - 1, x + 1, s < 0 ? zc - 1.5 - len / 2 + 1 : zc + 1.5 + len / 2 + 1, 0.6, 0.6);

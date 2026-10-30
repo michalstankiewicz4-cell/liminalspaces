@@ -263,7 +263,7 @@ const PROPS = {
     // a glass path over the water channel (89:54): glass panes on steel bearers, walkable (invisible collider)
     const L = p.len || 4, w = p.w || 3;
     E.box('glass', -L / 2, -0.03, -w / 2, L / 2, 0, w / 2, { skip: 'nx,px,nz,pz' });
-    E.box('steel', -L / 2, -0.12, -w / 2, -L / 2 + 0.06, 0, w / 2);
+    E.box('steel', -L / 2, -0.12, -w / 2, -L / 2 + 0.06, -0.031, w / 2);          // under the glass, not flush with it
     for (const z of [-w / 2 + 0.03, 0, w / 2 - 0.03]) E.box('steel', -L / 2, -0.1, z - 0.03, L / 2, -0.03, z + 0.03);
   },
   blocker(E, p) { const w = p.w || 2; E.box('dark', -w / 2, 0, -0.1, w / 2, p.h || 3, 0.1, { solid: true, hide: true }); },
